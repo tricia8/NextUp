@@ -1,5 +1,4 @@
 import { ThemedText } from "@/components/ThemedText";
-import { IconSymbol } from "@/components/ui/IconSymbol";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
@@ -8,7 +7,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { SearchBar } from "react-native-elements";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function BucketList() {
   const [search, setSearch] = useState("");
@@ -52,9 +51,14 @@ export default function BucketList() {
         ) : (
           <View></View>
         )}
-        <View style={{ flexDirection: "row" }}>
+        <View style={styles.SubListRow2}>
           <ThemedText type="subtitle">{item.title}</ThemedText>
-          <AntDesign name="right" size={20} color="black" />
+          <AntDesign
+            name="right"
+            size={20}
+            color="black"
+            style={{ marginTop: 6 }}
+          />
         </View>
         <View>
           <ThemedText>
@@ -66,8 +70,8 @@ export default function BucketList() {
   };
 
   return (
-    <SafeAreaProvider>
-      <View style={{ flexDirection: "row", justifyContent: "center" }}>
+    <SafeAreaView style={styles.SafeView}>
+      <View style={styles.SearchFilterBar}>
         <SearchBar
           containerStyle={{
             flex: 1,
@@ -80,7 +84,7 @@ export default function BucketList() {
           round
         />
 
-        <TouchableOpacity>
+        <TouchableOpacity style={{ justifyContent: "center" }}>
           <Ionicons
             size={35}
             name="filter-circle-outline"
@@ -102,21 +106,33 @@ export default function BucketList() {
       >
         <Ionicons name="add-circle" size={70} color="coral" />
       </TouchableOpacity>
-    </SafeAreaProvider>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  SafeView: {
+    flex: 1,
+    margin: 6,
+  },
   ItemContainer: {
     flexDirection: "column",
     margin: 10,
     padding: 25,
-    alignItems: "center",
     justifyContent: "space-between",
     borderRadius: 10,
     borderWidth: 2,
     borderColor: "white",
     backgroundColor: "#69d8ff",
+  },
+  SubListRow2: {
+    flexDirection: "row",
+    padding: 2,
+    justifyContent: "space-between",
+  },
+  SearchFilterBar: {
+    flexDirection: "row",
+    justifyContent: "center",
   },
   AddButton: {
     position: "absolute",
