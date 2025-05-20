@@ -84,11 +84,6 @@ export default function BucketList() {
 
   return (
     <SafeAreaView style={styles.SafeView}>
-      <ThemedView>
-        <ThemedText type="title" style={styles.Heading}>
-          My Bucket List
-        </ThemedText>
-      </ThemedView>
       <View style={styles.SearchFilterBar}>
         <SearchBar
           containerStyle={{
@@ -100,6 +95,8 @@ export default function BucketList() {
           onChangeText={setSearch}
           value={search}
           round
+          lightTheme={colorScheme === "light"}
+          placeholderTextColor={colorScheme === "light" ? "#727573" : "#86939e"}
         />
 
         <TouchableOpacity style={{ justifyContent: "center" }}>
@@ -132,11 +129,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
   StyleSheet.create({
     SafeView: {
       flex: 1,
-      margin: 6,
-    },
-    Heading: {
-      margin: 8,
-      fontSize: RFValue(26),
+      margin: 5,
     },
     ItemContainer: {
       flexDirection: "column",
@@ -162,6 +155,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     SearchFilterBar: {
       flexDirection: "row",
       justifyContent: "center",
+      paddingHorizontal: 3,
     },
     AddButton: {
       position: "absolute",
