@@ -5,12 +5,20 @@ import Feather from "@expo/vector-icons/Feather";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  ColorSchemeName,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 import { SearchBar } from "react-native-elements";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ThemedView } from "@/components/ThemedView";
 
 export default function BucketList() {
   const [search, setSearch] = useState("");
+  const colorScheme = useColorScheme(); // 'light' or 'dark'
 
   interface Sublist {
     title: string;
@@ -69,8 +77,15 @@ export default function BucketList() {
     );
   };
 
+  const styles = getStyles(colorScheme);
+
   return (
     <SafeAreaView style={styles.SafeView}>
+      <ThemedView>
+        <ThemedText type="title" style={styles.Heading}>
+          My Bucket List
+        </ThemedText>
+      </ThemedView>
       <View style={styles.SearchFilterBar}>
         <SearchBar
           containerStyle={{
@@ -110,37 +125,41 @@ export default function BucketList() {
   );
 }
 
-const styles = StyleSheet.create({
-  SafeView: {
-    flex: 1,
-    margin: 6,
-  },
-  ItemContainer: {
-    flexDirection: "column",
-    margin: 10,
-    padding: 25,
-    justifyContent: "space-between",
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "white",
-    backgroundColor: "#69d8ff",
-  },
-  SubListRow2: {
-    flexDirection: "row",
-    padding: 2,
-    justifyContent: "space-between",
-  },
-  SearchFilterBar: {
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-  AddButton: {
-    position: "absolute",
-    bottom: 20,
-    right: 20,
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: "white",
-    padding: 2,
-  },
-});
+const getStyles = (colorScheme: ColorSchemeName) =>
+  StyleSheet.create({
+    SafeView: {
+      flex: 1,
+      margin: 6,
+    },
+    Heading: {
+      margin: 8,
+    },
+    ItemContainer: {
+      flexDirection: "column",
+      margin: 10,
+      padding: 25,
+      justifyContent: "space-between",
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: "white",
+      backgroundColor: colorScheme === "dark" ? "#1a98a1" : "#6ae7f0",
+    },
+    SubListRow2: {
+      flexDirection: "row",
+      padding: 2,
+      justifyContent: "space-between",
+    },
+    SearchFilterBar: {
+      flexDirection: "row",
+      justifyContent: "center",
+    },
+    AddButton: {
+      position: "absolute",
+      bottom: 20,
+      right: 20,
+      borderRadius: 50,
+      borderWidth: 1,
+      borderColor: "coral",
+      padding: 2,
+    },
+  });
