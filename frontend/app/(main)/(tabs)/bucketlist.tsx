@@ -15,6 +15,7 @@ import {
 import { SearchBar } from "react-native-elements";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
+import { RFValue } from "react-native-responsive-fontsize";
 
 export default function BucketList() {
   const [search, setSearch] = useState("");
@@ -60,7 +61,9 @@ export default function BucketList() {
           <View></View>
         )}
         <View style={styles.SubListRow2}>
-          <ThemedText type="subtitle">{item.title}</ThemedText>
+          <ThemedText type="subtitle" style={styles.ListName}>
+            {item.title}
+          </ThemedText>
           <AntDesign
             name="right"
             size={20}
@@ -69,7 +72,7 @@ export default function BucketList() {
           />
         </View>
         <View>
-          <ThemedText>
+          <ThemedText style={styles.StatusText}>
             {item.completionStatus[0]} of {item.completionStatus[1]} complete
           </ThemedText>
         </View>
@@ -103,7 +106,7 @@ export default function BucketList() {
           <Ionicons
             size={35}
             name="filter-circle-outline"
-            color={"yellowgreen"}
+            color={colorScheme === "dark" ? "yellowgreen" : "#36a76b"}
           />
         </TouchableOpacity>
       </View>
@@ -133,6 +136,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     Heading: {
       margin: 8,
+      fontSize: RFValue(26),
     },
     ItemContainer: {
       flexDirection: "column",
@@ -148,6 +152,12 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       flexDirection: "row",
       padding: 2,
       justifyContent: "space-between",
+    },
+    ListName: {
+      fontSize: RFValue(18),
+    },
+    StatusText: {
+      fontSize: RFValue(13),
     },
     SearchFilterBar: {
       flexDirection: "row",
