@@ -47,7 +47,7 @@ export default function Signup() {
               Just a few quick things to get started
             </ThemedText>
 
-            <View style={{ margin: 10 }}>
+            <View style={styles.fieldContainer}>
               <FloatingLabelInput
                 label={"Email"}
                 value={email}
@@ -58,9 +58,7 @@ export default function Signup() {
                 containerStyles={styles.inputContainer}
                 inputStyles={styles.input}
               />
-            </View>
 
-            <View style={{ margin: 10 }}>
               <FloatingLabelInput
                 label={"Username"}
                 value={username}
@@ -71,9 +69,7 @@ export default function Signup() {
                 containerStyles={styles.inputContainer}
                 inputStyles={styles.input}
               />
-            </View>
 
-            <View style={{ margin: 10 }}>
               <FloatingLabelInput
                 label={"Password"}
                 isPassword
@@ -127,6 +123,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   signUpContainer: {},
+  fieldContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 18,
+  },
   heading: {
     fontSize: RFValue(25),
     textAlign: "center",
