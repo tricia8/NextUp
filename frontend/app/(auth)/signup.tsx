@@ -28,7 +28,7 @@ export default function Signup() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={undefined}
+        behavior={"height"}
         keyboardVerticalOffset={0}
       >
         <ScrollView
@@ -131,6 +131,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: RFValue(25),
     textAlign: "center",
+    marginTop: 12,
     marginBottom: 10,
     lineHeight: RFValue(30),
   },
