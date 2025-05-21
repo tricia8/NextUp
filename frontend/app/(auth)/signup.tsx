@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
+  Text,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
@@ -21,8 +23,16 @@ export default function Signup() {
   const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false); // show or hide password
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
+
+  // autohide password after 5 seconds if it's revealed
+  const handleShowPassword = () => {
+    setShow(true);
+    // Automatically hide after 5 seconds
+    setTimeout(() => setShow(false), 5000);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,6 +86,15 @@ export default function Signup() {
                 togglePassword={show}
                 value={password}
                 onChangeText={(value) => setPassword(value)}
+                customShowPasswordComponent={
+                  <Text
+                    onPress={handleShowPassword}
+                    style={{ backgroundColor: "transparent" }}
+                  >
+                    Show
+                  </Text>
+                }
+                customHidePasswordComponent={<Text>Hide</Text>}
                 leftComponent={
                   <EvilIcons name="lock" size={22} color="black" />
                 }
@@ -84,25 +103,36 @@ export default function Signup() {
               />
             </View>
 
-            <TouchableOpacity style={styles.accountButton}>
-              <ThemedText style={[styles.subHeading, styles.createAccountText]}>
-                Create account
-              </ThemedText>
-            </TouchableOpacity>
+            {loading ? (
+              <ActivityIndicator size="large" />
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.accountButton}
+                  disabled={!email || !password || !username}
+                >
+                  <ThemedText
+                    style={[styles.subHeading, styles.createAccountText]}
+                  >
+                    Create account
+                  </ThemedText>
+                </TouchableOpacity>
 
-            <View style={styles.haveAccountContainer}>
-              <ThemedText style={styles.haveAccountText}>
-                Already have an account?
-              </ThemedText>
-              <TouchableOpacity
-                onPress={() => router.push("./login")}
-                style={styles.loginContainer}
-              >
-                <ThemedText type="link" style={styles.linkedText}>
-                  Log in
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.haveAccountContainer}>
+                  <ThemedText style={styles.haveAccountText}>
+                    Already have an account?
+                  </ThemedText>
+                  <TouchableOpacity
+                    onPress={() => router.push("./login")}
+                    style={styles.loginContainer}
+                  >
+                    <ThemedText type="link" style={styles.linkedText}>
+                      Log in
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </ThemedView>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -120,7 +150,7 @@ const styles = StyleSheet.create({
   themedView: {
     flex: 1,
     justifyContent: "center",
-    padding: 10,
+    padding: 13,
   },
   fieldContainer: {
     paddingHorizontal: 16,
