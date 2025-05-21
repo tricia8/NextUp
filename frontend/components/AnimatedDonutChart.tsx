@@ -1,25 +1,22 @@
 import React from 'react';
-import { Animated, View, Text, TextInput, StyleSheet } from 'react-native';
+import { Animated, View, TextInput } from 'react-native';
 import Svg, {G, Circle} from 'react-native-svg';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const AnimatedInput = Animated.createAnimatedComponent(TextInput);
 
 
 export default function DonutChart({
     value = 75,
-    radius = 40,
-    strokeWidth = 20,
-    duration = 500,
+    radius = 60,
+    strokeWidth = 25,
+    duration = 1000,
     delay = 0,
-    color = 'grey',
-    textColor = 'black',
+    color = 'white',
     max = 100,
 }) {
     const animatedValue = React.useRef(new Animated.Value(0)).current;
 
     const circleRef = React.useRef<Circle>(null);
-    const inputRef = React.useRef<TextInput>(null);
 
     const halfCircle = radius + strokeWidth;
     const circleCircumference = 2 * Math.PI * radius;
@@ -30,9 +27,7 @@ export default function DonutChart({
             duration,
             delay,
             useNativeDriver: true
-        }).start(() => {
-            animation(toValue === 0 ? value : 0);
-        });
+        }).start();
     };
 
 
@@ -47,12 +42,6 @@ export default function DonutChart({
                     strokeDashoffset,
                 })
             }
-
-            if (inputRef?.current) {
-                inputRef.current.setNativeProps( {
-                    text: `${Math.round(v.value)}`
-                })
-            }
         });
 
         return () => {
@@ -60,9 +49,14 @@ export default function DonutChart({
         };
     }, [max, value]);
     
+
     return (
         <View>
-            <Svg viewBox={`0 0 ${halfCircle * 2} ${halfCircle * 2}`}>
+            <Svg 
+                width={radius * 2}
+                height={radius * 2} 
+                viewBox={`0 0 ${halfCircle * 2} ${halfCircle * 2}`}
+            >
                 <G rotation='-90' origin={`${halfCircle}, ${halfCircle}`}>
                     <Circle
                         cx='50%'
@@ -71,7 +65,7 @@ export default function DonutChart({
                         strokeWidth={strokeWidth}
                         r={radius}
                         fill="transparent"
-                        strokeOpacity={0.2}
+                        strokeOpacity={0.5}
                     />
                     <AnimatedCircle 
                         ref={circleRef}
@@ -87,17 +81,6 @@ export default function DonutChart({
                     />
                 </G>
             </Svg>
-
-            <AnimatedInput
-                ref={inputRef}
-                editable={false}
-                defaultValue='0'
-                style={[
-                    StyleSheet.absoluteFillObject,
-                    { fontSize: radius / 2, color: textColor ?? color },
-                    { fontWeight: '900', textAlign: 'center' },
-                ]}
-            />
         </View>
     )
 }
