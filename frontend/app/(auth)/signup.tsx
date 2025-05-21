@@ -38,7 +38,7 @@ export default function Signup() {
           <ThemedView
             lightColor="#c2bef1"
             darkColor=""
-            style={{ flex: 1, justifyContent: "center" }}
+            style={styles.themedView}
           >
             <ThemedText type="title" style={styles.heading}>
               Sign Up
@@ -85,17 +85,12 @@ export default function Signup() {
             </View>
 
             <TouchableOpacity style={styles.accountButton}>
-              <ThemedText
-                style={[
-                  styles.subHeading,
-                  { color: "#2e61a4", fontWeight: "bold" },
-                ]}
-              >
+              <ThemedText style={[styles.subHeading, styles.createAccountText]}>
                 Create account
               </ThemedText>
             </TouchableOpacity>
 
-            <View style={{ flexDirection: "row", justifyContent: "center" }}>
+            <View style={styles.haveAccountContainer}>
               <ThemedText style={styles.haveAccountText}>
                 Already have an account?
               </ThemedText>
@@ -122,7 +117,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  signUpContainer: {},
+  themedView: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 10,
+  },
   fieldContainer: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -154,16 +153,26 @@ const styles = StyleSheet.create({
     margin: 16,
     backgroundColor: "#46d5c2",
     color: "#fff",
+    justifyContent: "center",
   },
   subHeading: {
     textAlign: "center",
     marginBottom: 10,
     fontSize: RFValue(13),
   },
+  createAccountText: {
+    color: "#2e61a4",
+    fontWeight: "bold",
+    margin: 10,
+  },
   haveAccountText: {
     margin: 10,
     marginLeft: 0,
     fontSize: RFValue(13),
+  },
+  haveAccountContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
   },
   linkedText: {
     fontSize: RFValue(13),
