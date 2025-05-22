@@ -14,18 +14,18 @@ import JourneyScreen from './journey';
 
 export default function ProfileScreen() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView edges={[]} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
 
             <View style={styles.topContainer}>
-                <FontAwesome name="user-circle-o" size={ms(80)} color="purple" />
+                <FontAwesome name="user-circle-o" size={ms(80)} color="#7b68ee" />
 
                 <View style={styles.profileDetails}>
                     <View style={styles.username}>
                         <ThemedText type="subtitle">az123</ThemedText>
                         <TouchableOpacity style={styles.editButton}>
-                            <ThemedText style={{fontSize: RFValue(13)}}>Edit Profile</ThemedText>
+                            <ThemedText style={{fontSize: RFValue(12)}}>Edit Profile</ThemedText>
                         </TouchableOpacity>
                     </View>
 
@@ -38,21 +38,21 @@ export default function ProfileScreen() {
 
 
             <View style={styles.middleContainer}>
-                <View style={styles.dataContainer}>
+                <View>
                     <ThemedText style={styles.dataText}>
                         <ThemedText type='subtitle'>10</ThemedText>{'\n'}
                         <Text style={styles.subDataText}>GOALS{'\n'}CREATED</Text>
                     </ThemedText>
                 </View>
 
-                <View style={styles.dataContainer}>
+                <View>
                     <ThemedText style={styles.dataText}>
                         <ThemedText type='subtitle'>5</ThemedText>{'\n'} 
                         <Text style={styles.subDataText}>GOALS{'\n'}COMPLETED</Text>
                     </ThemedText>
                 </View>
 
-                <View style={styles.dataContainer}>
+                <View>
                     <ThemedText style={styles.dataText}>
                         <ThemedText type='subtitle'>Travel</ThemedText>{'\n'}
                         <Text style={styles.subDataText}>TOP{'\n'}CATEGORY</Text>
@@ -60,19 +60,55 @@ export default function ProfileScreen() {
                 </View>
             </View>
 
+            <View style={styles.previewContainer}>
+              <View style={styles.previewContainer}>
+                <Preview route='bucketlist' title='Bucket List' color='rgba(94, 231, 255, 0.5)' component={<BucketList />}/>
+                </View>
+                <View style={styles.previewContainer}>
+                <Preview route='journey' title='Journey' color='rgba(26, 230, 186, 0.5)' component={<JourneyScreen />}/>
+              </View>
+            </View>
+
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
   )
 
+
+  function Preview(
+      { route, title, color, component}: 
+      { route: string, title: string, color: string, component: React.ReactNode} ) {
+      
+        return (
+        <TouchableOpacity 
+          onPress={() => router.push(`./${route}`)}
+        >
+            <View style={{height: '100%', width: '100%'}}>
+              <View style={{ padding: 15 }}>
+                <ThemedText type="subtitle" style={{textAlign: 'center'}}>{title}</ThemedText>
+              </View>
+              {component}
+            </View>
+            <LinearGradient 
+              colors={['#00000000', color]} 
+              style={StyleSheet.absoluteFillObject}
+              pointerEvents="none">
+            </LinearGradient>
+        </TouchableOpacity> 
+    )}
+
+}
+
+
+
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    gap: vs(10),
+    gap: vs(16),
   },
   topContainer: {
     paddingHorizontal: s(22),
-    paddingTop: vs(40),
+    paddingTop: vs(45),
     flexDirection: 'row',
     gap: s(18),
     alignItems: 'center',
@@ -80,25 +116,24 @@ const styles = StyleSheet.create({
   profileDetails: {
     flex: 1,
     flexDirection: 'column',
-    gap: vs(6),
+    gap: vs(8),
   },
   username: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   editButton: {
     paddingHorizontal: s(10),
-    paddingVertical: vs(4),
+    paddingVertical: vs(3),
     borderRadius: 20,
-    backgroundColor: 'purple',
+    backgroundColor: '#7b68ee',
     alignSelf: 'flex-start'
   },
   middleContainer: {
     paddingHorizontal: s(22),
     justifyContent: 'space-around',
     flexDirection: 'row',
-  },
-  dataContainer: {
   },
   dataText: {
     textAlign: 'center',
@@ -108,7 +143,7 @@ const styles = StyleSheet.create({
     fontSize: RFValue(12),
     lineHeight: s(20),
   },
-  bottomContainer: {
-
+  previewContainer: {
+    flex: 1,
   },
 });
