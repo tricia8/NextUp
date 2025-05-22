@@ -19,6 +19,7 @@ import AntDesign from "react-native-vector-icons/AntDesign";
 import EvilIcons from "react-native-vector-icons/EvilIcons";
 import { useRouter } from "expo-router";
 import { RFValue } from "react-native-responsive-fontsize";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -80,14 +81,13 @@ export default function Login() {
                 value={password}
                 onChangeText={(value) => setPassword(value)}
                 customShowPasswordComponent={
-                  <Text
-                    onPress={handleShowPassword}
-                    style={{ backgroundColor: "transparent" }}
-                  >
-                    Show
-                  </Text>
+                  <TouchableOpacity onPress={handleShowPassword}>
+                    <Ionicons name="eye" size={24} color="black" />
+                  </TouchableOpacity>
                 }
-                customHidePasswordComponent={<Text>Hide</Text>}
+                customHidePasswordComponent={
+                  <Ionicons name="eye-off" size={24} color="black" />
+                }
                 leftComponent={
                   <EvilIcons name="lock" size={22} color="black" />
                 }
