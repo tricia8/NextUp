@@ -48,7 +48,7 @@ export default function Signup() {
         >
           <ThemedView
             lightColor="#c2bef1"
-            darkColor=""
+            darkColor="#4d2549"
             style={styles.themedView}
           >
             <ThemedText type="title" style={styles.heading}>
@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
   },
   linkedText: {
     fontSize: RFValue(13),
+    color: "#33d3cc",
   },
   input: {
     color: "#274266",
