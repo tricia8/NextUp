@@ -39,11 +39,21 @@ export default function BucketList() {
       // icon: ,
       title: "Skills to learn",
       completionStatus: [1, 3],
-      isShared: true,
+      isShared: false,
     },
     {
       title: "Random Stuff",
       completionStatus: [3, 4],
+      isShared: false,
+    },
+    {
+      title: "Family Goals",
+      completionStatus: [0, 5],
+      isShared: true,
+    },
+    {
+      title: "Hackathons",
+      completionStatus: [1, 4],
       isShared: false,
     },
   ];
@@ -52,7 +62,7 @@ export default function BucketList() {
 
   const renderFlatlistItem = ({ item }: { item: Sublist }) => {
     return (
-      <TouchableOpacity style={styles.ItemContainer}>
+      <TouchableOpacity style={styles.itemContainer}>
         {item.isShared ? (
           <View>
             <Feather name="users" size={24} color="black" />
@@ -83,63 +93,77 @@ export default function BucketList() {
   const styles = getStyles(colorScheme);
 
   return (
-    <SafeAreaView style={styles.SafeView}>
-      <View style={styles.SearchFilterBar}>
-        <SearchBar
-          containerStyle={{
-            flex: 1,
-            backgroundColor: "transparent",
-          }}
-          platform="default"
-          placeholder="Search Item..."
-          onChangeText={setSearch}
-          value={search}
-          round
-          lightTheme={colorScheme === "light"}
-          placeholderTextColor={colorScheme === "light" ? "#727573" : "#86939e"}
-        />
-
-        <TouchableOpacity style={{ justifyContent: "center" }}>
-          <Ionicons
-            size={35}
-            name="filter-circle-outline"
-            color={colorScheme === "dark" ? "yellowgreen" : "#36a76b"}
+    <SafeAreaView style={styles.safeView} edges={[]}>
+      <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
+        <View style={styles.searchFilterBar}>
+          <SearchBar
+            containerStyle={{
+              flex: 1,
+              backgroundColor: "transparent",
+            }}
+            inputStyle={{
+              color: colorScheme === "dark" ? "#e3e3e3" : "black",
+            }}
+            platform="default"
+            placeholder="Search Item..."
+            onChangeText={setSearch}
+            value={search}
+            round
+            lightTheme={colorScheme === "light"}
+            placeholderTextColor={
+              colorScheme === "light" ? "#727573" : "#86939e"
+            }
           />
-        </TouchableOpacity>
-      </View>
 
-      <FlashList
-        data={DATA}
-        renderItem={renderFlatlistItem}
-        estimatedItemSize={20}
-      />
+          <TouchableOpacity style={{ justifyContent: "center" }}>
+            <Ionicons
+              size={35}
+              name="filter-circle-outline"
+              color={colorScheme === "dark" ? "yellowgreen" : "#36a76b"}
+            />
+          </TouchableOpacity>
+        </View>
 
-      <TouchableOpacity
-        onPress={() => router.push("../newgoal")}
-        activeOpacity={0.8}
-        style={styles.AddButton}
-      >
-        <Ionicons name="add-circle" size={70} color="coral" />
-      </TouchableOpacity>
+        <View style={{ flex: 0.8 }}>
+          <FlashList
+            data={DATA}
+            renderItem={renderFlatlistItem}
+            estimatedItemSize={20}
+            contentContainerStyle={{ paddingBottom: 100 }}
+          />
+        </View>
+
+        <View style={{ flex: 0.2 }}>
+          <TouchableOpacity
+            onPress={() => router.push("../newgoal")}
+            activeOpacity={0.8}
+            style={styles.AddButton}
+          >
+            <Ionicons name="add-circle" size={75} color="#39a64b" />
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
     </SafeAreaView>
   );
 }
 
 const getStyles = (colorScheme: ColorSchemeName) =>
   StyleSheet.create({
-    SafeView: {
+    safeView: {
       flex: 1,
-      margin: 5,
     },
-    ItemContainer: {
+    themedView: {
+      flex: 1,
+    },
+    itemContainer: {
       flexDirection: "column",
-      margin: 10,
-      padding: 25,
+      marginVertical: 8,
+      marginHorizontal: 15,
+      padding: 20,
       justifyContent: "space-between",
-      borderRadius: 10,
-      borderWidth: 2,
-      borderColor: "white",
-      backgroundColor: colorScheme === "dark" ? "#1a98a1" : "#6ae7f0",
+      borderRadius: 5,
+      backgroundColor: colorScheme === "dark" ? "#1a98a1" : "#dcf4a9",
+      elevation: 5,
     },
     SubListRow2: {
       flexDirection: "row",
@@ -147,22 +171,22 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       justifyContent: "space-between",
     },
     ListName: {
-      fontSize: RFValue(18),
+      fontSize: RFValue(16),
     },
     StatusText: {
-      fontSize: RFValue(13),
+      fontSize: RFValue(11),
     },
-    SearchFilterBar: {
+    searchFilterBar: {
       flexDirection: "row",
       justifyContent: "center",
-      paddingHorizontal: 3,
+      paddingHorizontal: 10,
     },
     AddButton: {
       position: "absolute",
       bottom: 20,
       right: 20,
       borderRadius: 50,
-      borderWidth: 1,
+      // borderWidth: 1,
       borderColor: "coral",
       padding: 2,
     },
