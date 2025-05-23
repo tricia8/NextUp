@@ -11,7 +11,7 @@ import AnimatedTextInput from '@/components/AnimatedTextInput';
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView edges={[]} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <ThemedView style={{flex: 1}}>
 
@@ -62,9 +62,11 @@ export default function HomeScreen() {
 
 
               <View style={styles.quoteContainer}>
-                <ThemedText style={styles.smallText}>
-                  Twenty years from now you will be more disappointed by the things you didn't do than by the ones you did do. — Mark Twain
-                </ThemedText>
+                <ScrollView>
+                  <ThemedText style={styles.smallText}>
+                    Twenty years from now you will be more disappointed by the things you didn't do than by the ones you did do. — Mark Twain
+                  </ThemedText>
+                </ScrollView>
               </View>
             </View>
 
@@ -78,7 +80,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     paddingHorizontal: s(20),
-    paddingTop: vs(15),
+    paddingTop: vs(30),
     gap: s(14),
   },
   titleContainer: {
@@ -115,7 +117,10 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   quoteContainer: {
-    paddingVertical: vs(15),
+    height: vs(100),
+    flexDirection: 'row',
+    alignItems:'center',
+    paddingVertical: vs(10),
     paddingHorizontal: s(10),
     backgroundColor: 'rgba(102, 205, 170, 0.7)',
   },
