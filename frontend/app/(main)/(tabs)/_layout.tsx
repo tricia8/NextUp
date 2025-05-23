@@ -53,7 +53,7 @@ export default function TabLayout() {
           title: "My Bucket List", // header
           tabBarLabel: "Bucket List", // label under  tab icon
           tabBarIcon: ({ color }) => (
-            <Entypo name="bucket" size={28} color="black" />
+            <Entypo name="bucket" size={28} color={color} />
           ),
           headerTitleStyle: {
             fontWeight: "bold",
