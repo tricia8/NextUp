@@ -16,6 +16,7 @@ import { SearchBar } from "react-native-elements";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function BucketList() {
   const [search, setSearch] = useState("");
@@ -62,31 +63,46 @@ export default function BucketList() {
 
   const renderFlatlistItem = ({ item }: { item: Sublist }) => {
     return (
-      <TouchableOpacity style={styles.itemContainer}>
-        {item.isShared ? (
-          <View>
-            <Feather name="users" size={24} color="black" />
+      <LinearGradient
+        colors={
+          colorScheme === "dark"
+            ? ["#0f2027", "#188991"]
+            : ["#dcf4a9", "#b2df75"]
+        }
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.itemContainer}
+      >
+        <TouchableOpacity style={{ flex: 1 } /*styles.itemContainer*/}>
+          {item.isShared ? (
+            <View>
+              <Feather
+                name="users"
+                size={24}
+                color={colorScheme === "dark" ? "white" : "black"}
+              />
+            </View>
+          ) : (
+            <View></View>
+          )}
+          <View style={styles.SubListRow2}>
+            <ThemedText type="subtitle" style={styles.ListName}>
+              {item.title}
+            </ThemedText>
+            <AntDesign
+              name="right"
+              size={20}
+              color="black"
+              style={{ marginTop: 6 }}
+            />
           </View>
-        ) : (
-          <View></View>
-        )}
-        <View style={styles.SubListRow2}>
-          <ThemedText type="subtitle" style={styles.ListName}>
-            {item.title}
-          </ThemedText>
-          <AntDesign
-            name="right"
-            size={20}
-            color="black"
-            style={{ marginTop: 6 }}
-          />
-        </View>
-        <View>
-          <ThemedText style={styles.StatusText}>
-            {item.completionStatus[0]} of {item.completionStatus[1]} complete
-          </ThemedText>
-        </View>
-      </TouchableOpacity>
+          <View>
+            <ThemedText style={styles.StatusText}>
+              {item.completionStatus[0]} of {item.completionStatus[1]} complete
+            </ThemedText>
+          </View>
+        </TouchableOpacity>
+      </LinearGradient>
     );
   };
 
@@ -162,7 +178,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       padding: 20,
       justifyContent: "space-between",
       borderRadius: 5,
-      backgroundColor: colorScheme === "dark" ? "#1a98a1" : "#dcf4a9",
       elevation: 5,
     },
     SubListRow2: {
