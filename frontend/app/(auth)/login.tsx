@@ -26,8 +26,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false); // show or hide password
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({}); // to make fields required
 
   const colorScheme = useColorScheme(); // 'light' or 'dark'
+  const styles = getStyles(colorScheme);
   const router = useRouter();
 
   // autohide password after 5 seconds if it's revealed
@@ -37,7 +42,13 @@ export default function Login() {
     setTimeout(() => setShow(false), 5000);
   };
 
-  const styles = getStyles(colorScheme);
+  const validateForm = () => {
+    const formErrors: typeof errors = {};
+    if (!email) formErrors.email = "Email is required";
+    if (!password) formErrors.password = "Password is required";
+    setErrors(formErrors);
+    return Object.keys(formErrors).length == 0; // check if all fields are filled
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,20 +77,39 @@ export default function Login() {
               <FloatingLabelInput
                 label={"Email"}
                 value={email}
-                onChangeText={(value) => setEmail(value)}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: "" })); // remove error message when user types something
+                  }
+                }}
                 leftComponent={
                   <Fontisto name="email" size={22} color="black" />
                 }
                 containerStyles={styles.inputContainer}
                 inputStyles={styles.input}
               />
+              {errors.email && (
+                <ThemedText
+                  style={styles.errorText}
+                  lightColor="#c40028"
+                  darkColor="#ffb1c1"
+                >
+                  {errors.email}
+                </ThemedText>
+              )}
 
               <FloatingLabelInput
                 label={"Password"}
                 isPassword
                 togglePassword={show}
                 value={password}
-                onChangeText={(value) => setPassword(value)}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  if (errors.password) {
+                    setErrors((prev) => ({ ...prev, password: "" })); // remove error message when user types something
+                  }
+                }}
                 customShowPasswordComponent={
                   <TouchableOpacity onPress={handleShowPassword}>
                     <Ionicons name="eye" size={24} color="black" />
@@ -94,6 +124,15 @@ export default function Login() {
                 containerStyles={styles.inputContainer}
                 inputStyles={styles.input}
               />
+              {errors.password && (
+                <ThemedText
+                  style={styles.errorText}
+                  lightColor="#c40028"
+                  darkColor="#ffb1c1"
+                >
+                  {errors.password}
+                </ThemedText>
+              )}
             </View>
 
             {loading ? (
@@ -102,7 +141,12 @@ export default function Login() {
               <>
                 <TouchableOpacity
                   style={styles.loginButton}
-                  disabled={!email || !password}
+                  onPress={() => {
+                    if (validateForm()) {
+                      // setLoading(true);
+                      // add signup logic here
+                    }
+                  }}
                 >
                   <ThemedText style={[styles.subHeading, styles.loginText]}>
                     Log in
@@ -117,7 +161,12 @@ export default function Login() {
                     onPress={() => router.push("./signup")}
                     style={styles.signUpContainer}
                   >
-                    <ThemedText type="link" style={styles.linkedText}>
+                    <ThemedText
+                      type="link"
+                      lightColor="#3d93aa"
+                      darkColor="#aeefff"
+                      style={styles.linkedText}
+                    >
                       Sign up
                     </ThemedText>
                   </TouchableOpacity>
@@ -183,6 +232,9 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       fontWeight: "bold",
       margin: 10,
     },
+    errorText: {
+      fontSize: RFValue(12),
+    },
     noAccountText: {
       margin: 10,
       marginLeft: 0,
@@ -194,7 +246,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     linkedText: {
       fontSize: RFValue(13),
-      color: colorScheme === "dark" ? "#aeefff" : "#3d93aa",
     },
     input: {
       color: "#274266",
