@@ -1,15 +1,21 @@
 import { db } from "./firebaseConfig";
-import { collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { debounce } from "lodash";
 
+export const checkUniqueUsername = debounce(async (username, setAvailable) => {
+  const normalizedUsername = username.trim().toLowerCase();
 
-export const checkUniqueUsername = debounce(async (event, setAvailable) => {
-  const username = event.target.value.trim().toLowerCase();
-
-  if (username.length >= 1 && username.length <= 8) {
-    const usernameRef = doc(db, "usernames", username);
+  if (normalizedUsername.length >= 1 && normalizedUsername.length <= 8) {
+    const usernameRef = doc(db, "usernames", normalizedUsername);
     const usernameSnap = await getDoc(usernameRef);
-
     setAvailable(!usernameSnap.exists());
   } else {
     setAvailable(null); // invalid length
@@ -38,17 +44,14 @@ export const createUser = async (user, username) => {
   });
 };
 
-
 export const setBucketList = async (userId, bucketListData) => {
   try {
-    await setDoc(doc(db, "users", userId, "bucketList"), 
-    bucketListData);
+    await setDoc(doc(db, "users", userId, "bucketList"), bucketListData);
   } catch (error) {
     console.error("Error creating bucket list:", error);
     throw error;
   }
 };
-
 
 export const createSubBucketList = async (userId, subBucketListData) => {
   try {
@@ -63,11 +66,22 @@ export const createSubBucketList = async (userId, subBucketListData) => {
   }
 };
 
-
-export const addEventToSubBucketList = async (userId, subBucketListId, eventData) => {
+export const addEventToSubBucketList = async (
+  userId,
+  subBucketListId,
+  eventData
+) => {
   try {
     const eventRef = await addDoc(
-      collection(db, "users", userId, "bucketList", "subBucketLists", subBucketListId, "events"),
+      collection(
+        db,
+        "users",
+        userId,
+        "bucketList",
+        "subBucketLists",
+        subBucketListId,
+        "events"
+      ),
       eventData
     );
     return eventRef.id;
@@ -77,10 +91,16 @@ export const addEventToSubBucketList = async (userId, subBucketListId, eventData
   }
 };
 
-
 export const updateSubBucketList = async (userId, subBucketListId, updates) => {
   try {
-    const bucketListDoc = doc(db, "users", userId, "bucketList", "subBucketLists", subBucketListId);
+    const bucketListDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      "subBucketLists",
+      subBucketListId
+    );
     await updateDoc(bucketListDoc, updates);
   } catch (error) {
     console.error("Error updating bucket list:", error);
@@ -88,10 +108,23 @@ export const updateSubBucketList = async (userId, subBucketListId, updates) => {
   }
 };
 
-
-export const updateEvent = async (userId, subBucketListId, eventId, updates) => {
+export const updateEvent = async (
+  userId,
+  subBucketListId,
+  eventId,
+  updates
+) => {
   try {
-    const eventDoc = doc(db, "users", userId, "bucketList", "subBucketLists", subBucketListId, "events", eventId);
+    const eventDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      "subBucketLists",
+      subBucketListId,
+      "events",
+      eventId
+    );
     await updateDoc(eventDoc, updates);
   } catch (error) {
     console.error("Error updating event:", error);
@@ -99,10 +132,16 @@ export const updateEvent = async (userId, subBucketListId, eventId, updates) => 
   }
 };
 
-
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
-    const bucketListDoc = doc(db, "users", userId, "bucketList", "subBucketLists", subBucketListId);
+    const bucketListDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      "subBucketLists",
+      subBucketListId
+    );
     await deleteDoc(bucketListDoc);
   } catch (error) {
     console.error("Error deleting bucket list:", error);
@@ -110,10 +149,18 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
-
 export const deleteEvent = async (userId, subBucketListId, eventId) => {
   try {
-    const eventDoc = doc(db, "users", userId, "bucketList", "subBucketLists", subBucketListId, "events", eventId);
+    const eventDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      "subBucketLists",
+      subBucketListId,
+      "events",
+      eventId
+    );
     await deleteDoc(eventDoc);
   } catch (error) {
     console.error("Error deleting event:", error);
