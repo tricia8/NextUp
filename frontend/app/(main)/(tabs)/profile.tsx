@@ -23,14 +23,20 @@ export default function ProfileScreen() {
 
                 <View style={styles.profileDetails}>
                     <View style={styles.username}>
-                        <ThemedText type="subtitle">az123</ThemedText>
+                        <ThemedText 
+                          type="subtitle" 
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          style={{ maxWidth: s(120) }}>
+                            az123
+                        </ThemedText>
                         <TouchableOpacity style={styles.editButton}>
                             <ThemedText style={{fontSize: RFValue(12)}}>Edit Profile</ThemedText>
                         </TouchableOpacity>
                     </View>
 
                     <View>
-                        <ThemedText style={{fontSize: RFValue(12), lineHeight: vs(20)}}>Live life to the fullest. You only live once. Don't leave regrets.</ThemedText>
+                        <ThemedText style={{fontSize: RFValue(12), lineHeight: vs(20)}}>Live life to the fullest.</ThemedText>
                     </View>
                 </View>  
 
@@ -110,7 +116,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(22),
     paddingTop: vs(45),
     flexDirection: 'row',
-    gap: s(18),
+    gap: s(14),
     alignItems: 'center',
   },
   profileDetails: {
