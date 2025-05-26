@@ -1,56 +1,83 @@
 import { createContext, useState, useEffect } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setUser(user);
-        });
-    
-        return () => {
-            unsubscribe();
-        };
-    }, []);
-    
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
 
-   // Login function
-    async function login(email, password) {
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-            console.error("Login error:", error.message);
-            throw error;
-        }
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Login function
+  async function login(email, password) {
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const results = userCredential.user;
+      if (results.emailVerified === false) {
+        // hasn't verified email
+        alert("Please verify your email to login.");
+        return;
+      }
+    } catch (error) {
+      console.error("Login error:", error.message);
+      throw error;
     }
+  }
 
-    // Register function
-    async function register(email, password) {
-        try {
-            await createUserWithEmailAndPassword(auth, email, password);
-        } catch (error) {
-            console.error("Registration error:", error.message);
-            throw error;
-        }
-    }   
-
-    // Logout function
-    async function logout() {
-        try {
-            await signOut(auth);
-        } catch (error) {
-            console.error("Logout error:", error.message);
-            throw error;
-        }
+  // Register function
+  async function register(email, password) {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const results = userCredential.user;
+      await sendEmailVerification(results);
+      showMessage({
+        message: "Verification Required",
+        description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
+        type: "warning",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+      });
+    } catch (error) {
+      console.error("Registration error:", error.message);
+      throw error;
     }
+  }
 
-    return (
-        <AuthContext.Provider value={{ user, login, register, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  // Logout function
+  async function logout() {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Logout error:", error.message);
+      throw error;
+    }
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
