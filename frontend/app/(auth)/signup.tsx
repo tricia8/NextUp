@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   ColorSchemeName,
   useColorScheme,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
@@ -20,8 +21,12 @@ import EvilIcons from "@expo/vector-icons/EvilIcons";
 import { useRouter } from "expo-router";
 import { RFValue } from "react-native-responsive-fontsize";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useContext } from "react";
+import { AuthContext } from "@/context/AuthContext";
+import { showMessage } from "react-native-flash-message";
 
 export default function Signup() {
+  const { register } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -51,6 +56,26 @@ export default function Signup() {
     if (!password) formErrors.password = "Password is required";
     setErrors(formErrors);
     return Object.keys(formErrors).length == 0; // check if all fields are filled
+  };
+
+  const handleSignUp = async () => {
+    setLoading(true);
+    try {
+      await register(email, password);
+      router.replace("/login");
+    } catch (error) {
+      const err = error as Error;
+      // Alert.alert("Sign up failed: ", err.message);
+      showMessage({
+        message: "Sign Up Failed",
+        description: err.message,
+        type: "danger",
+        statusBarHeight: StatusBar.currentHeight, //Android only
+        floating: true,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -172,8 +197,7 @@ export default function Signup() {
                   style={styles.accountButton}
                   onPress={() => {
                     if (validateForm()) {
-                      // setLoading(true);
-                      // add signup logic here
+                      handleSignUp();
                     }
                   }}
                   // disabled={!email || !password || !username}
