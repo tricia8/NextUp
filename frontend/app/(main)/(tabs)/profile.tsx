@@ -7,6 +7,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BucketList from './bucketlist';
 import JourneyScreen from './journey';
@@ -18,7 +19,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
 
-            <View style={styles.topContainer}>
+            <View style={styles.profileContainer}>
                 <FontAwesome name="user-circle-o" size={ms(80)} color="#7b68ee" />
 
                 <View style={styles.profileDetails}>
@@ -36,14 +37,20 @@ export default function ProfileScreen() {
                     </View>
 
                     <View>
-                        <ThemedText style={{fontSize: RFValue(12), lineHeight: vs(20)}}>Live life to the fullest.</ThemedText>
+                        <ThemedText 
+                          numberOfLines={2}
+                          ellipsizeMode="tail"
+                          style={{fontSize: RFValue(12), lineHeight: vs(20)}}>
+                            Live life to the fullest.                        
+                        </ThemedText>
                     </View>
                 </View>  
 
             </View>
 
 
-            <View style={styles.middleContainer}>
+
+            <View style={styles.statsContainer}>
                 <View>
                     <ThemedText style={styles.dataText}>
                         <ThemedText type='subtitle'>10</ThemedText>{'\n'}
@@ -65,6 +72,15 @@ export default function ProfileScreen() {
                     </ThemedText>
                 </View>
             </View>
+
+
+            <View style={styles.friendsContainer}>
+              <TouchableOpacity style={styles.editButton}>
+                <Ionicons name='people-outline' color='white' size={ms(18)}/>
+                <ThemedText style={{fontSize: RFValue(12)}}>View Friends</ThemedText>
+              </TouchableOpacity>
+            </View>
+
 
             <View style={styles.previewContainer}>
               <View style={styles.previewContainer}>
@@ -112,7 +128,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: vs(16),
   },
-  topContainer: {
+  profileContainer: {
     paddingHorizontal: s(22),
     paddingTop: vs(45),
     flexDirection: 'row',
@@ -132,11 +148,14 @@ const styles = StyleSheet.create({
   editButton: {
     paddingHorizontal: s(10),
     paddingVertical: vs(3),
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: '#7b68ee',
-    alignSelf: 'flex-start'
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 2,
+    alignItems: 'center',
   },
-  middleContainer: {
+  statsContainer: {
     paddingHorizontal: s(22),
     justifyContent: 'space-around',
     flexDirection: 'row',
@@ -148,6 +167,9 @@ const styles = StyleSheet.create({
   subDataText: {
     fontSize: RFValue(12),
     lineHeight: s(20),
+  },
+  friendsContainer: {
+    alignSelf: 'center',
   },
   previewContainer: {
     flex: 1,
