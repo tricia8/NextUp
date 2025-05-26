@@ -7,11 +7,11 @@ import {
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
-  Text,
   ActivityIndicator,
   ColorSchemeName,
   useColorScheme,
   StatusBar,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
@@ -24,11 +24,13 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
+import { checkUniqueUsername } from "@/firebase/firestore";
 
 export default function Signup() {
   const { register } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [username, setUser] = useState("");
+  const [userNameAvailable, setUsernameAvailable] = useState(null); // boolean or null
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false); // show or hide password
   const [loading, setLoading] = useState(false);
@@ -130,18 +132,38 @@ export default function Signup() {
               <FloatingLabelInput
                 label={"Username"}
                 value={username}
+                onChange={(e) => checkUniqueUsername(e, setUsernameAvailable)} //fix error here, change checkUniqueUsername parameters
                 onChangeText={(value) => {
                   setUser(value);
                   if (errors.username) {
                     setErrors((prev) => ({ ...prev, username: "" })); // remove error message when user types something
                   }
                 }}
+                rightComponent={
+                  userNameAvailable === true ? (
+                    <Image source={require("@/assets/images/tick-icon.png")} />
+                  ) : undefined
+                }
                 leftComponent={
                   <AntDesign name="user" size={22} color="black" />
                 }
                 containerStyles={styles.inputContainer}
                 inputStyles={styles.input}
               />
+              {userNameAvailable === false && (
+                <ThemedText
+                  style={styles.errorText}
+                  lightColor="#c40028"
+                  darkColor="#ffb1c1"
+                >
+                  Username is taken.
+                </ThemedText>
+              )}
+              {userNameAvailable === null && (
+                <ThemedText style={styles.errorText}>
+                  Enter 1 to 30 characters
+                </ThemedText>
+              )}
 
               {errors.username && (
                 <ThemedText
@@ -200,7 +222,6 @@ export default function Signup() {
                       handleSignUp();
                     }
                   }}
-                  // disabled={!email || !password || !username}
                 >
                   <ThemedText
                     style={[styles.subHeading, styles.createAccountText]}
