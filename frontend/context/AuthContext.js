@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
         floating: true,
       });
     } catch (error) {
-      console.error("Registration error:", error.message);
+      console.error("Signup error:", error.message);
       throw error;
     }
   }
