@@ -14,9 +14,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
-import Fontisto from "react-native-vector-icons/Fontisto";
-import AntDesign from "react-native-vector-icons/AntDesign";
-import EvilIcons from "react-native-vector-icons/EvilIcons";
+import Fontisto from "@expo/vector-icons/Fontisto";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import EvilIcons from "@expo/vector-icons/EvilIcons";
 import { useRouter } from "expo-router";
 import { RFValue } from "react-native-responsive-fontsize";
 import Ionicons from "@expo/vector-icons/Ionicons";
