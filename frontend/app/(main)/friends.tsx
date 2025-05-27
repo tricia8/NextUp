@@ -3,12 +3,41 @@ import { StyleSheet, ScrollView, View, TextInput, TouchableOpacity, useColorSche
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
+import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useState } from 'react'
+import { LegendList } from '@legendapp/list';
+
+
+
 
 
 export default function JourneyScreen() {
     const [search, setSearch] = useState('');
+    const colorScheme = useColorScheme();
+    const styles = makeStyles(colorScheme);
+
+
+    type Friend = {
+      id: number,
+      username: string,
+    }
+
+    const friends = [
+        { id: 0, username: 'bp099' },
+        { id: 1, username: 'ef32' },
+    ];
+
+
+    function renderItem({item}: {item: Friend}) {
+          return (
+              <TouchableOpacity style={styles.friendsContainer}>
+                  <ThemedText>{item.username}</ThemedText>
+              </TouchableOpacity>
+          )
+      }
+
+
 
     return (
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
@@ -24,6 +53,14 @@ export default function JourneyScreen() {
                         onChangeText={setSearch}
                     />
                 </View>
+
+                <LegendList
+                    data={friends}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item.id.toString()}
+                    recycleItems={true}
+                    maintainVisibleContentPosition            
+                />
             </ThemedView>
         </ScrollView>
     </SafeAreaView>
@@ -33,10 +70,10 @@ export default function JourneyScreen() {
 
 
 
-const styles = StyleSheet.create({
+const makeStyles = (colorScheme: any) => StyleSheet.create({
   mainContainer: {
     flex: 1,
-    gap: vs(16),
+    gap: vs(14),
   },
   searchContainer: {
     paddingHorizontal: s(15),
@@ -51,7 +88,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: s(10),
     borderRadius: 10,
-    color: useColorScheme() === 'dark' ? 'white' : 'black',
+    color: colorScheme === 'dark' ? 'white' : 'black',
     backgroundColor: 'transparent',
+  },
+  friendsContainer: {
+    paddingHorizontal: s(20),
+    paddingVertical: vs(4),
   },
 })
