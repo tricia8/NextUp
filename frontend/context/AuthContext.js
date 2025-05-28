@@ -5,11 +5,14 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signOut,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "@/firebase/firebaseConfig";
 import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
+
+const router = useRouter();
 
 export const AuthContext = createContext();
 
@@ -89,8 +92,28 @@ export function AuthProvider({ children }) {
     }
   }
 
+  // Forgot password function
+  async function forgotPassword(email) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showMessage({
+        message: "Check your email",
+        description: `If an account is associated with ${email}, you'll receive a password reset email shortly.`,
+        type: "success",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+      });
+      router.push("./login");
+    } catch (error) {
+      console.error("Error sending password reset email:", error.message);
+      throw error;
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, forgotPassword }}
+    >
       {children}
     </AuthContext.Provider>
   );
