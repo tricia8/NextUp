@@ -12,12 +12,15 @@ import { debounce } from "lodash";
 
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
+  console.log("Normalized username:", normalizedUsername);
 
-  if (normalizedUsername.length >= 1 && normalizedUsername.length <= 8) {
+  if (normalizedUsername.length >= 1 && normalizedUsername.length <= 15) {
     const usernameRef = doc(db, "usernames", normalizedUsername);
     const usernameSnap = await getDoc(usernameRef);
+    console.log("Username exists in DB:", usernameSnap.exists());
     setAvailable(!usernameSnap.exists());
   } else {
+    console.log("Invalid username length");
     setAvailable(null); // invalid length
   }
 }, 500);
@@ -168,25 +171,12 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
-
 export const addFriend = async (userId, friendId) => {
   try {
-    const currentUserfriendRef = doc(
-      db,
-      "users",
-      userId,
-      "friends",   
-      friendId,
-    );
+    const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
     await setDoc(currentUserfriendRef);
 
-    const otherUserfriendRef = doc(
-      db,
-      "users",
-      friendId,
-      "friends",   
-      userId,
-    );
+    const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
     await setDoc(otherUserfriendRef);
   } catch (error) {
     console.error("Error adding friend:", error);
@@ -194,30 +184,15 @@ export const addFriend = async (userId, friendId) => {
   }
 };
 
-
 export const deleteFriend = async (userId, friendId) => {
   try {
-    const currentUserfriendRef = doc(
-      db,
-      "users",
-      userId,
-      "friends",   
-      friendId,
-    );
+    const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
     await deleteDoc(currentUserfriendRef);
 
-    const otherUserfriendRef = doc(
-      db,
-      "users",
-      friendId,
-      "friends",   
-      userId,
-    );
+    const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
     await deleteDoc(otherUserfriendRef);
   } catch (error) {
     console.error("Error deleting friend:", error);
     throw error;
   }
 };
-
-
