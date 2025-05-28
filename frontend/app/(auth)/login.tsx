@@ -1,16 +1,17 @@
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   TouchableOpacity,
   View,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
-  Text,
   ActivityIndicator,
   useColorScheme,
   ColorSchemeName,
+  Keyboard,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
@@ -20,8 +21,13 @@ import EvilIcons from "@expo/vector-icons/EvilIcons";
 import { useRouter } from "expo-router";
 import { RFValue } from "react-native-responsive-fontsize";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { AuthContext } from "@/context/AuthContext";
+import { FirebaseError } from "firebase/app";
+import { showMessage } from "react-native-flash-message";
+import { getFriendlyAuthErrorMessage } from "@/utils/firebaseErrorMapper";
 
 export default function Login() {
+  const { login } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false); // show or hide password
@@ -48,6 +54,26 @@ export default function Login() {
     if (!password) formErrors.password = "Password is required";
     setErrors(formErrors);
     return Object.keys(formErrors).length == 0; // check if all fields are filled
+  };
+
+  const handleLogin = async () => {
+    Keyboard.dismiss();
+    setLoading(true);
+    try {
+      await login(email, password);
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        showMessage({
+          message: "Login Failed",
+          description: getFriendlyAuthErrorMessage(error),
+          type: "danger",
+          statusBarHeight: StatusBar.currentHeight, //Android only
+          floating: true,
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -143,8 +169,7 @@ export default function Login() {
                   style={styles.loginButton}
                   onPress={() => {
                     if (validateForm()) {
-                      // setLoading(true);
-                      // add signup logic here
+                      handleLogin();
                     }
                   }}
                 >
@@ -161,12 +186,7 @@ export default function Login() {
                     onPress={() => router.push("./signup")}
                     style={styles.signUpContainer}
                   >
-                    <ThemedText
-                      type="link"
-                      lightColor="#3d93aa"
-                      darkColor="#aeefff"
-                      style={styles.linkedText}
-                    >
+                    <ThemedText type="link" style={styles.linkedText}>
                       Sign up
                     </ThemedText>
                   </TouchableOpacity>
@@ -246,6 +266,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     linkedText: {
       fontSize: RFValue(13),
+      color: colorScheme == "dark" ? "#a4ffe9" : "#3d93aa",
     },
     input: {
       color: "#274266",
