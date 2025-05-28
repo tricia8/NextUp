@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, View, Text,TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
@@ -7,28 +7,42 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import DonutChart from '@/components/AnimatedDonutChart';
 import AnimatedTextInput from '@/components/AnimatedTextInput';
+import SideMenu from '@/components/SideMenu';
+import { useState } from 'react';
+
+
 
 
 export default function HomeScreen() {
+
+  const [open, setOpen] = useState(false);
+
+  const toggleOpen = () => {
+      setOpen(!open);
+  }
+
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <ThemedView style={{flex: 1}}>
+            
+            <SideMenu open={open} setOpen={setOpen} />
 
             <View style={styles.mainContainer}>
               <View style={styles.titleContainer}>
-                <ThemedText type="title">Hello, (user)!</ThemedText>
-                
+                <ThemedText type="title">Hello, az123!</ThemedText>
+
                 <View style={styles.iconContainer}>
                   <TouchableOpacity>
                     <Ionicons name="notifications" size={ms(28)} color="#66cdaa" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={toggleOpen}>
                     <FontAwesome name="user-circle" size={ms(50)} color="#6a5acd" />
                   </TouchableOpacity>
                 </View>
               </View>
+              
               
               <View style={styles.subContainer}>
                 <Text style={styles.header}>My Progress</Text>
