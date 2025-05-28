@@ -24,12 +24,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
-import { checkUniqueUsername } from "@/firebase/firestore";
+import { checkUniqueUsername, createUser } from "@/firebase/firestore";
 
 export default function Signup() {
   const { register } = useContext(AuthContext);
   const [email, setEmail] = useState("");
-  const [username, setUser] = useState("");
+  const [username, setUsername] = useState("");
   const [userNameAvailable, setUsernameAvailable] = useState(null); // boolean or null
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false); // show or hide password
@@ -51,6 +51,14 @@ export default function Signup() {
     setTimeout(() => setShow(false), 5000);
   };
 
+  const handleUsernameChange = (name: string) => {
+    setUsername(name);
+    checkUniqueUsername(name, setUsernameAvailable);
+    if (errors.username) {
+      setErrors((prev) => ({ ...prev, username: "" })); // remove error message when user types something
+    }
+  };
+
   const validateForm = () => {
     const formErrors: typeof errors = {};
     if (!email) formErrors.email = "Email is required";
@@ -63,11 +71,12 @@ export default function Signup() {
   const handleSignUp = async () => {
     setLoading(true);
     try {
-      await register(email, password);
+      const userCredential = await register(email, password);
+      const user = userCredential.user;
+      await createUser(user, username);
       router.replace("/login");
     } catch (error) {
       const err = error as Error;
-      // Alert.alert("Sign up failed: ", err.message);
       showMessage({
         message: "Sign Up Failed",
         description: err.message,
@@ -77,6 +86,22 @@ export default function Signup() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAccountCreation = () => {
+    if (validateForm()) {
+      if (userNameAvailable === false) {
+        showMessage({
+          message: "Username Taken",
+          description: "Please choose a different username.",
+          type: "danger",
+          statusBarHeight: StatusBar.currentHeight,
+          floating: true,
+        });
+        return;
+      }
+      handleSignUp();
     }
   };
 
@@ -130,15 +155,9 @@ export default function Signup() {
               )}
 
               <FloatingLabelInput
-                label={"Username"}
+                label={"Username: 1 to 30 characters"}
                 value={username}
-                onChange={(e) => checkUniqueUsername(e, setUsernameAvailable)} //fix error here, change checkUniqueUsername parameters
-                onChangeText={(value) => {
-                  setUser(value);
-                  if (errors.username) {
-                    setErrors((prev) => ({ ...prev, username: "" })); // remove error message when user types something
-                  }
-                }}
+                onChangeText={handleUsernameChange}
                 rightComponent={
                   userNameAvailable === true ? (
                     <Image source={require("@/assets/images/tick-icon.png")} />
@@ -159,11 +178,12 @@ export default function Signup() {
                   Username is taken.
                 </ThemedText>
               )}
-              {userNameAvailable === null && (
+
+              {/* {userNameAvailable === null && (
                 <ThemedText style={styles.errorText}>
                   Enter 1 to 30 characters
                 </ThemedText>
-              )}
+              )} */}
 
               {errors.username && (
                 <ThemedText
@@ -217,11 +237,7 @@ export default function Signup() {
               <>
                 <TouchableOpacity
                   style={styles.accountButton}
-                  onPress={() => {
-                    if (validateForm()) {
-                      handleSignUp();
-                    }
-                  }}
+                  onPress={handleAccountCreation}
                 >
                   <ThemedText
                     style={[styles.subHeading, styles.createAccountText]}
