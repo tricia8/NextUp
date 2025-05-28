@@ -43,7 +43,6 @@ export default function Login() {
   // autohide password after 5 seconds if it's revealed
   const handleShowPassword = () => {
     setShow(true);
-    // Automatically hide after 5 seconds
     setTimeout(() => setShow(false), 5000);
   };
 
@@ -187,6 +186,20 @@ export default function Login() {
                   >
                     <ThemedText type="link" style={styles.linkedText}>
                       Sign up
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.haveAccountContainer}>
+                  <ThemedText style={styles.noAccountText}>
+                    Forgot password?
+                  </ThemedText>
+                  <TouchableOpacity
+                    onPress={() => router.push("./forgot-password")}
+                    style={styles.signUpContainer}
+                  >
+                    <ThemedText type="link" style={styles.linkedText}>
+                      Reset password
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
