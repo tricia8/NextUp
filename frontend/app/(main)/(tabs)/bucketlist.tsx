@@ -73,7 +73,7 @@ export default function BucketList() {
         end={{ x: 1, y: 1 }}
         style={styles.itemContainer}
       >
-        <TouchableOpacity style={{ flex: 1 } /*styles.itemContainer*/}>
+        <TouchableOpacity style={{ flex: 1 }}>
           {item.isShared ? (
             <View>
               <Feather
@@ -146,6 +146,7 @@ export default function BucketList() {
             renderItem={renderFlatlistItem}
             estimatedItemSize={20}
             contentContainerStyle={{ paddingBottom: 100 }}
+            keyExtractor={(item, index) => `${item.title}-${index}`}
           />
         </View>
 
