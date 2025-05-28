@@ -36,6 +36,10 @@ export default function RootLayout() {
               options={{ headerShown: false }}
             />
             <Stack.Screen
+              name="(auth)/forgot-password"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
               name="(main)/(tabs)"
               options={{ headerShown: false }}
             />
