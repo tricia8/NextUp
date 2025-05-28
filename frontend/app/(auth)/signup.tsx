@@ -87,6 +87,8 @@ export default function Signup() {
           type: "danger",
           statusBarHeight: StatusBar.currentHeight, //Android only
           floating: true,
+          autoHide: false,
+          icon: "warning",
         });
       }
     } finally {
