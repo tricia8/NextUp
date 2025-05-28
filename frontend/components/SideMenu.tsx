@@ -5,26 +5,37 @@ import { FontAwesome } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import MenuDrawer from 'react-native-side-drawer';
+import { useContext } from 'react';
+import { AuthContext } from "@/context/AuthContext";
+import { router } from 'expo-router';
 
 
 
-
-
-const drawerContent = () => {
-    return (
-        <ThemedView style={styles.sidebarContainer}>
-            <FontAwesome name="user-circle" size={ms(50)} color="#6a5acd" />
-
-            <TouchableOpacity style={styles.textContainer}>
-                <ThemedText style={styles.sidebarText}>Log out</ThemedText>
-            </TouchableOpacity>
-        </ThemedView>
-    )
-}
 
 export default function SideMenu(
     {open, setOpen}: {open: boolean, setOpen: React.Dispatch<React.SetStateAction<boolean>>}
 ) {
+
+    const { logout } = useContext(AuthContext);
+
+    const logOut = () => {
+        logout();
+        router.replace('/(auth)/login');
+    }
+
+    const drawerContent = () => {
+        return (
+            <ThemedView style={styles.sidebarContainer}>
+                <FontAwesome name="user-circle" size={ms(50)} color="#6a5acd" />
+
+                <TouchableOpacity style={styles.textContainer} onPress={logOut}>
+                    <ThemedText style={styles.sidebarText}>Log out</ThemedText>
+                </TouchableOpacity>
+            </ThemedView>
+        )
+    }
+
+
     return (
         <View style={StyleSheet.absoluteFill}>
             {open && 
