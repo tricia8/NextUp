@@ -8,6 +8,8 @@ import {
 } from "firebase/auth";
 import { auth } from "@/firebase/firebaseConfig";
 import { showMessage } from "react-native-flash-message";
+import { StatusBar } from "react-native";
+import { useRouter } from "expo-router";
 
 export const AuthContext = createContext();
 
@@ -35,9 +37,19 @@ export function AuthProvider({ children }) {
       const results = userCredential.user;
       if (results.emailVerified === false) {
         // hasn't verified email
-        alert("Please verify your email to login.");
+        showMessage({
+          message: "Warning",
+          description: "Please verify your email to login.",
+          type: "warning",
+          icon: "auto",
+          statusBarHeight: StatusBar.currentHeight, //Android only
+          floating: true,
+          color: "#4a2516",
+        });
+
         return;
       }
+      router.replace("/(main)/(tabs)"); // login success: redirect user to homepage
     } catch (error) {
       console.error("Login error:", error.message);
       throw error;
