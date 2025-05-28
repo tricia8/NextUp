@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { AuthProvider } from '@/context/AuthContext';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -19,14 +20,16 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <Stack>
-                <Stack.Screen name="(main)/(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-            </Stack>
-            <StatusBar style="auto" />
-        </ThemeProvider>
-    </SafeAreaProvider>
+    <AuthProvider>
+      <SafeAreaProvider>
+          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                  <Stack.Screen name="(main)/(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="+not-found" />
+              </Stack>
+              <StatusBar style="auto" />
+          </ThemeProvider>
+      </SafeAreaProvider>
+    </AuthProvider>
   );
 }
