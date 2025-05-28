@@ -7,6 +7,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "@/firebase/firebaseConfig";
+import { showMessage } from "react-native-flash-message";
 
 export const AuthContext = createContext();
 
