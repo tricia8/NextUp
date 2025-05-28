@@ -12,7 +12,7 @@ import { LegendList } from '@legendapp/list';
 
 
 
-export default function JourneyScreen() {
+export default function FriendsScreen() {
     const [search, setSearch] = useState('');
     const colorScheme = useColorScheme();
     const styles = makeStyles(colorScheme);
