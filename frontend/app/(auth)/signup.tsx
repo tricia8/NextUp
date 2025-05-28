@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import EvilIcons from "@expo/vector-icons/EvilIcons";
+import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import { useRouter } from "expo-router";
 import { RFValue } from "react-native-responsive-fontsize";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -220,7 +220,7 @@ export default function Signup() {
                   <Ionicons name="eye-off" size={24} color="black" />
                 }
                 leftComponent={
-                  <EvilIcons name="lock" size={22} color="black" />
+                  <SimpleLineIcons name="lock" size={22} color="black" />
                 }
                 containerStyles={styles.inputContainer}
                 inputStyles={styles.input}
