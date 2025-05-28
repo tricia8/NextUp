@@ -12,6 +12,7 @@ import {
   useColorScheme,
   StatusBar,
   Image,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FloatingLabelInput } from "react-native-floating-label-input";
@@ -25,6 +26,8 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { checkUniqueUsername, createUser } from "@/firebase/firestore";
+import { FirebaseError } from "firebase/app";
+import { getFriendlyAuthErrorMessage } from "@/utils/firebaseErrorMapper";
 
 export default function Signup() {
   const { register } = useContext(AuthContext);
@@ -69,6 +72,7 @@ export default function Signup() {
   };
 
   const handleSignUp = async () => {
+    Keyboard.dismiss();
     setLoading(true);
     try {
       const userCredential = await register(email, password);
@@ -76,14 +80,15 @@ export default function Signup() {
       await createUser(user, username);
       router.replace("/login");
     } catch (error) {
-      const err = error as Error;
-      showMessage({
-        message: "Sign Up Failed",
-        description: err.message,
-        type: "danger",
-        statusBarHeight: StatusBar.currentHeight, //Android only
-        floating: true,
-      });
+      if (error instanceof FirebaseError) {
+        showMessage({
+          message: "Sign Up Failed",
+          description: getFriendlyAuthErrorMessage(error),
+          type: "danger",
+          statusBarHeight: StatusBar.currentHeight, //Android only
+          floating: true,
+        });
+      }
     } finally {
       setLoading(false);
     }
