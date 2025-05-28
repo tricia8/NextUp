@@ -160,12 +160,12 @@ export default function Signup() {
               )}
 
               <FloatingLabelInput
-                label={"Username: 1 to 30 characters"}
+                label={"Username: 1 to 15 characters"}
                 value={username}
                 onChangeText={handleUsernameChange}
                 rightComponent={
                   userNameAvailable === true ? (
-                    <Image source={require("@/assets/images/tick-icon.png")} />
+                    <AntDesign name="checkcircle" size={22} color="#89d66b" />
                   ) : undefined
                 }
                 leftComponent={
@@ -183,12 +183,6 @@ export default function Signup() {
                   Username is taken.
                 </ThemedText>
               )}
-
-              {/* {userNameAvailable === null && (
-                <ThemedText style={styles.errorText}>
-                  Enter 1 to 30 characters
-                </ThemedText>
-              )} */}
 
               {errors.username && (
                 <ThemedText
