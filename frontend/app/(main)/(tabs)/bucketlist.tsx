@@ -151,7 +151,7 @@ export default function BucketList() {
 
         <View style={{ flex: 0.2 }}>
           <TouchableOpacity
-            onPress={() => router.push("../newgoal")}
+            onPress={() => router.push("../new-sublist")}
             activeOpacity={0.8}
             style={styles.AddButton}
           >
