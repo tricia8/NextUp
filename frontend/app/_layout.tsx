@@ -11,6 +11,7 @@ import "react-native-reanimated";
 import { AuthProvider } from "@/context/AuthContext";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import FlashMessage from "react-native-flash-message";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -43,6 +44,7 @@ export default function RootLayout() {
           <StatusBar style="auto" />
         </ThemeProvider>
       </SafeAreaProvider>
+      <FlashMessage position="top" />
     </AuthProvider>
   );
 }
