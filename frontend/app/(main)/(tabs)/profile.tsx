@@ -95,9 +95,9 @@ export default function ProfileScreen() {
       </ScrollView>
     </SafeAreaView>
   )
+}
 
-
-  function Preview(
+function Preview(
       { route, title, color, component}: 
       { route: string, title: string, color: string, component: React.ReactNode} ) {
       
@@ -117,10 +117,7 @@ export default function ProfileScreen() {
               pointerEvents="none">
             </LinearGradient>
         </TouchableOpacity> 
-    )}
-
-}
-
+)}
 
 
 const styles = StyleSheet.create({
