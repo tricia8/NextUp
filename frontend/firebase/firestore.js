@@ -167,3 +167,57 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
     throw error;
   }
 };
+
+
+export const addFriend = async (userId, friendId) => {
+  try {
+    const currentUserfriendRef = doc(
+      db,
+      "users",
+      userId,
+      "friends",   
+      friendId,
+    );
+    await setDoc(currentUserfriendRef);
+
+    const otherUserfriendRef = doc(
+      db,
+      "users",
+      friendId,
+      "friends",   
+      userId,
+    );
+    await setDoc(otherUserfriendRef);
+  } catch (error) {
+    console.error("Error adding friend:", error);
+    throw error;
+  }
+};
+
+
+export const deleteFriend = async (userId, friendId) => {
+  try {
+    const currentUserfriendRef = doc(
+      db,
+      "users",
+      userId,
+      "friends",   
+      friendId,
+    );
+    await deleteDoc(currentUserfriendRef);
+
+    const otherUserfriendRef = doc(
+      db,
+      "users",
+      friendId,
+      "friends",   
+      userId,
+    );
+    await deleteDoc(otherUserfriendRef);
+  } catch (error) {
+    console.error("Error deleting friend:", error);
+    throw error;
+  }
+};
+
+
