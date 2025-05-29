@@ -20,7 +20,6 @@ import { RFValue } from "react-native-responsive-fontsize";
 import { ThemedView } from "@/components/ThemedView";
 import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
-import { colors } from "react-native-elements";
 
 export default function newSubList() {
   const router = useRouter();
@@ -85,15 +84,12 @@ export default function newSubList() {
               }}
             />
 
-            <TouchableOpacity style={styles.shareButton}>
-              <MaterialIcons
-                name="group-add"
-                size={35}
-                color="black"
-                onPress={() => setModalVisible(true)}
-              />
+            <TouchableOpacity
+              style={styles.shareButton}
+              onPress={() => setModalVisible(true)}
+            >
+              <MaterialIcons name="group-add" size={35} color="black" />
             </TouchableOpacity>
-            {/* share icon with modal pop up*/}
           </View>
 
           <View style={{ marginVertical: 10 }}>
@@ -118,7 +114,10 @@ export default function newSubList() {
             <Ionicons name="add-circle-outline" size={22} color="black" />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={submit}>
+          <TouchableOpacity
+            onPress={submit}
+            style={[styles.addButton, styles.submitButton]}
+          >
             <ThemedText>Create Sublist</ThemedText>
           </TouchableOpacity>
         </ScrollView>
@@ -160,7 +159,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       borderRadius: 5,
       elevation: 5,
     },
-    StatusText: {
+    statusText: {
       fontSize: RFValue(11),
     },
     titleShareBar: {
@@ -179,14 +178,18 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       alignItems: "center",
     },
     addButton: {
-      paddingVertical: 10,
+      paddingVertical: 13,
       justifyContent: "center",
+      alignItems: "center",
       borderRadius: 12,
       marginVertical: 15,
       backgroundColor: "#46d5c2",
       color: "#fff",
       flexDirection: "row",
       gap: 8,
+    },
+    submitButton: {
+      backgroundColor: "#4d8ce5",
     },
     inputContainer: {
       borderRadius: 12,
