@@ -9,6 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import FlashMessage from "react-native-flash-message";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -27,11 +28,12 @@ export default function RootLayout() {
         <Stack.Screen name="(main)/(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="(main)/new-sublist"
-          options={{ headerShown: false }}
+          options={{ title: "New Sublist" }}
         />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
+      <FlashMessage position="top" />
     </ThemeProvider>
   );
 }
