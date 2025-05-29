@@ -8,11 +8,11 @@ import { useState } from "react";
 import {
   ColorSchemeName,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
-import { SearchBar } from "react-native-elements";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -112,24 +112,37 @@ export default function BucketList() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View style={styles.searchFilterBar}>
-          <SearchBar
-            containerStyle={{
-              flex: 1,
-              backgroundColor: "transparent",
-            }}
-            inputStyle={{
-              color: colorScheme === "dark" ? "#e3e3e3" : "black",
-            }}
-            platform="default"
-            placeholder="Search Item..."
-            onChangeText={setSearch}
-            value={search}
-            round
-            lightTheme={colorScheme === "light"}
-            placeholderTextColor={
-              colorScheme === "light" ? "#727573" : "#86939e"
-            }
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              placeholder="Search list..."
+              style={{
+                color: colorScheme === "dark" ? "#e3e3e3" : "black",
+                borderRadius: 10,
+                padding: 15,
+                fontSize: RFValue(13),
+              }}
+              value={search}
+              onChangeText={setSearch}
+              placeholderTextColor={
+                colorScheme === "light" ? "#727573" : "white"
+              }
+              inputMode="search"
+              returnKeyLabel="search"
+              underlineColorAndroid="transparent"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearch("")}
+                style={styles.clearButton}
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={24}
+                  color={colorScheme === "dark" ? "#34403e" : "#999"}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
 
           <TouchableOpacity style={{ justifyContent: "center" }}>
             <Ionicons
@@ -194,8 +207,11 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     searchFilterBar: {
       flexDirection: "row",
-      justifyContent: "center",
+      justifyContent: "space-between",
+      gap: 8,
       paddingHorizontal: 10,
+      marginVertical: 10,
+      marginHorizontal: 10,
     },
     AddButton: {
       position: "absolute",
@@ -205,5 +221,17 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       // borderWidth: 1,
       borderColor: "coral",
       padding: 2,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      backgroundColor: colorScheme === "dark" ? "#4b8e83" : "#d7e6de",
+      flex: 1,
+    },
+    clearButton: {
+      paddingLeft: 3,
     },
   });
