@@ -75,6 +75,8 @@ export function AuthProvider({ children }) {
         type: "warning",
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
+        color: "black",
+        duration: 2300,
       });
     } catch (error) {
       console.error("Signup error:", error.message);

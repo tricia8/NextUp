@@ -278,12 +278,17 @@ export function getFriendlyAuthErrorMessage(error: FirebaseError): string {
 
     case "auth/project-not-found":
       return "Project not found. Please try again.";
+
     case "auth/insufficient-permission":
       return "Insufficient permission. Please try again.";
+
     case "auth/internal-error":
       return "Internal error. Please try again.";
 
+    case "auth/password-does-not-meet-requirements":
+      return "Password must have at least 6 characters, with at least 1 lowercase character, 1 uppercase character, 1 numeric character, and 1 non-alphanumeric character.";
+
     default:
-      return "Oops! Something went wrong. Please try again later.";
+      return "Oops, something went wrong. Please try again.";
   }
 }
