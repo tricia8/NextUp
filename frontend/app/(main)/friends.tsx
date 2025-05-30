@@ -1,19 +1,22 @@
-import React, { use } from 'react';
+import React from 'react';
 import { StyleSheet, ScrollView, View, TextInput, TouchableOpacity, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { useState } from 'react'
 import { LegendList } from '@legendapp/list';
 
 
 
-
+const friends = [
+        { id: 0, username: 'bp099' },
+        { id: 1, username: 'ef32' },
+    ];
 
 export default function FriendsScreen() {
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = React.useState('');
+    const [filteredFriends, setFriends] = React.useState(friends);
     const colorScheme = useColorScheme();
     const styles = makeStyles(colorScheme);
 
@@ -23,16 +26,23 @@ export default function FriendsScreen() {
       username: string,
     }
 
-    const friends = [
-        { id: 0, username: 'bp099' },
-        { id: 1, username: 'ef32' },
-    ];
+    
+
+
+    const filterData = (text: string) => {
+      const formattedQuery = text.toLowerCase();
+      const filtered = friends.filter((item: Friend) => {
+        return item.username.toLowerCase().includes(formattedQuery);
+      });
+      setFriends(filtered);
+      setSearch(text);
+    };
 
 
     function renderItem({item}: {item: Friend}) {
           return (
               <TouchableOpacity style={styles.friendsContainer}>
-                  <ThemedText>{item.username}</ThemedText>
+                  <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
               </TouchableOpacity>
           )
       }
@@ -50,12 +60,12 @@ export default function FriendsScreen() {
                         placeholderTextColor='gray'
                         selectionColor='gray'
                         value={search}
-                        onChangeText={setSearch}
+                        onChangeText={(text) => filterData(text)}
                     />
                 </View>
 
                 <LegendList
-                    data={friends}
+                    data={filteredFriends}
                     renderItem={renderItem}
                     keyExtractor={(item) => item.id.toString()}
                     recycleItems={true}
