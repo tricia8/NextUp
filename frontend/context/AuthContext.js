@@ -76,6 +76,7 @@ export function AuthProvider({ children }) {
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
       });
+      return results;
     } catch (error) {
       console.error("Signup error:", error.message);
       throw error;
