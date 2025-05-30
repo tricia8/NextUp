@@ -82,11 +82,11 @@ export default function ProfileScreen() {
             </View>
 
 
-            <View style={styles.previewContainer}>
+            <View style={{flex: 1}}>
               <View style={styles.previewContainer}>
                 <Preview route='bucketlist' title='Bucket List' color='rgba(94, 231, 255, 0.5)' component={<BucketList />}/>
-                </View>
-                <View style={styles.previewContainer}>
+              </View>
+              <View style={styles.previewContainer}>
                 <Preview route='journey' title='Journey' color='rgba(26, 230, 186, 0.5)' component={<JourneyScreen />}/>
               </View>
             </View>
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
   profileContainer: {
     paddingHorizontal: s(22),
-    paddingTop: vs(45),
+    paddingTop: vs(35),
     flexDirection: 'row',
     gap: s(14),
     alignItems: 'center',
@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   previewContainer: {
-    flex: 1,
-  },
+    height: '50%',
+    overflow: 'hidden',
+  }
 });
