@@ -3,7 +3,7 @@ import { StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,7 +30,7 @@ export default function ProfileScreen() {
                           style={{ maxWidth: s(120) }}>
                             az123
                         </ThemedText>
-                        <TouchableOpacity style={styles.editButton}>
+                        <TouchableOpacity style={styles.button}>
                             <Text style={styles.buttonText}>Edit Profile</Text>
                         </TouchableOpacity>
                     </View>
@@ -74,9 +74,13 @@ export default function ProfileScreen() {
 
 
             <View style={styles.friendsContainer}>
-              <TouchableOpacity style={styles.editButton}>
+              <TouchableOpacity style={styles.button}>
                 <Ionicons name='people-outline' color='white' size={ms(18)}/>
                 <Text style={styles.buttonText}>View Friends</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.button}>
+                <MaterialIcons name='group-add' color='white' size={ms(18)}/>
               </TouchableOpacity>
             </View>
 
@@ -141,9 +145,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  editButton: {
+  button: {
     paddingHorizontal: s(10),
-    paddingVertical: vs(3),
+    paddingVertical: vs(5),
     borderRadius: 10,
     backgroundColor: '#7b68ee',
     alignSelf: 'flex-start',
@@ -166,6 +170,8 @@ const styles = StyleSheet.create({
   },
   friendsContainer: {
     alignSelf: 'center',
+    flexDirection: 'row',
+    gap: s(8),
   },
   buttonText: {
     fontSize: RFValue(12),
