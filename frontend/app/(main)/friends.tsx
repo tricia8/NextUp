@@ -6,6 +6,7 @@ import { s, ms, vs } from 'react-native-size-matters';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { LegendList } from '@legendapp/list';
+import { FontAwesome } from '@expo/vector-icons';
 
 
 
@@ -42,6 +43,7 @@ export default function FriendsScreen() {
     function renderItem({item}: {item: Friend}) {
           return (
               <TouchableOpacity style={styles.friendsContainer}>
+                  <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
                   <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
               </TouchableOpacity>
           )
@@ -104,5 +106,8 @@ const makeStyles = (colorScheme: any) => StyleSheet.create({
   friendsContainer: {
     paddingHorizontal: s(20),
     paddingVertical: vs(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(12),
   },
 })
