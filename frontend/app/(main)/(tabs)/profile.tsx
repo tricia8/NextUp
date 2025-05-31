@@ -32,7 +32,7 @@ export default function ProfileScreen() {
                             az123
                         </ThemedText>
                         <TouchableOpacity style={styles.editButton}>
-                            <ThemedText style={{fontSize: RFValue(12)}}>Edit Profile</ThemedText>
+                            <Text style={styles.buttonText}>Edit Profile</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -77,7 +77,7 @@ export default function ProfileScreen() {
             <View style={styles.friendsContainer}>
               <TouchableOpacity style={styles.editButton}>
                 <Ionicons name='people-outline' color='white' size={ms(18)}/>
-                <ThemedText style={{fontSize: RFValue(12)}}>View Friends</ThemedText>
+                <Text style={styles.buttonText}>View Friends</Text>
               </TouchableOpacity>
             </View>
 
@@ -167,6 +167,10 @@ const styles = StyleSheet.create({
   },
   friendsContainer: {
     alignSelf: 'center',
+  },
+  buttonText: {
+    fontSize: RFValue(12),
+    color: 'white',
   },
   previewContainer: {
     height: '50%',
