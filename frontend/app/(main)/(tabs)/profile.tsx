@@ -3,11 +3,10 @@ import { StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import BucketList from './bucketlist';
 import JourneyScreen from './journey';
