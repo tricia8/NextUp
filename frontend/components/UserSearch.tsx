@@ -1,0 +1,107 @@
+import React from 'react';
+import { StyleSheet, View, TextInput, TouchableOpacity, useColorScheme } from 'react-native';
+import { RFValue } from 'react-native-responsive-fontsize';
+import { s, ms, vs } from 'react-native-size-matters';
+import { ThemedText } from '@/components/ThemedText';
+import { LegendList } from '@legendapp/list';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { User } from '@/types/user';
+
+
+
+
+
+type Props = {
+  users: User[];
+  showAddButton?: boolean;
+};
+
+export default function UserSearch({users, showAddButton = false}: Props) {
+    const [search, setSearch] = React.useState('');
+    const [filteredFriends, setFriends] = React.useState(users);
+    const colorScheme = useColorScheme();
+    const styles = makeStyles(colorScheme);
+
+    const filterData = (text: string) => {
+      const formattedQuery = text.toLowerCase();
+      const filtered = users.filter((item) => {
+        return item.username.toLowerCase().includes(formattedQuery);
+      });
+      setFriends(filtered);
+      setSearch(text);
+    };
+
+
+    function renderItem({item}: {item: User}) {
+          return (
+            <TouchableOpacity style={styles.userRowContainer}>
+              <View style={styles.userDisplay}>
+                  <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
+                  <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
+                  {showAddButton && (
+                    <TouchableOpacity>
+                        <MaterialIcons name='group-add' color='white' size={ms(18)}/>
+                    </TouchableOpacity>
+                  )}
+              </View>
+            </TouchableOpacity>
+          )
+      }
+
+
+
+    return (
+        <View>
+            <View style={styles.searchContainer}>
+                <TextInput
+                    style={styles.input}
+                    placeholder='Search friends'
+                    placeholderTextColor='gray'
+                    selectionColor='gray'
+                    value={search}
+                    onChangeText={(text) => filterData(text)}
+                />
+            </View>
+
+            <LegendList
+                data={filteredFriends}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.uid}
+                recycleItems={true}
+                maintainVisibleContentPosition            
+            />
+        </View>
+)}
+
+
+
+
+
+const makeStyles = (colorScheme: any) => StyleSheet.create({
+  searchContainer: {
+    paddingHorizontal: s(15),
+    paddingVertical: vs(15),
+    backgroundColor: 'transparent',
+    borderColor: '#7b68ee',
+    borderBottomWidth: 1,
+  },
+  input: {
+    height: vs(35),
+    borderColor: '#7b68ee',
+    borderWidth: 1,
+    paddingHorizontal: s(10),
+    borderRadius: 10,
+    color: colorScheme === 'dark' ? 'white' : 'black',
+    backgroundColor: 'transparent',
+  },
+  userRowContainer: {
+    justifyContent: 'space-between',
+  },
+  userDisplay: {
+    paddingHorizontal: s(20),
+    paddingVertical: vs(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(12),
+  },
+})
