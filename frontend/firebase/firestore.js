@@ -175,11 +175,23 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
 
 export const addFriend = async (userId, friendId) => {
   try {
+    const friendSnapshot = await getDoc(doc(db, "users", friendId));
+    const friendData = friendSnapshot.data();
+
     const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
-    await setDoc(currentUserfriendRef);
+    await setDoc(currentUserfriendRef, {
+      username: friendData?.username,
+      photoUrl: friendData?.photoUrl || null,
+    });
+
+    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
+    const currentUserData = currentUserSnapshot.data();
 
     const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
-    await setDoc(otherUserfriendRef);
+    await setDoc(otherUserfriendRef, {
+      username: currentUserData?.username,
+      photoUrl: currentUserData?.photoUrl || null,
+    });
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
