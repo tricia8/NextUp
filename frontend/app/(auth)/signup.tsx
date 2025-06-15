@@ -75,8 +75,7 @@ export default function Signup() {
     Keyboard.dismiss();
     setLoading(true);
     try {
-      const userCredential = await register(email, password);
-      const user = userCredential.user;
+      const user = await register(email, password);
       await createUser(user, username);
       router.replace("/login");
     } catch (error) {

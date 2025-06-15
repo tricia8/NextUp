@@ -80,6 +80,7 @@ export function AuthProvider({ children }) {
         color: "black",
         duration: 2300,
       });
+      return results;
     } catch (error) {
       console.error("Signup error:", error.message);
       throw error;
