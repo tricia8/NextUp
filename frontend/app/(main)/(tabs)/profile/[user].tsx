@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
@@ -15,6 +15,7 @@ import JourneyScreen from '@/app/(main)/(tabs)/journey';
 import { User } from '@/types/user';
 
 
+const PROFILEPICSIZE = ms(80);
 
 export default function ProfileScreen() {
 
@@ -45,7 +46,15 @@ export default function ProfileScreen() {
         <ThemedView style={styles.mainContainer}>
 
             <View style={styles.profileContainer}>
-                <FontAwesome name="user-circle-o" size={ms(80)} color="#7b68ee" />
+                {userData?.photoUrl ? (
+                  <Image
+                    source={{ uri: userData.photoUrl }}
+                    style={styles.profilePic}
+                  />
+                ) : (
+                  <FontAwesome name="user-circle-o" size={PROFILEPICSIZE} color="#7b68ee" />
+                )}
+
 
                 <View style={styles.profileDetails}>
                     <View style={styles.username}>
@@ -54,7 +63,7 @@ export default function ProfileScreen() {
                           numberOfLines={1}
                           ellipsizeMode="tail"
                           style={{ maxWidth: s(120) }}>
-                            az123
+                          {userData?.username}
                         </ThemedText>
                         
                         {finalUid === auth.currentUser?.uid &&
@@ -69,7 +78,7 @@ export default function ProfileScreen() {
                           numberOfLines={2}
                           ellipsizeMode="tail"
                           style={{fontSize: RFValue(12), lineHeight: vs(20)}}>
-                            Live life to the fullest.                        
+                            {userData?.bio}                        
                         </ThemedText>
                     </View>
                 </View>  
@@ -170,6 +179,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     gap: vs(8),
+  },
+  profilePic: {
+    height: PROFILEPICSIZE,
+    width: PROFILEPICSIZE,
+    borderRadius: PROFILEPICSIZE / 2,
   },
   username: {
     flexDirection: 'row',
