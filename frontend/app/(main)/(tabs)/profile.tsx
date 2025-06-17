@@ -74,12 +74,12 @@ export default function ProfileScreen() {
 
 
             <View style={styles.friendsContainer}>
-              <TouchableOpacity style={styles.button}>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/friends')}>
                 <Ionicons name='people-outline' color='white' size={ms(18)}/>
                 <Text style={styles.buttonText}>View Friends</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.button}>
+              <TouchableOpacity style={styles.button} onPress={() => router.push('/addfriends')}>
                 <MaterialIcons name='group-add' color='white' size={ms(18)}/>
               </TouchableOpacity>
             </View>
@@ -106,7 +106,7 @@ function Preview(
       
         return (
         <TouchableOpacity 
-          onPress={() => router.push(`./${route}`)}
+          onPress={() => router.navigate(`./${route}`)}
         >
             <View style={{height: '100%', width: '100%'}}>
               <View style={{ padding: 15 }}>
