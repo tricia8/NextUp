@@ -33,7 +33,7 @@ export default function ProfileScreen() {
     });
 
     return () => unsubscribe();
-  }, [uid]);
+  }, [finalUid]);
 
 
 
@@ -56,9 +56,12 @@ export default function ProfileScreen() {
                           style={{ maxWidth: s(120) }}>
                             az123
                         </ThemedText>
-                        <TouchableOpacity style={styles.button}>
-                            <Text style={styles.buttonText}>Edit Profile</Text>
-                        </TouchableOpacity>
+                        
+                        {finalUid === auth.currentUser?.uid &&
+                          <TouchableOpacity style={styles.button}>
+                              <Text style={styles.buttonText}>Edit Profile</Text>
+                          </TouchableOpacity>
+                        }
                     </View>
 
                     <View>
@@ -105,9 +108,11 @@ export default function ProfileScreen() {
                 <Text style={styles.buttonText}>View Friends</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.button} onPress={() => router.push('/addfriends')}>
-                <MaterialIcons name='group-add' color='white' size={ms(18)}/>
-              </TouchableOpacity>
+              {finalUid === auth.currentUser?.uid &&
+                <TouchableOpacity style={styles.button} onPress={() => router.push('/addfriends')}>
+                  <MaterialIcons name='group-add' color='white' size={ms(18)}/>
+                </TouchableOpacity>
+              }
             </View>
 
 
