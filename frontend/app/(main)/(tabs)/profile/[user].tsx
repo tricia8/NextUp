@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
@@ -7,12 +7,38 @@ import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import BucketList from './bucketlist';
-import JourneyScreen from './journey';
+import { router, useLocalSearchParams } from 'expo-router';
+import { onSnapshot, doc } from 'firebase/firestore';
+import { auth, db } from '@/firebaseConfig';
+import BucketList from '@/app/(main)/(tabs)/bucketlist';
+import JourneyScreen from '@/app/(main)/(tabs)/journey';
+import { User } from '@/types/user';
+
 
 
 export default function ProfileScreen() {
+
+  const { uid } = useLocalSearchParams();
+  const [userData, setUserData] = useState<User | null>(null);
+
+  const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
+
+  useEffect(() => {
+    if (!uid) return;
+
+    const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        setUserData(docSnapshot.data() as User);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [uid]);
+
+
+
+
+
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
