@@ -42,7 +42,8 @@ export const createUser = async (user, username) => {
       username: username,
       email: user.email,
       photoUrl: user.photoURL,
-      displayName: user.displayName || null,
+      displayName: user.displayName,
+      bio: user.bio,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
