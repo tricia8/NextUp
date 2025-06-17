@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   View,
   StyleSheet,
-  Text,
   useColorScheme,
   ColorSchemeName,
 } from "react-native";
@@ -23,6 +22,7 @@ import { ThemedView } from "@/components/ThemedView";
 import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
+import SublistField from "@/components/SublistField";
 
 export default function newSubList() {
   const router = useRouter();
@@ -113,18 +113,10 @@ export default function newSubList() {
         />
         <ScrollView>
           <View style={styles.titleShareBar}>
-            <FloatingLabelInput
-              label={"Title"}
-              value={title}
+            <SublistField
+              label="Title"
               onChangeText={(value) => setTitle(value)}
-              inputStyles={{ color: colorScheme == "dark" ? "white" : "black" }}
-              containerStyles={styles.inputContainer}
-              staticLabel
-              labelStyles={styles.floatingLabel}
-              customLabelStyles={{
-                colorFocused: colorScheme == "dark" ? "#aee690" : "#0e8f4a",
-                colorBlurred: colorScheme == "dark" ? "#74b552" : "#16ac5c",
-              }}
+              value={title}
             />
 
             <TouchableOpacity
@@ -136,19 +128,11 @@ export default function newSubList() {
           </View>
 
           <View style={{ marginVertical: 10 }}>
-            <FloatingLabelInput
-              label={"Description"}
-              value={description}
+            <SublistField
+              label="Description"
               onChangeText={(value) => setDesc(value)}
+              value={description}
               multiline={true}
-              inputStyles={{ color: colorScheme == "dark" ? "white" : "black" }}
-              staticLabel
-              labelStyles={styles.floatingLabel}
-              containerStyles={styles.inputContainer}
-              customLabelStyles={{
-                colorFocused: colorScheme == "dark" ? "#aee690" : "#0c6736",
-                colorBlurred: colorScheme == "dark" ? "#74b552" : "#16ac5c",
-              }}
             />
           </View>
 
@@ -244,15 +228,5 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     submitButton: {
       backgroundColor: "#4d8ce5",
-    },
-    inputContainer: {
-      borderRadius: 12,
-      borderWidth: 2,
-      borderColor: colorScheme == "dark" ? "white" : "black",
-      padding: 10,
-    },
-    floatingLabel: {
-      backgroundColor: colorScheme == "dark" ? "#141515" : "#a2e6ff",
-      paddingHorizontal: 5,
     },
   });
