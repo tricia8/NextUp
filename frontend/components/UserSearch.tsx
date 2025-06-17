@@ -14,9 +14,10 @@ import { User } from '@/types/user';
 type Props = {
   users: User[];
   showAddButton?: boolean;
+  placeholder?: string;
 };
 
-export default function UserSearch({users, showAddButton = false}: Props) {
+export default function UserSearch({users, showAddButton = false, placeholder = ''}: Props) {
     const [search, setSearch] = React.useState('');
     const [filteredFriends, setFriends] = React.useState(users);
     const colorScheme = useColorScheme();
@@ -55,7 +56,7 @@ export default function UserSearch({users, showAddButton = false}: Props) {
             <View style={styles.searchContainer}>
                 <TextInput
                     style={styles.input}
-                    placeholder='Search friends'
+                    placeholder={placeholder}
                     placeholderTextColor='gray'
                     selectionColor='gray'
                     value={search}

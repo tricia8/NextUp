@@ -46,7 +46,7 @@ export default function UsersList() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
               <ThemedView style={styles.mainContainer}>
-                <UserSearch users={data} showAddButton={true}/>
+                <UserSearch users={data} showAddButton={true} placeholder='Seach users'/>
               </ThemedView>
           </ScrollView>
       </SafeAreaView>
