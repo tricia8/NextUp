@@ -1,7 +1,7 @@
 // Import dependencies (ESM-style)
 import express from "express";
 import morgan from "morgan";
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
 // Create Express app
