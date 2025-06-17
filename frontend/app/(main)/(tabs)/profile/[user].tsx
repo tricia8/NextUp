@@ -9,7 +9,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { onSnapshot, doc } from 'firebase/firestore';
-import { auth, db } from '@/firebaseConfig';
+import { auth, db } from '@/firebase/firebaseConfig';
 import BucketList from '@/app/(main)/(tabs)/bucketlist';
 import JourneyScreen from '@/app/(main)/(tabs)/journey';
 import { User } from '@/types/user';
