@@ -16,10 +16,13 @@ import { FloatingLabelInput } from "react-native-floating-label-input";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
+import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import { RFValue } from "react-native-responsive-fontsize";
 import { ThemedView } from "@/components/ThemedView";
 import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
+import DropDownPicker from "react-native-dropdown-picker";
 
 export default function newSubList() {
   const router = useRouter();
@@ -29,6 +32,46 @@ export default function newSubList() {
 
   const colorScheme = useColorScheme();
   const styles = getStyles(colorScheme);
+  const theme = colorScheme == "dark" ? "DARK" : "LIGHT";
+
+  // For access picker
+  const [accessLevel, setAccessLevel] = useState("");
+  const [open, setOpen] = useState(false);
+  const accessOptions = [
+    {
+      label: "Only you can view",
+      value: "private",
+      icon: () => (
+        <Feather
+          name="user"
+          size={24}
+          color={colorScheme == "dark" ? "white" : "black"}
+        />
+      ),
+    },
+    {
+      label: "Only friends can view",
+      value: "friends",
+      icon: () => (
+        <Feather
+          name="users"
+          size={24}
+          color={colorScheme == "dark" ? "white" : "black"}
+        />
+      ),
+    },
+    {
+      label: "Everyone (any user) can view",
+      value: "everyone",
+      icon: () => (
+        <SimpleLineIcons
+          name="globe"
+          size={24}
+          color={colorScheme == "dark" ? "white" : "black"}
+        />
+      ),
+    },
+  ];
 
   const submit = () => {
     router.push("./(tabs)/bucketlist");
@@ -109,10 +152,21 @@ export default function newSubList() {
             />
           </View>
 
-          <TouchableOpacity style={styles.addButton}>
+          {/* <TouchableOpacity style={styles.addButton}>
             <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
             <Ionicons name="add-circle-outline" size={22} color="black" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <View style={{ marginVertical: 10 }}>
+            <DropDownPicker
+              open={open}
+              value={accessLevel}
+              items={accessOptions}
+              setOpen={setOpen}
+              setValue={setAccessLevel}
+              listMode="SCROLLVIEW"
+              theme={theme}
+            />
+          </View>
 
           <TouchableOpacity
             onPress={submit}
