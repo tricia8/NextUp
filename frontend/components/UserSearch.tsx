@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { LegendList } from '@legendapp/list';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { User } from '@/types/user';
+import { router } from 'expo-router';
 
 
 
@@ -35,7 +36,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
 
     function renderItem({item}: {item: User}) {
           return (
-            <TouchableOpacity style={styles.userRowContainer}>
+            <TouchableOpacity style={styles.userRowContainer} onPress={() => router.push(`/(main)/(tabs)/profile/${item.uid}`)}>
               <View style={styles.userDisplay}>
                   <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
                   <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
