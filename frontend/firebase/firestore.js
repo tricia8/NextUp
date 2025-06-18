@@ -50,6 +50,36 @@ export const createUser = async (user, username) => {
   });
 };
 
+export const editProfile = async (userId) => {
+  try {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error("User does not exist");
+    }
+
+    const existingData = userSnap.data();
+    const updatedFields = {};
+
+    for (const key in newData) {
+      if (newData[key] !== existingData[key]) {
+        updatedFields[key] = newData[key];
+      }
+    }
+
+    if (Object.keys(updatedFields).length > 0) {
+      await updateDoc(userRef, updatedFields);
+      console.log("Updated fields:", updatedFields);
+    } else {
+      console.log("No fields were changed. Skipping update.");
+    }
+  } catch (error) {
+    console.error("Error updating profile.")
+    throw error;
+  }
+}
+
 export const setBucketList = async (userId, bucketListData) => {
   try {
     await setDoc(doc(db, "users", userId, "bucketList"), bucketListData);
