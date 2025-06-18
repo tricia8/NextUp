@@ -12,7 +12,7 @@ import { onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from '@/firebase/firebaseConfig';
 import BucketList from '../bucketlist';
 import JourneyScreen from '../journey';
-import EditProfile from './editprofile';
+import EditProfile from '@/components/editprofile';
 import { User } from '@/types/user';
 
 
