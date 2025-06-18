@@ -47,7 +47,7 @@ export const createUser = async (user, username) => {
   });
 };
 
-export const editProfile = async (userId) => {
+export const updateProfile = async (userId) => {
   try {
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
