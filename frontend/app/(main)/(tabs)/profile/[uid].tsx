@@ -10,8 +10,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from '@/firebase/firebaseConfig';
-import BucketList from '@/app/(main)/(tabs)/bucketlist';
-import JourneyScreen from '@/app/(main)/(tabs)/journey';
+import BucketList from '../bucketlist';
+import JourneyScreen from '../journey';
+import EditProfile from './editprofile';
 import { User } from '@/types/user';
 
 
@@ -21,6 +22,7 @@ export default function ProfileScreen() {
 
   const { uid } = useLocalSearchParams();
   const [userData, setUserData] = useState<User | null>(null);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
 
@@ -35,9 +37,6 @@ export default function ProfileScreen() {
 
     return () => unsubscribe();
   }, [finalUid]);
-
-
-
 
 
   return (
@@ -67,7 +66,7 @@ export default function ProfileScreen() {
                         </ThemedText>
                         
                         {finalUid === auth.currentUser?.uid &&
-                          <TouchableOpacity style={styles.button}>
+                          <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
                               <Text style={styles.buttonText}>Edit Profile</Text>
                           </TouchableOpacity>
                         }
@@ -136,6 +135,16 @@ export default function ProfileScreen() {
 
         </ThemedView>
       </ScrollView>
+
+      {userData && (
+        <EditProfile 
+          visible={isModalVisible} 
+          onClose={() => setModalVisible(false)} 
+          userData={userData}
+        />
+        )
+      }
+
     </SafeAreaView>
   )
 }

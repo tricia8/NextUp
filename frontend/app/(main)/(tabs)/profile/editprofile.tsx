@@ -1,6 +1,5 @@
-import React, { useEffect, useId, useState } from 'react';
-import { Image, StyleSheet, ScrollView, View, Text, TextInput, TouchableOpacity, useColorScheme, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { StyleSheet, ScrollView, View, Text, TextInput, TouchableOpacity, useColorScheme, Alert } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
 import { FontAwesome } from '@expo/vector-icons';
@@ -19,7 +18,7 @@ type editProfileProps = {
 
 export default function EditProfile({ visible, onClose, userData }: editProfileProps) {
 
-  const [bioText, setBioText] = useState('');
+  const [bioText, setBioText] = useState(userData.bio);
   const colorScheme = useColorScheme();
   const styles = makeStyles(colorScheme);
 
@@ -44,27 +43,27 @@ export default function EditProfile({ visible, onClose, userData }: editProfileP
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                     <View style={{flex: 1, justifyContent: 'center'}}>
                         <ThemedView style={styles.mainContainer}>
-                                <View style={styles.profileContainer}>
-                                    <FontAwesome name="user-circle-o" size={ms(100)} color="#7b68ee" />
+                            <View style={styles.profileContainer}>
+                                <FontAwesome name="user-circle-o" size={ms(100)} color="#7b68ee" />
 
-                                    <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
+                                <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
 
-                                    <View style={styles.bioContainer}>
-                                        <TextInput
-                                            style={styles.input}
-                                            placeholder='Add your bio'
-                                            placeholderTextColor='gray'
-                                            selectionColor='gray'
-                                            multiline
-                                            value={bioText}
-                                            onChangeText={(text) => setBioText(text)}
-                                        />
-                                    </View>
-
-                                    <TouchableOpacity style={styles.button} onPress={() => handleSave(userData.uid, {bio: bioText})}>
-                                        <Text style={styles.buttonText}>SAVE</Text>
-                                    </TouchableOpacity>
+                                <View style={styles.bioContainer}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder='Add your bio'
+                                        placeholderTextColor='gray'
+                                        selectionColor='gray'
+                                        multiline
+                                        value={bioText}
+                                        onChangeText={(text) => setBioText(text)}
+                                    />
                                 </View>
+
+                                <TouchableOpacity style={styles.button} onPress={() => handleSave(userData.uid, {bio: bioText})}>
+                                    <Text style={styles.buttonText}>SAVE</Text>
+                                </TouchableOpacity>
+                            </View>
                         
                         </ThemedView>
                     </View>
