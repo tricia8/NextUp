@@ -3,6 +3,6 @@ export type User = {
   username: string;
   email: string | null;
   photoUrl: string | null;
-  displayName: string | null;
-  bio: string | null;
+  displayName: string;
+  bio: string;
 };
