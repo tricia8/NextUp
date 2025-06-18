@@ -25,7 +25,7 @@ export default function ProfileScreen() {
   const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
 
   useEffect(() => {
-    if (!uid) return;
+    if (!finalUid) return;
 
     const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
       if (docSnapshot.exists()) {
