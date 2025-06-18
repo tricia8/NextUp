@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, useColorScheme } from 'react-native';
+import { Alert, StyleSheet, View, TextInput, TouchableOpacity, useColorScheme } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
 import { ThemedText } from '@/components/ThemedText';
@@ -7,6 +7,7 @@ import { LegendList } from '@legendapp/list';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { User } from '@/types/user';
 import { router } from 'expo-router';
+import { addFriend } from '@/firebase/firestore';
 
 
 
@@ -34,6 +35,16 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
     };
 
 
+    const handleAddFriend = async (userId: string, friendId: string) => {
+        try {
+            await addFriend(userId, friendId);
+            Alert.alert('Success', 'Friend added!');
+        } catch (error) {
+            console.log('Error adding friend');
+            Alert.alert('Error', 'Error adding friend.');
+        }
+    }
+
     function renderItem({item}: {item: User}) {
           return (
             <TouchableOpacity style={styles.userRowContainer} onPress={() => router.push(`/(main)/(tabs)/profile/${item.uid}`)}>
@@ -41,7 +52,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
                   <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
                   <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
                   {showAddButton && (
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleAddFriend}>
                         <MaterialIcons name='group-add' color='white' size={ms(18)}/>
                     </TouchableOpacity>
                   )}
