@@ -51,7 +51,7 @@ export default function FriendsList() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
               <ThemedView style={styles.mainContainer}>
-                <UserSearch users={data} placeholder='Search friends'/>
+                <UserSearch users={data} placeholder='Search friends' userId={currentUserId}/>
               </ThemedView>
           </ScrollView>
       </SafeAreaView>
