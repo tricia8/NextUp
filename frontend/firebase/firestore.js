@@ -87,6 +87,25 @@ export const updateProfile = async (userId, newData) => {
   }
 }
 
+//bucketlist
+const updateOverallStats = async (userId, type) => {
+  const statsRef = doc(db, "users", userId, "bucketList");
+
+  const fieldMap = {
+    incrementTotal: {totalEvents: increment(1)},
+    decrementTotal: {totalEvents: decrement(1)},
+    incrementCompleted: {totalEvents: increment(1)},
+    decrementCompleted: {totalEvents: decrement(1)},
+  }
+
+  try {
+    await updateDoc(statsRef, fieldMap[type]);
+  } catch (error) {
+    console.log('Error updating stats');
+    throw error;
+  }
+}
+
 //subbucketlists
 export const createSubBucketList = async (userId, subBucketListData) => {
   try {
@@ -125,7 +144,7 @@ export const addEvent = async (
   eventData
 ) => {
   try {
-    const eventRef = await addDoc(
+    const eventDoc = await addDoc(
       collection(
         db,
         "users",
@@ -137,7 +156,7 @@ export const addEvent = async (
       ),
       eventData
     );
-    return eventRef.id;
+    return eventDoc.id;
   } catch (error) {
     console.error("Error adding event:", error);
     throw error;
@@ -187,6 +206,41 @@ export const updateEvent = async (
   }
 };
 
+export const toggleEventCompletion = async (userId, subBucketListId, eventId) => {
+  try {
+    const eventDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      "subBucketLists",
+      subBucketListId,
+      "events",
+      eventId
+    );
+
+    const docSnap = await getDoc(eventDoc);
+
+    if (!docSnap.exists()) {
+      throw new Error("Event not found");
+    }
+
+    const currentCompleted = docSnap.data().completed;
+
+    if (currentCompleted) {
+      updateOverallStats(userId, decrementCompleted);
+    } else {
+      updateOverallStats(userId, incrementCompleted);
+    }
+
+    await updateDoc(eventDoc, {
+      completed: !currentCompleted,
+    });
+  } catch (error) {
+    console.error("Error toggling event completion");
+    throw error;
+  }
+}
 
 //friends
 export const addFriend = async (userId, friendId) => {
