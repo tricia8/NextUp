@@ -59,7 +59,7 @@ export const createUser = async (user, username) => {
 //profile
 export const updateProfile = async (userId, newData) => {
   try {
-    const userRef = doc(db, "users", uid);
+    const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
