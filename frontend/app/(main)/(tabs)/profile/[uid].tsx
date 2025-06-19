@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Image, StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
@@ -14,6 +14,8 @@ import BucketList from '../bucketlist';
 import JourneyScreen from '../journey';
 import EditProfile from '@/components/editprofile';
 import { User } from '@/types/user';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 
 const PROFILEPICSIZE = ms(80);
@@ -28,31 +30,36 @@ export default function ProfileScreen() {
 
   const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
 
-  useEffect(() => {
-    if (!finalUid) return;
+  useFocusEffect(() => {
+    useCallback(() => {
+        if (!finalUid) return;
 
-    const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        setUserData(docSnapshot.data() as User);
-      }
-    });
+        const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
+          if (docSnapshot.exists()) {
+            setUserData(docSnapshot.data() as User);
+          }
+        });
 
-    return () => unsubscribe();
-  }, [finalUid]);
+        return () => unsubscribe();
+    }, [finalUid]);
+  });
+    
 
-  useEffect(() => {
-    if (!finalUid) return;
+  useFocusEffect(() => {
+    useCallback(() => {
+      if (!finalUid) return;
 
-    const unsubscribe = onSnapshot(doc(db, 'users', finalUid, 'bucketList', 'stats'), (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        setTotalEvents(data.totalEvents);
-        setCompletedEvents(data.completedEvents);
-      }
-    });
+      const unsubscribe = onSnapshot(doc(db, 'users', finalUid, 'bucketList', 'stats'), (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setTotalEvents(data.totalEvents);
+          setCompletedEvents(data.completedEvents);
+        }
+      });
 
-  return () => unsubscribe();
-}, [finalUid]);
+      return () => unsubscribe();
+    }, [finalUid]);
+  })
 
 
   return (
