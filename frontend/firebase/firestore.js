@@ -30,6 +30,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
+  const bucketListRef = doc(db, "users", user.uid, "bucketList")
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -47,6 +48,11 @@ export const createUser = async (user, username) => {
     });
 
     transaction.set(usernameRef, { uid: user.uid });
+
+    transaction.set(bucketListRef, {
+      totalEvents: 0,
+      completedEvents: 0,
+    });
   });
 };
 
