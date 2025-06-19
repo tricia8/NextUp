@@ -8,7 +8,8 @@ import { db } from "@/firebase/firebaseConfig";
 import { getAuth } from 'firebase/auth';
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
-
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 
 const auth = getAuth();
@@ -24,23 +25,25 @@ export default function FriendsList() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!currentUserId) {
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      collection(db, "users", currentUserId, "friends"),
-      (snapshot) => {
-        data = snapshot.docs.map(doc => ({
-          uid: doc.id,
-          ...(doc.data() as Omit<User, 'uid'>)
-        }));
+  useFocusEffect(
+    useCallback(() => {
+      if (!currentUserId) {
+        return;
       }
-  );
 
-  return () => unsubscribe();
-}, [currentUserId]);
+      const unsubscribe = onSnapshot(
+        collection(db, "users", currentUserId, "friends"),
+        (snapshot) => {
+          data = snapshot.docs.map(doc => ({
+            uid: doc.id,
+            ...(doc.data() as Omit<User, 'uid'>)
+          }));
+        }
+      );
+
+      return () => unsubscribe();
+  }, [currentUserId])
+);
 
   return (
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
