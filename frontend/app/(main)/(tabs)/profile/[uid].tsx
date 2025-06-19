@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, ScrollView, View, Text,TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, ScrollView, View, Text,TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
@@ -61,6 +61,9 @@ export default function ProfileScreen() {
     }, [finalUid])
   )
 
+  if (!userData) {
+    <ActivityIndicator size="large"/>
+  }
 
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
