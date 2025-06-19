@@ -6,6 +6,8 @@ interface TitleDescProps {
   description: string;
   setTitle: (title: string) => void;
   setDescription: (desc: string) => void;
+  lightLabelBg?: string;
+  darkLabelBg?: string;
 }
 
 export default function TitleDescFields({
@@ -13,6 +15,8 @@ export default function TitleDescFields({
   description,
   setTitle,
   setDescription,
+  lightLabelBg = "#a2e6ff",
+  darkLabelBg = "#141515",
 }: TitleDescProps) {
   return (
     <View style={{ gap: 10 }}>
@@ -20,6 +24,8 @@ export default function TitleDescFields({
         label="Title"
         onChangeText={(value) => setTitle(value)}
         value={title}
+        lightLabelBg={lightLabelBg}
+        darkLabelBg={darkLabelBg}
       />
       <SublistField
         label="Description"
@@ -27,6 +33,8 @@ export default function TitleDescFields({
         value={description}
         multiline={true}
         placeholder="Add details, timelines, or motivations..."
+        lightLabelBg={lightLabelBg}
+        darkLabelBg={darkLabelBg}
       />
     </View>
   );
