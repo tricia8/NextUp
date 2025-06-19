@@ -14,7 +14,7 @@ import BucketList from '../bucketlist';
 import JourneyScreen from '../journey';
 import EditProfile from '@/components/editprofile';
 import { User } from '@/types/user';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 
 
