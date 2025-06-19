@@ -7,8 +7,10 @@ import {
   getDoc,
   updateDoc,
   deleteDoc,
+  runTransaction,
 } from "firebase/firestore";
 import { debounce } from "lodash";
+
 
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
@@ -28,7 +30,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListRef = doc(db, "users", user.uid, "bucketList")
+  const bucketListStatsRef = collection(db, "users", user.uid, "bucketList", "stats")
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -41,21 +43,23 @@ export const createUser = async (user, username) => {
       username: username,
       email: user.email,
       photoUrl: user.photoURL,
-      displayName: user.displayName || null,
+      displayName: '',
+      bio: '',
     });
 
     transaction.set(usernameRef, { uid: user.uid });
 
-    transaction.set(bucketListRef, {
+    transaction.set(bucketListStatsRef, {
       totalEvents: 0,
       completedEvents: 0,
     });
   });
 };
 
+//profile
 export const updateProfile = async (userId, newData) => {
   try {
-    const userRef = doc(db, "users", uid);
+    const userRef = doc(db, "users", userId);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
@@ -83,19 +87,30 @@ export const updateProfile = async (userId, newData) => {
   }
 }
 
-export const setBucketList = async (userId, bucketListData) => {
+//bucketlist
+const updateOverallStats = async (userId, type) => {
+  const statsRef = doc(db, "users", userId, "bucketList");
+
+  const fieldMap = {
+    incrementTotal: {totalEvents: increment(1)},
+    decrementTotal: {totalEvents: decrement(1)},
+    incrementCompleted: {totalEvents: increment(1)},
+    decrementCompleted: {totalEvents: decrement(1)},
+  }
+
   try {
-    await setDoc(doc(db, "users", userId, "bucketList"), bucketListData);
+    await updateDoc(statsRef, fieldMap[type]);
   } catch (error) {
-    console.error("Error creating bucket list:", error);
+    console.log('Error updating stats');
     throw error;
   }
-};
+}
 
+//subbucketlists
 export const createSubBucketList = async (userId, subBucketListData) => {
   try {
     const subBucketListRef = await addDoc(
-      collection(db, "users", userId, "bucketList", "subBucketLists"),
+      collection(db, "users", userId, "bucketList"),
       subBucketListData
     );
     return subBucketListRef.id;
@@ -105,44 +120,67 @@ export const createSubBucketList = async (userId, subBucketListData) => {
   }
 };
 
-export const addEventToSubBucketList = async (
+export const deleteSubBucketList = async (userId, subBucketListId) => {
+  try {
+    const subBucketListRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId
+    );
+    await deleteDoc(subBucketListRef);
+  } catch (error) {
+    console.error("Error deleting bucket list:", error);
+    throw error;
+  }
+};
+
+//events
+export const addEvent = async (
   userId,
   subBucketListId,
   eventData
 ) => {
   try {
-    const eventRef = await addDoc(
+    const eventDoc = await addDoc(
       collection(
         db,
         "users",
         userId,
         "bucketList",
-        "subBucketLists",
         subBucketListId,
         "events"
       ),
       eventData
     );
-    return eventRef.id;
+
+    updateOverallStats(userId, incrementTotal);
+
+    return eventDoc.id;
   } catch (error) {
     console.error("Error adding event:", error);
     throw error;
   }
 };
 
-export const updateSubBucketList = async (userId, subBucketListId, updates) => {
+export const deleteEvent = async (userId, subBucketListId, eventId) => {
   try {
-    const bucketListDoc = doc(
+    const eventDoc = doc(
       db,
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
-      subBucketListId
+      subBucketListId,
+      "events",
+      eventId
     );
-    await updateDoc(bucketListDoc, updates);
+
+    await deleteDoc(eventDoc);
+
+    updateOverallStats(userId, incrementTotal);
   } catch (error) {
-    console.error("Error updating bucket list:", error);
+    console.error("Error deleting event:", error);
     throw error;
   }
 };
@@ -159,7 +197,6 @@ export const updateEvent = async (
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
       subBucketListId,
       "events",
       eventId
@@ -171,49 +208,61 @@ export const updateEvent = async (
   }
 };
 
-export const deleteSubBucketList = async (userId, subBucketListId) => {
-  try {
-    const bucketListDoc = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      "subBucketLists",
-      subBucketListId
-    );
-    await deleteDoc(bucketListDoc);
-  } catch (error) {
-    console.error("Error deleting bucket list:", error);
-    throw error;
-  }
-};
-
-export const deleteEvent = async (userId, subBucketListId, eventId) => {
+export const toggleEventCompletion = async (userId, subBucketListId, eventId) => {
   try {
     const eventDoc = doc(
       db,
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
       subBucketListId,
       "events",
       eventId
     );
-    await deleteDoc(eventDoc);
+    
+    const docSnap = await getDoc(eventDoc);
+
+    if (!docSnap.exists()) {
+      throw new Error("Event not found");
+    }
+
+    const currentCompleted = docSnap.data().completed;
+
+    if (currentCompleted) {
+      updateOverallStats(userId, decrementCompleted);
+    } else {
+      updateOverallStats(userId, incrementCompleted);
+    }
+
+    await updateDoc(eventDoc, {
+      completed: !currentCompleted,
+    });
   } catch (error) {
-    console.error("Error deleting event:", error);
+    console.error("Error toggling event completion");
     throw error;
   }
-};
+}
 
+//friends
 export const addFriend = async (userId, friendId) => {
   try {
+    const friendSnapshot = await getDoc(doc(db, "users", friendId));
+    const friendData = friendSnapshot.data();
+
     const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
-    await setDoc(currentUserfriendRef);
+    await setDoc(currentUserfriendRef, {
+      username: friendData?.username,
+      photoUrl: friendData?.photoUrl || null,
+    });
+
+    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
+    const currentUserData = currentUserSnapshot.data();
 
     const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
-    await setDoc(otherUserfriendRef);
+    await setDoc(otherUserfriendRef, {
+      username: currentUserData?.username,
+      photoUrl: currentUserData?.photoUrl || null,
+    });
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
