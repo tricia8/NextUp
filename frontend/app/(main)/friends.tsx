@@ -8,7 +8,7 @@ import { db } from "@/firebase/firebaseConfig";
 import { getAuth } from 'firebase/auth';
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 
 
