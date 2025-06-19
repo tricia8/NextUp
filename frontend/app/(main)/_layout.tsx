@@ -55,7 +55,7 @@ export default function MainLayout() {
           }}
         />
         <Stack.Screen
-          name="(main)/current-sublist"
+          name="current-sublist"
           options={{
             headerTitle: "",
             headerLeft: () => (
