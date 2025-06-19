@@ -8,17 +8,19 @@ interface AccessDropdownPickerProps {
   accessLevel: string;
   onChange: React.Dispatch<React.SetStateAction<string>>;
   theme: "LIGHT" | "DARK" | "DEFAULT";
+  zindex?: number | undefined;
 }
 
 export default function AccessDropdownPicker({
   accessLevel,
   onChange,
   theme = "DEFAULT", // default option is LIGHT
+  zindex,
 }: AccessDropdownPickerProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const accessOptions = [
     {
@@ -50,14 +52,15 @@ export default function AccessDropdownPicker({
 
   return (
     <DropDownPicker
-      open={open}
+      open={isOpen}
       placeholder="Who can view this?"
       value={accessLevel}
       items={accessOptions}
-      setOpen={setOpen}
+      setOpen={setIsOpen}
       setValue={onChange}
       listMode="SCROLLVIEW"
       theme={theme}
+      zIndex={zindex}
     />
   );
 }
