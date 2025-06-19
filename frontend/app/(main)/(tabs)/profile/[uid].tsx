@@ -30,7 +30,7 @@ export default function ProfileScreen() {
 
   const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
 
-  useFocusEffect(() => {
+  useFocusEffect(
     useCallback(() => {
         if (!finalUid) return;
 
@@ -41,11 +41,11 @@ export default function ProfileScreen() {
         });
 
         return () => unsubscribe();
-    }, [finalUid]);
-  });
+    }, [finalUid])
+  );
     
 
-  useFocusEffect(() => {
+  useFocusEffect(
     useCallback(() => {
       if (!finalUid) return;
 
@@ -58,8 +58,8 @@ export default function ProfileScreen() {
       });
 
       return () => unsubscribe();
-    }, [finalUid]);
-  })
+    }, [finalUid])
+  )
 
 
   return (
