@@ -56,6 +56,7 @@ export const createUser = async (user, username) => {
   });
 };
 
+//profile
 export const updateProfile = async (userId, newData) => {
   try {
     const userRef = doc(db, "users", uid);
@@ -86,6 +87,7 @@ export const updateProfile = async (userId, newData) => {
   }
 }
 
+//subbucketlists
 export const createSubBucketList = async (userId, subBucketListData) => {
   try {
     const subBucketListRef = await addDoc(
@@ -99,7 +101,25 @@ export const createSubBucketList = async (userId, subBucketListData) => {
   }
 };
 
-export const addEventToSubBucketList = async (
+export const deleteSubBucketList = async (userId, subBucketListId) => {
+  try {
+    const bucketListDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      "subBucketLists",
+      subBucketListId
+    );
+    await deleteDoc(bucketListDoc);
+  } catch (error) {
+    console.error("Error deleting bucket list:", error);
+    throw error;
+  }
+};
+
+//events
+export const addEvent = async (
   userId,
   subBucketListId,
   eventData
@@ -124,19 +144,21 @@ export const addEventToSubBucketList = async (
   }
 };
 
-export const updateSubBucketList = async (userId, subBucketListId, updates) => {
+export const deleteEvent = async (userId, subBucketListId, eventId) => {
   try {
-    const bucketListDoc = doc(
+    const eventDoc = doc(
       db,
       "users",
       userId,
       "bucketList",
       "subBucketLists",
-      subBucketListId
+      subBucketListId,
+      "events",
+      eventId
     );
-    await updateDoc(bucketListDoc, updates);
+    await deleteDoc(eventDoc);
   } catch (error) {
-    console.error("Error updating bucket list:", error);
+    console.error("Error deleting event:", error);
     throw error;
   }
 };
@@ -165,42 +187,8 @@ export const updateEvent = async (
   }
 };
 
-export const deleteSubBucketList = async (userId, subBucketListId) => {
-  try {
-    const bucketListDoc = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      "subBucketLists",
-      subBucketListId
-    );
-    await deleteDoc(bucketListDoc);
-  } catch (error) {
-    console.error("Error deleting bucket list:", error);
-    throw error;
-  }
-};
 
-export const deleteEvent = async (userId, subBucketListId, eventId) => {
-  try {
-    const eventDoc = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      "subBucketLists",
-      subBucketListId,
-      "events",
-      eventId
-    );
-    await deleteDoc(eventDoc);
-  } catch (error) {
-    console.error("Error deleting event:", error);
-    throw error;
-  }
-};
-
+//friends
 export const addFriend = async (userId, friendId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
