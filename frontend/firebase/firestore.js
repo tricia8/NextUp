@@ -80,15 +80,6 @@ export const updateProfile = async (userId, newData) => {
   }
 }
 
-export const setBucketList = async (userId, bucketListData) => {
-  try {
-    await setDoc(doc(db, "users", userId, "bucketList"), bucketListData);
-  } catch (error) {
-    console.error("Error creating bucket list:", error);
-    throw error;
-  }
-};
-
 export const createSubBucketList = async (userId, subBucketListData) => {
   try {
     const subBucketListRef = await addDoc(
