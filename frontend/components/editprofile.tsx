@@ -26,6 +26,7 @@ export default function EditProfile({ visible, onClose, userData }: editProfileP
     try {
         await updateProfile(uid, profileDetails);
         Alert.alert("Saved!");
+        onClose();
     } catch (error) {
         Alert.alert("Error saving");
     }
@@ -34,42 +35,38 @@ export default function EditProfile({ visible, onClose, userData }: editProfileP
   return (
             <Modal
                 isVisible={visible}
-                onBackdropPress={onClose}
                 backdropOpacity={0.4}
+                onBackdropPress={onClose}
                 animationIn="zoomIn"
                 animationOut="zoomOut"
                 useNativeDriver
             >
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                    <View style={{flex: 1, justifyContent: 'center'}}>
-                        <ThemedView style={styles.mainContainer}>
-                            <View style={styles.profileContainer}>
-                                <FontAwesome name="user-circle-o" size={ms(100)} color="#7b68ee" />
+                  <View style={{justifyContent: 'center'}}>
+                      <ThemedView style={styles.mainContainer}>
+                          <View style={styles.profileContainer}>
+                              <FontAwesome name="user-circle-o" size={ms(100)} color="#7b68ee" />
 
-                                <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
+                              <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
 
-                                <View style={styles.bioContainer}>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder='Add your bio'
-                                        placeholderTextColor='gray'
-                                        selectionColor='gray'
-                                        multiline
-                                        value={bioText}
-                                        onChangeText={(text) => setBioText(text)}
-                                    />
-                                </View>
+                              <View style={styles.bioContainer}>
+                                  <TextInput
+                                      style={styles.input}
+                                      placeholder='Add your bio'
+                                      placeholderTextColor='gray'
+                                      selectionColor='gray'
+                                      multiline
+                                      value={bioText}
+                                      onChangeText={(text) => setBioText(text)}
+                                  />
+                              </View>
 
-                                <TouchableOpacity style={styles.button} onPress={() => handleSave(userData.uid, {bio: bioText})}>
-                                    <Text style={styles.buttonText}>SAVE</Text>
-                                </TouchableOpacity>
-                            </View>
-                        
-                        </ThemedView>
-                    </View>
-                    
-                </ScrollView>
-
+                              <TouchableOpacity style={styles.button} onPress={() => handleSave(userData.uid, {bio: bioText})}>
+                                  <Text style={styles.buttonText}>SAVE</Text>
+                              </TouchableOpacity>
+                          </View>
+                      
+                      </ThemedView>
+                  </View>
             </Modal>
   )
 }
