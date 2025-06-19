@@ -1,4 +1,3 @@
-import SublistField from "@/components/forms/SublistField";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   StyleSheet,
@@ -24,8 +23,10 @@ import {
   BottomSheetBackgroundProps,
   BottomSheetModal,
   BottomSheetScrollView,
+  BottomSheetTextInput,
 } from "@gorhom/bottom-sheet";
 import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
+import CategoryPicker from "@/components/forms/CategoryPicker";
 
 interface User {
   username: string;
@@ -55,6 +56,21 @@ export default function currentSublist({
   const isDark = colorScheme === "dark";
   const styles = getStyles(colorScheme);
 
+  // Category Picker
+  const [selectedTags, setSelectedTags] = useState<string[]>([]); // array of strings
+  const [categoryOpen, setCategoryOpen] = useState(false);
+
+  //Date-Time Picker
+  const [dateTimeOpen, setDateTimeOpen] = useState(false);
+
+  const onCategoryOpen = useCallback(() => {
+    setDateTimeOpen(false);
+  }, []);
+
+  const onDateTimeOpen = useCallback(() => {
+    setCategoryOpen(false);
+  }, []);
+
   // set right header as invite collaborators icon
   const navigation = useNavigation();
   useLayoutEffect(() => {
@@ -76,7 +92,7 @@ export default function currentSublist({
 
   // Bottom-sheet modal
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["25%", "50%", "90%"], []);
+  const snapPoints = useMemo(() => ["50%", "90%"], []);
 
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
@@ -195,17 +211,34 @@ export default function currentSublist({
         >
           <BottomSheetScrollView style={styles.contentContainer}>
             <View style={styles.modalViewContainer}>
-              <TitleDescFields
+              <BottomSheetTextInput style={styles.input} placeholder="Title" />
+              <BottomSheetTextInput
+                style={styles.input}
+                placeholder="Add details, timelines, or motivations..."
+              />
+              {/* <TitleDescFields
                 title={title}
                 description={description}
                 setTitle={setTitle}
                 setDescription={setDesc}
                 lightLabelBg="#eee"
                 darkLabelBg="#1e1e2f"
-              />
+              /> */}
+              <View>
+                <CategoryPicker
+                  open={categoryOpen}
+                  setOpen={setCategoryOpen}
+                  onOpen={onCategoryOpen}
+                  selectedTags={selectedTags}
+                  setSelectedTags={setSelectedTags}
+                />
+              </View>
 
               <TouchableOpacity
-                style={[styles.editingButton, { backgroundColor: "#618ce0" }]}
+                style={[
+                  styles.editingButton,
+                  { backgroundColor: "#618ce0", alignItems: "center" },
+                ]}
                 onPress={() => {
                   closeSheet();
                   // add logic for saving to db and updating current screen
@@ -265,5 +298,14 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     modalBg: {
       borderRadius: 25,
       backgroundColor: colorScheme == "dark" ? "#1e1e2f" : "#eee",
+    },
+    input: {
+      marginTop: 8,
+      marginBottom: 10,
+      borderRadius: 10,
+      fontSize: 16,
+      lineHeight: 20,
+      padding: 8,
+      backgroundColor: "rgba(151, 151, 151, 0.25)",
     },
   });
