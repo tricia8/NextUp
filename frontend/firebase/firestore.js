@@ -156,6 +156,9 @@ export const addEvent = async (
       ),
       eventData
     );
+
+    updateOverallStats(userId, incrementTotal);
+
     return eventDoc.id;
   } catch (error) {
     console.error("Error adding event:", error);
@@ -175,7 +178,10 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
       "events",
       eventId
     );
+
     await deleteDoc(eventDoc);
+
+    updateOverallStats(userId, incrementTotal);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -218,7 +224,7 @@ export const toggleEventCompletion = async (userId, subBucketListId, eventId) =>
       "events",
       eventId
     );
-
+    
     const docSnap = await getDoc(eventDoc);
 
     if (!docSnap.exists()) {
