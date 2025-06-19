@@ -9,6 +9,7 @@ import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 
 
 
@@ -18,11 +19,14 @@ export default function UsersList() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      setCurrentUserId(user.uid);
-    }
-  }, []);
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          setCurrentUserId(user.uid);
+        }
+      });
+  
+      return () => unsubscribe();
+    }, []);
 
   useFocusEffect(
     useCallback(() => {
