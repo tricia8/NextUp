@@ -1,5 +1,5 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useEffect, useState } from 'react';
@@ -44,8 +44,12 @@ export default function FriendsList() {
       );
 
       return () => unsubscribe();
-  }, [currentUserId])
-);
+    }, [currentUserId])
+  );
+
+  if (!currentUserId) {
+    return <ActivityIndicator size="large" />;
+  }
 
   return (
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
