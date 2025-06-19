@@ -25,6 +25,7 @@ import {
   BottomSheetModal,
   BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
+import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
 
 interface User {
   username: string;
@@ -51,6 +52,7 @@ export default function currentSublist({
   const [accessLevel, setAccessLevel] = useState(initialAccess);
   const [modalVisible, setModalVisible] = useState(false);
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const styles = getStyles(colorScheme);
 
   // set right header as invite collaborators icon
@@ -65,7 +67,7 @@ export default function currentSublist({
           <MaterialIcons
             name="group-add"
             size={30}
-            color={colorScheme == "dark" ? "white" : "black"}
+            color={isDark ? "white" : "black"}
           />
         </TouchableOpacity>
       ),
@@ -120,7 +122,7 @@ export default function currentSublist({
                 <Feather
                   name="edit-2"
                   size={24}
-                  color={colorScheme == "dark" ? "white" : "black"}
+                  color={isDark ? "white" : "black"}
                 />
               </TouchableOpacity>
             </View>
@@ -164,6 +166,14 @@ export default function currentSublist({
             </View>
           </View>
         )}
+
+        <View style={{ marginVertical: 10 }}>
+          <AccessDropdownPicker
+            accessLevel={accessLevel}
+            onChange={setAccessLevel}
+            theme={isDark ? "DARK" : "LIGHT"}
+          />
+        </View>
 
         <TouchableOpacity
           style={styles.addButton}
