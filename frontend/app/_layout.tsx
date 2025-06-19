@@ -3,14 +3,20 @@ import "react-native-reanimated";
 import { AuthProvider } from "@/context/AuthContext";
 import FlashMessage from "react-native-flash-message";
 import { Slot } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <Slot />
-      </SafeAreaProvider>
-      <FlashMessage position="top" />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheetModalProvider>
+          <SafeAreaProvider>
+            <Slot />
+            <FlashMessage position="top" />
+          </SafeAreaProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
     </AuthProvider>
   );
 }
