@@ -10,7 +10,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from '@/firebase/firebaseConfig';
-import BucketList from '../bucketlist';
 import JourneyScreen from '../journey';
 import EditProfile from '@/components/editprofile';
 import { User } from '@/types/user';
@@ -151,9 +150,6 @@ export default function ProfileScreen() {
 
 
             <View style={{flex: 1}}>
-              <View style={styles.previewContainer}>
-                <Preview route='bucketlist' title='Bucket List' color='rgba(94, 231, 255, 0.5)' component={<BucketList />}/>
-              </View>
               <View style={styles.previewContainer}>
                 <Preview route='journey' title='Journey' color='rgba(26, 230, 186, 0.5)' component={<JourneyScreen />}/>
               </View>
