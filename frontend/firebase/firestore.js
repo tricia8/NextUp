@@ -30,7 +30,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListRef = doc(db, "users", user.uid, "bucketList")
+  const bucketListStatsRef = collection(db, "users", user.uid, "bucketList", "stats")
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -49,7 +49,7 @@ export const createUser = async (user, username) => {
 
     transaction.set(usernameRef, { uid: user.uid });
 
-    transaction.set(bucketListRef, {
+    transaction.set(bucketListStatsRef, {
       totalEvents: 0,
       completedEvents: 0,
     });
@@ -110,7 +110,7 @@ const updateOverallStats = async (userId, type) => {
 export const createSubBucketList = async (userId, subBucketListData) => {
   try {
     const subBucketListRef = await addDoc(
-      collection(db, "users", userId, "bucketList", "subBucketLists"),
+      collection(db, "users", userId, "bucketList"),
       subBucketListData
     );
     return subBucketListRef.id;
@@ -122,15 +122,14 @@ export const createSubBucketList = async (userId, subBucketListData) => {
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
-    const bucketListDoc = doc(
+    const subBucketListRef = doc(
       db,
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
       subBucketListId
     );
-    await deleteDoc(bucketListDoc);
+    await deleteDoc(subBucketListRef);
   } catch (error) {
     console.error("Error deleting bucket list:", error);
     throw error;
@@ -150,7 +149,6 @@ export const addEvent = async (
         "users",
         userId,
         "bucketList",
-        "subBucketLists",
         subBucketListId,
         "events"
       ),
@@ -173,7 +171,6 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
       subBucketListId,
       "events",
       eventId
@@ -200,7 +197,6 @@ export const updateEvent = async (
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
       subBucketListId,
       "events",
       eventId
@@ -219,7 +215,6 @@ export const toggleEventCompletion = async (userId, subBucketListId, eventId) =>
       "users",
       userId,
       "bucketList",
-      "subBucketLists",
       subBucketListId,
       "events",
       eventId
