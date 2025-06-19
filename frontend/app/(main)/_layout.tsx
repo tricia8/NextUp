@@ -67,10 +67,14 @@ export default function MainLayout() {
                   gap: 8,
                 }}
               >
-                <MaterialIcons name="arrow-back" size={24} color="black" />
+                <MaterialIcons
+                  name="arrow-back"
+                  size={24}
+                  color={colorScheme == "dark" ? "white" : "black"}
+                />
 
                 <View>
-                  <ThemedText>back to Bucket List</ThemedText>
+                  <ThemedText>Back to Bucket List</ThemedText>
                 </View>
               </TouchableOpacity>
             ),

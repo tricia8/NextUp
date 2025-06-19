@@ -40,8 +40,8 @@ interface SublistFormProps {
 }
 
 export default function currentSublist({
-  initialTitle = "Hello",
-  initialDescription = "",
+  initialTitle = "Title", // Dummy Placeholder for UI check
+  initialDescription = "Description", // Dummy Placeholder for UI check
   initialAccess = "",
   users,
   onSubmit,
@@ -63,7 +63,11 @@ export default function currentSublist({
           onPress={() => setModalVisible(true)}
           style={{ marginRight: 12 }}
         >
-          <MaterialIcons name="group-add" size={30} color="black" />
+          <MaterialIcons
+            name="group-add"
+            size={30}
+            color={colorScheme == "dark" ? "white" : "black"}
+          />
         </TouchableOpacity>
       ),
     });
@@ -103,7 +107,7 @@ export default function currentSublist({
           onClose={() => setModalVisible(false)}
         />
         {!isEditing && (
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: 10 }}>
             <View style={styles.titleEditBar}>
               <ThemedText
                 type="title"
@@ -114,7 +118,11 @@ export default function currentSublist({
                 {title}
               </ThemedText>
               <TouchableOpacity onPress={() => setIsEditing(true)}>
-                <Feather name="edit-2" size={24} color="black" />
+                <Feather
+                  name="edit-2"
+                  size={24}
+                  color={colorScheme == "dark" ? "white" : "black"}
+                />
               </TouchableOpacity>
             </View>
 
@@ -177,14 +185,14 @@ export default function currentSublist({
           backgroundStyle={styles.modalBg}
         >
           <BottomSheetScrollView style={styles.contentContainer}>
-            <View>
+            <View style={styles.modalViewContainer}>
               <TitleDescFields
                 title={title}
                 description={description}
                 setTitle={setTitle}
                 setDescription={setDesc}
                 lightLabelBg="#eee"
-                darkLabelBg="1e1e2f"
+                darkLabelBg="#1e1e2f"
               />
 
               <TouchableOpacity
@@ -240,6 +248,10 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     contentContainer: {
       backgroundColor: colorScheme == "dark" ? "#1e1e2f" : "#eee",
+      padding: 12,
+    },
+    modalViewContainer: {
+      gap: 10,
     },
     modalBg: {
       borderRadius: 25,
