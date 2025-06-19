@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import SublistField from "../SublistField";
+import SublistField from "./SublistField";
 
 interface TitleDescProps {
   title: string;

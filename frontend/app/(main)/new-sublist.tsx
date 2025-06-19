@@ -22,7 +22,7 @@ import { ThemedView } from "@/components/ThemedView";
 import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
-import SublistField from "@/components/SublistField";
+import SublistField from "@/components/forms/SublistField";
 
 export default function newSubList() {
   const router = useRouter();
