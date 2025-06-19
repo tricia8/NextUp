@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, Text, TextInput, TouchableOpacity, useColorScheme, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, useColorScheme, Alert } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
 import { s, ms, vs } from 'react-native-size-matters';
 import { FontAwesome } from '@expo/vector-icons';
@@ -49,6 +49,7 @@ export default function EditProfile({ visible, onClose, userData }: editProfileP
                               <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
 
                               <View style={styles.bioContainer}>
+                                  <ThemedText>Bio:</ThemedText>
                                   <TextInput
                                       style={styles.input}
                                       placeholder='Add your bio'
@@ -90,6 +91,8 @@ const makeStyles = (colorScheme: any) => StyleSheet.create({
     backgroundColor: 'transparent',
     borderColor: '#7b68ee',
     flexDirection: 'row',
+    gap: s(8),
+    alignItems: 'center',
   },
   input: {
     flex: 1,
