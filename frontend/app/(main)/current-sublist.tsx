@@ -10,6 +10,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { RFValue } from "react-native-responsive-fontsize";
+import TitleDescFields from "@/components/forms/TitleDescFields";
+import { useRouter } from "expo-router";
 
 interface User {
   username: string;
@@ -25,7 +27,7 @@ interface SublistFormProps {
 
 export default function currentSublist({
   initialTitle = "Hello",
-  initialDescription = "Dummy Desc",
+  initialDescription = "",
   initialAccess = "",
   users,
   onSubmit,
@@ -35,6 +37,7 @@ export default function currentSublist({
   const [description, setDesc] = useState(initialDescription);
   const [accessLevel, setAccessLevel] = useState(initialAccess);
   const [modalVisible, setModalVisible] = useState(false);
+  const router = useRouter();
 
   // set right header as invite collaborators icon
   const navigation = useNavigation();
@@ -83,16 +86,11 @@ export default function currentSublist({
 
         {isEditing && (
           <View style={{ gap: 10 }}>
-            <SublistField
-              label="Title"
-              onChangeText={(value) => setTitle(value)}
-              value={title}
-            />
-            <SublistField
-              label="Description"
-              onChangeText={(value) => setDesc(value)}
-              value={description}
-              multiline={true}
+            <TitleDescFields
+              title={title}
+              description={description}
+              setTitle={setTitle}
+              setDescription={setDesc}
             />
             <View style={styles.editHandler}>
               <TouchableOpacity
