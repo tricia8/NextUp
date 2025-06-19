@@ -4,15 +4,13 @@ import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from "@/firebase/firebaseConfig";
-import { getAuth } from 'firebase/auth';
+import { auth, db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 
 
-const auth = getAuth();
 let data: User[];
 
 export default function FriendsList() {
