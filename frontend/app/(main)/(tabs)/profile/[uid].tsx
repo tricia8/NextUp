@@ -23,6 +23,8 @@ export default function ProfileScreen() {
   const { uid } = useLocalSearchParams();
   const [userData, setUserData] = useState<User | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const [completedEvents, setCompletedEvents] = useState(0);
 
   const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
 
@@ -37,6 +39,20 @@ export default function ProfileScreen() {
 
     return () => unsubscribe();
   }, [finalUid]);
+
+  useEffect(() => {
+    if (!finalUid) return;
+
+    const unsubscribe = onSnapshot(doc(db, 'users', finalUid, 'bucketList', 'stats'), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setTotalEvents(data.totalEvents);
+        setCompletedEvents(data.completedEvents);
+      }
+    });
+
+  return () => unsubscribe();
+}, [finalUid]);
 
 
   return (
@@ -89,14 +105,14 @@ export default function ProfileScreen() {
             <View style={styles.statsContainer}>
                 <View>
                     <ThemedText style={styles.dataText}>
-                        <ThemedText type='subtitle'>10</ThemedText>{'\n'}
+                        <ThemedText type='subtitle'>{totalEvents}</ThemedText>{'\n'}
                         <Text style={styles.subDataText}>GOALS{'\n'}CREATED</Text>
                     </ThemedText>
                 </View>
 
                 <View>
                     <ThemedText style={styles.dataText}>
-                        <ThemedText type='subtitle'>5</ThemedText>{'\n'} 
+                        <ThemedText type='subtitle'>{completedEvents}</ThemedText>{'\n'} 
                         <Text style={styles.subDataText}>GOALS{'\n'}COMPLETED</Text>
                     </ThemedText>
                 </View>
