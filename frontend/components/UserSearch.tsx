@@ -17,9 +17,10 @@ type Props = {
   users: User[];
   showAddButton?: boolean;
   placeholder?: string;
+  userId: string;
 };
 
-export default function UserSearch({users, showAddButton = false, placeholder = ''}: Props) {
+export default function UserSearch({users, showAddButton = false, placeholder = '', userId}: Props) {
     const [search, setSearch] = React.useState('');
     const [filteredFriends, setFriends] = React.useState(users);
     const colorScheme = useColorScheme();
@@ -52,7 +53,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
                   <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
                   <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
                   {showAddButton && (
-                    <TouchableOpacity onPress={() => handleAddFriend}>
+                    <TouchableOpacity onPress={() => handleAddFriend(userId, item.uid)}>
                         <MaterialIcons name='group-add' color='white' size={ms(18)}/>
                     </TouchableOpacity>
                   )}
