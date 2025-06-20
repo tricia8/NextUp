@@ -48,7 +48,11 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
 
     function renderItem({item}: {item: User}) {
           return (
-            <TouchableOpacity style={styles.userRowContainer} onPress={() => router.push(`/(main)/(tabs)/profile/${item.uid}`)}>
+            <TouchableOpacity style={styles.userRowContainer} 
+              onPress={() => router.push({
+                pathname: "/profile",
+                params: { uid: item.uid },
+            })}>
               <View style={styles.userDisplay}>
                   <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
                   <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
