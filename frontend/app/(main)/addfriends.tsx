@@ -4,7 +4,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useContext, useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { auth, db } from "@/firebase/firebaseConfig";
+import { db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
@@ -15,6 +15,7 @@ import { AuthContext } from '@/context/AuthContext';
 
 export default function UsersList() {
   const [users, setUsers] = useState<User[]>([]);
+  const [friendUids, setFriendUids] = useState<string[]>([]);
   const { user } = useContext(AuthContext);
   const currentUserId = user?.uid;
 
@@ -24,7 +25,7 @@ export default function UsersList() {
           return;
         }
 
-        const unsubscribe = onSnapshot(
+        const unsubscribeUsers = onSnapshot(
           collection(db, "users"),
           (snapshot) => {
             const data = snapshot.docs.map(doc => ({
@@ -35,7 +36,18 @@ export default function UsersList() {
           }
         );
 
-      return () => unsubscribe();
+        const unsubscribeFriends = onSnapshot(
+          collection(db, "users", currentUserId, "friends"),
+          (snapshot) => {
+            const uids = snapshot.docs.map(doc => doc.id);
+            setFriendUids(uids);
+          }
+        );
+
+        return () => {
+          unsubscribeUsers();
+          unsubscribeFriends();
+        };
     }, [currentUserId])
   );
 
@@ -47,7 +59,13 @@ export default function UsersList() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
               <ThemedView style={styles.mainContainer}>
-                <UserSearch users={users} showAddButton={true} placeholder='Seach users' userId={currentUserId}/>
+                <UserSearch 
+                  users={users} 
+                  showAddButton={true} 
+                  placeholder='Seach users' 
+                  userId={currentUserId} 
+                  friendUids={friendUids}
+                />
               </ThemedView>
           </ScrollView>
       </SafeAreaView>

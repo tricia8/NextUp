@@ -17,10 +17,11 @@ type Props = {
   users: User[];
   showAddButton?: boolean;
   placeholder?: string;
-  userId: string;
+  userId?: string;
+  friendUids?: string[];
 };
 
-export default function UserSearch({users, showAddButton = false, placeholder = '', userId}: Props) {
+export default function UserSearch({users, showAddButton = false, placeholder = '', userId, friendUids}: Props) {
     const [search, setSearch] = React.useState('');
     const [filteredUsers, setUsers] = React.useState(users);
     const colorScheme = useColorScheme();
@@ -35,8 +36,11 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
       setSearch(text);
     };
 
+    const isFriend = (uid: string) => {
+        return friendUids?.includes(uid);
+    };
 
-    const handleAddFriend = async (userId: string, friendId: string) => {
+    const handleAddFriend = async (friendId: string) => {
         try {
             await addFriend(userId, friendId);
             Alert.alert('Success', 'Friend added!');
@@ -56,8 +60,8 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
               <View style={styles.userDisplay}>
                   <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
                   <ThemedText style={{fontSize: RFValue(14)}}>{item.username}</ThemedText>
-                  {showAddButton && (
-                    <TouchableOpacity onPress={() => handleAddFriend(userId, item.uid)}>
+                  {showAddButton && userId && !isFriend(item.uid) && (
+                    <TouchableOpacity onPress={() => handleAddFriend(item.uid)}>
                         <MaterialIcons name='group-add' color='white' size={ms(18)}/>
                     </TouchableOpacity>
                   )}
