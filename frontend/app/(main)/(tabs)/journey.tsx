@@ -9,7 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useState } from 'react';
 import { AuthContext } from '@/context/AuthContext';
-import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
 
 
@@ -26,13 +26,26 @@ type SubBucketList = {
     description: string;
     accessLevel: string;
     collaborators: string[];
+    createdAt: string;
 };
+
+type Event = {
+    id: string,
+    title: string;
+    description: string;
+    categories: string[];      
+    deadline: string;          
+    isCompleted: boolean;      
+    createdAt: string;         
+}
 
 export default function JourneyScreen() {
     const { user } = useContext(AuthContext);
     const { uid: paramUid } = useLocalSearchParams();
     const [relationship, setRelationship] = useState<'self' | 'friend' | 'none'>('none');
     const [subBucketLists, setSubBucketLists] = useState<SubBucketList[]>([]);
+    const [events, setEvents] = useState<Event[]>([]);
+
 
     const finalParamUid = Array.isArray(paramUid) ? paramUid[0] : paramUid;
 
@@ -91,6 +104,21 @@ export default function JourneyScreen() {
         return unsubscribe;
     }
 
+    async function getEvents() {
+        const allEvents: Event[] = [];
+
+        for (const sub of subBucketLists) {
+            const eventsRef = collection(db, 'users', uid, 'bucketList', sub.id, 'events');
+            const eventsSnap = await getDocs(eventsRef);
+            const events = eventsSnap.docs.map(doc => ({
+                id: doc.id,
+                ...(doc.data() as Omit<Event, 'id'>),
+            }));
+            allEvents.push(...events);
+        }
+
+        setEvents(allEvents);
+    }
 
 
     function renderItem({ item }: { item: MileStone }) {
