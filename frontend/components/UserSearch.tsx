@@ -22,7 +22,7 @@ type Props = {
 
 export default function UserSearch({users, showAddButton = false, placeholder = '', userId}: Props) {
     const [search, setSearch] = React.useState('');
-    const [filteredFriends, setFriends] = React.useState(users);
+    const [filteredUsers, setUsers] = React.useState(users);
     const colorScheme = useColorScheme();
     const styles = makeStyles(colorScheme);
 
@@ -31,7 +31,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
       const filtered = users.filter((item) => {
         return item.username.toLowerCase().includes(formattedQuery);
       });
-      setFriends(filtered);
+      setUsers(filtered);
       setSearch(text);
     };
 
@@ -82,7 +82,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
             </View>
 
             <LegendList
-                data={filteredFriends}
+                data={filteredUsers}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.uid}
                 recycleItems={true}
