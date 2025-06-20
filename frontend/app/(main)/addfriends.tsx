@@ -2,31 +2,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { auth, db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { AuthContext } from '@/context/AuthContext';
 
 
 
 let data: User[];
 
 export default function UsersList() {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-          setCurrentUserId(user.uid);
-        }
-      });
-  
-      return () => unsubscribe();
-    }, []);
+  const [users, setUsers] = useState<User[]>([]);
+  const { user } = useContext(AuthContext);
+  const currentUserId = user?.uid;
 
   useFocusEffect(
     useCallback(() => {
@@ -41,6 +33,7 @@ export default function UsersList() {
               uid: doc.id,
               ...(doc.data() as Omit<User, 'uid'>)
             }));
+            setUsers(data);
           }
         );
 
@@ -56,7 +49,7 @@ export default function UsersList() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
               <ThemedView style={styles.mainContainer}>
-                <UserSearch users={data} showAddButton={true} placeholder='Seach users' userId={currentUserId}/>
+                <UserSearch users={users} showAddButton={true} placeholder='Seach users' userId={currentUserId}/>
               </ThemedView>
           </ScrollView>
       </SafeAreaView>
