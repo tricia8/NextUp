@@ -9,7 +9,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useState } from 'react';
 import { AuthContext } from '@/context/AuthContext';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
 
 
@@ -20,10 +20,19 @@ type MileStone = {
     description: string;
 }
 
+type SubBucketList = {
+    id: string,
+    title: string;
+    description: string;
+    accessLevel: string;
+    collaborators: string[];
+};
+
 export default function JourneyScreen() {
     const { user } = useContext(AuthContext);
     const { uid: paramUid } = useLocalSearchParams();
     const [relationship, setRelationship] = useState<'self' | 'friend' | 'none'>('none');
+    const [subBucketLists, setSubBucketLists] = useState<SubBucketList[]>([]);
 
     const finalParamUid = Array.isArray(paramUid) ? paramUid[0] : paramUid;
 
@@ -55,6 +64,34 @@ export default function JourneyScreen() {
             return () => unsubscribe();
         }, [user?.uid, uid])
     );
+
+    
+    async function filterSubBucketLists() {
+        const ref = collection(db, 'users', uid, 'bucketList');
+
+        const accessLevels =
+            relationship === 'self'
+            ? ['private', 'friends', 'everyone']
+            : relationship === 'friend'
+            ? ['friends', 'everyone']
+            : ['everyone'];
+
+        if (accessLevels.length === 0) return [];
+
+        const q = query(ref, where('accessLevel', 'in', accessLevels));
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...(doc.data() as Omit<SubBucketList, 'id'>)
+            }));
+            setSubBucketLists(data);
+        });
+
+        return unsubscribe;
+    }
+
+
 
     function renderItem({ item }: { item: MileStone }) {
 
