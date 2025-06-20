@@ -13,8 +13,6 @@ import { AuthContext } from '@/context/AuthContext';
 
 
 
-let data: User[];
-
 export default function UsersList() {
   const [users, setUsers] = useState<User[]>([]);
   const { user } = useContext(AuthContext);
@@ -29,7 +27,7 @@ export default function UsersList() {
         const unsubscribe = onSnapshot(
           collection(db, "users"),
           (snapshot) => {
-            data = snapshot.docs.map(doc => ({
+            const data = snapshot.docs.map(doc => ({
               uid: doc.id,
               ...(doc.data() as Omit<User, 'uid'>)
             }));

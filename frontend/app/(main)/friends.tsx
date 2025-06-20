@@ -12,7 +12,6 @@ import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 
 
-let data: User[];
 
 export default function FriendsList() {
   const [friends, setFriends] = useState<User[]>([]);
@@ -34,7 +33,7 @@ export default function FriendsList() {
       const unsubscribe = onSnapshot(
         collection(db, "users", currentUserId, "friends"),
         (snapshot) => {
-          data = snapshot.docs.map(doc => ({
+          const data = snapshot.docs.map(doc => ({
             uid: doc.id,
             ...(doc.data() as Omit<User, 'uid'>)
           }));
