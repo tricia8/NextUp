@@ -11,7 +11,6 @@ import {
 } from "firebase/firestore";
 import { debounce } from "lodash";
 
-
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
   console.log("Normalized username:", normalizedUsername);
@@ -30,7 +29,13 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = collection(db, "users", user.uid, "bucketList", "stats")
+  const bucketListStatsRef = collection(
+    db,
+    "users",
+    user.uid,
+    "bucketList",
+    "stats"
+  );
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -43,8 +48,8 @@ export const createUser = async (user, username) => {
       username: username,
       email: user.email,
       photoUrl: user.photoURL,
-      displayName: '',
-      bio: '',
+      displayName: "",
+      bio: "",
     });
 
     transaction.set(usernameRef, { uid: user.uid });
@@ -82,37 +87,46 @@ export const updateProfile = async (userId, newData) => {
       console.log("No fields were changed. Skipping update.");
     }
   } catch (error) {
-    console.error("Error updating profile.")
+    console.error("Error updating profile.");
     throw error;
   }
-}
+};
 
 //bucketlist
 const updateOverallStats = async (userId, type) => {
   const statsRef = doc(db, "users", userId, "bucketList");
 
   const fieldMap = {
-    incrementTotal: {totalEvents: increment(1)},
-    decrementTotal: {totalEvents: decrement(1)},
-    incrementCompleted: {totalEvents: increment(1)},
-    decrementCompleted: {totalEvents: decrement(1)},
-  }
+    incrementTotal: { totalEvents: increment(1) },
+    decrementTotal: { totalEvents: decrement(1) },
+    incrementCompleted: { totalEvents: increment(1) },
+    decrementCompleted: { totalEvents: decrement(1) },
+  };
 
   try {
     await updateDoc(statsRef, fieldMap[type]);
   } catch (error) {
-    console.log('Error updating stats');
+    console.log("Error updating stats");
     throw error;
   }
-}
+};
 
 //subbucketlists
-export const createSubBucketList = async (userId, subBucketListData) => {
+export const createSubBucketList = async (
+  userId,
+  { title, description, accessLevel, collaborators }
+) => {
   try {
     const subBucketListRef = await addDoc(
       collection(db, "users", userId, "bucketList"),
-      subBucketListData
-    );
+      {
+        title,
+        description,
+        accessLevel,
+        collaborators, // array of userIds
+        createdAt: new Date().toISOString(),
+      }
+    ); // go to bucketList collection
     return subBucketListRef.id;
   } catch (error) {
     console.error("Error creating subbucket list:", error);
@@ -140,19 +154,19 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
 export const addEvent = async (
   userId,
   subBucketListId,
-  eventData
+  { title, description, categories, deadline }
 ) => {
   try {
     const eventDoc = await addDoc(
-      collection(
-        db,
-        "users",
-        userId,
-        "bucketList",
-        subBucketListId,
-        "events"
-      ),
-      eventData
+      collection(db, "users", userId, "bucketList", subBucketListId, "events"),
+      {
+        title,
+        description,
+        categories,
+        deadline,
+        isCompleted: false,
+        createdAt: new Date().toISOString(),
+      }
     );
 
     updateOverallStats(userId, incrementTotal);
@@ -189,7 +203,7 @@ export const updateEvent = async (
   userId,
   subBucketListId,
   eventId,
-  updates
+  { title, description, categories, deadline, isCompleted }
 ) => {
   try {
     const eventDoc = doc(
@@ -201,14 +215,24 @@ export const updateEvent = async (
       "events",
       eventId
     );
-    await updateDoc(eventDoc, updates);
+    await updateDoc(eventDoc, {
+      title,
+      description,
+      categories,
+      deadline,
+      isCompleted,
+    });
   } catch (error) {
     console.error("Error updating event:", error);
     throw error;
   }
 };
 
-export const toggleEventCompletion = async (userId, subBucketListId, eventId) => {
+export const toggleEventCompletion = async (
+  userId,
+  subBucketListId,
+  eventId
+) => {
   try {
     const eventDoc = doc(
       db,
@@ -219,14 +243,14 @@ export const toggleEventCompletion = async (userId, subBucketListId, eventId) =>
       "events",
       eventId
     );
-    
+
     const docSnap = await getDoc(eventDoc);
 
     if (!docSnap.exists()) {
       throw new Error("Event not found");
     }
 
-    const currentCompleted = docSnap.data().completed;
+    const currentCompleted = docSnap.data().isCompleted;
 
     if (currentCompleted) {
       updateOverallStats(userId, decrementCompleted);
@@ -235,13 +259,13 @@ export const toggleEventCompletion = async (userId, subBucketListId, eventId) =>
     }
 
     await updateDoc(eventDoc, {
-      completed: !currentCompleted,
+      isCompleted: !currentCompleted,
     });
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
   }
-}
+};
 
 //friends
 export const addFriend = async (userId, friendId) => {
