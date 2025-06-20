@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { debounce } from "lodash";
 
+
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
   console.log("Normalized username:", normalizedUsername);

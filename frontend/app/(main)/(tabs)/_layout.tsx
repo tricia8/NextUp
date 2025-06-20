@@ -21,7 +21,6 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-        headerShown: true,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
@@ -40,6 +39,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="house.fill" color={color} />
           ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -61,7 +61,10 @@ export default function TabLayout() {
         options={{
           title: 'Journey',
           tabBarIcon: ({ color }) => <MaterialIcons size={28} name="landscape" color={color} />,
-          headerShown: true,
+          headerTitleStyle: {
+            fontWeight: "bold",
+            fontSize: RFValue(26),
+          },
         }}
       />
       <Tabs.Screen
@@ -69,7 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <FontAwesome5 size={28} name="user-alt" color={color} />,
-          ),
+          headerShown: false,
         }}
       />
     </Tabs>

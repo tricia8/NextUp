@@ -74,7 +74,7 @@ export default function newSubList() {
   ];
 
   const submit = () => {
-    router.push("./(tabs)/bucketlist");
+    router.push("/(main)/current-sublist");
     showMessage({
       message: "Success!",
       description: "New sublist added",
@@ -136,10 +136,6 @@ export default function newSubList() {
             />
           </View>
 
-          {/* <TouchableOpacity style={styles.addButton}>
-            <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
-            <Ionicons name="add-circle-outline" size={22} color="black" />
-          </TouchableOpacity> */}
           <View style={{ marginVertical: 10 }}>
             <DropDownPicker
               open={open}
@@ -175,30 +171,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     themedView: {
       flex: 1,
       padding: 20,
-    },
-    modalContent: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-    card: {
-      width: "90%",
-      padding: 20,
-      backgroundColor: "white",
-      borderRadius: 8,
-    },
-    itemContainer: {
-      flexDirection: "column",
-      marginVertical: 8,
-      marginHorizontal: 15,
-      padding: 20,
-      justifyContent: "space-between",
-      borderRadius: 5,
-      elevation: 5,
-    },
-    statusText: {
-      fontSize: RFValue(11),
     },
     titleShareBar: {
       flexDirection: "row",

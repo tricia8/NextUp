@@ -73,7 +73,10 @@ export default function BucketList() {
         end={{ x: 1, y: 1 }}
         style={styles.itemContainer}
       >
-        <TouchableOpacity style={{ flex: 1 }}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => router.push("/(main)/current-sublist")}
+        >
           {item.isShared ? (
             <View>
               <Feather
