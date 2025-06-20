@@ -13,12 +13,6 @@ import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/fir
 import { db } from '@/firebase/firebaseConfig';
 
 
-type MileStone = {
-    id: number;
-    date: string;
-    title: string;
-    description: string;
-}
 
 type SubBucketList = {
     id: string,
@@ -121,11 +115,11 @@ export default function JourneyScreen() {
     }
 
 
-    function renderItem({ item }: { item: MileStone }) {
+    function renderItem({ item }: { item: Event }) {
 
         return (
             <View style={{
-                alignItems: item.id % 2 === 0 ? 'flex-start' : 'flex-end',
+                alignItems: Number(item.id) % 2 === 0 ? 'flex-start' : 'flex-end',
             }}>
                 <TouchableOpacity style={styles.itemContainer}>
                     <MaterialCommunityIcons name="flag-variant" size={ms(30)} color="#66cdaa" />
@@ -146,9 +140,9 @@ export default function JourneyScreen() {
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <ThemedView style={styles.mainContainer}>
                     <LegendList
-                        data={}
+                        data={events}
                         renderItem={renderItem}
-                        keyExtractor={(item: MileStone) => item.id.toString()}
+                        keyExtractor={(item: Event) => item.id.toString()}
                         recycleItems={true}
                         maintainVisibleContentPosition
                     />
