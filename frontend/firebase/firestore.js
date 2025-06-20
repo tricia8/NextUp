@@ -94,7 +94,7 @@ export const updateProfile = async (userId, newData) => {
 
 //bucketlist
 const updateOverallStats = async (userId, type) => {
-  const statsRef = doc(db, "users", userId, "bucketList");
+  const statsRef = doc(db, "users", userId, "bucketList", "stats");
 
   const fieldMap = {
     incrementTotal: { totalEvents: increment(1) },
