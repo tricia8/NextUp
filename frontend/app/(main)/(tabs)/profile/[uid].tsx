@@ -60,8 +60,10 @@ export default function ProfileScreen() {
     }, [finalUid])
   )
 
-  if (!userData) {
-    <ActivityIndicator size="large"/>
+  if (!userData || !finalUid) {
+    return (
+      <ActivityIndicator size="large"/>
+    )
   }
 
   return (
@@ -136,7 +138,10 @@ export default function ProfileScreen() {
 
 
             <View style={styles.friendsContainer}>
-              <TouchableOpacity style={styles.button} onPress={() => router.push('/friends')}>
+              <TouchableOpacity style={styles.button} onPress={() => router.push({ 
+                pathname: '/friends', 
+                params: { uid: finalUid } 
+              })}>
                 <Ionicons name='people-outline' color='white' size={ms(18)}/>
                 <Text style={styles.buttonText}>View Friends</Text>
               </TouchableOpacity>
@@ -151,7 +156,7 @@ export default function ProfileScreen() {
 
             <View style={{flex: 1}}>
               <View style={styles.previewContainer}>
-                <Preview route='journey' title='Journey' color='rgba(26, 230, 186, 0.5)' component={<JourneyScreen />}/>
+                <Preview route='journey' title='Journey' color='rgba(26, 230, 186, 0.5)' component={<JourneyScreen />} uid={finalUid}/>
               </View>
             </View>
 
