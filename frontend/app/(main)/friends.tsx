@@ -2,31 +2,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { auth, db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { AuthContext } from '@/context/AuthContext';
 
 
 let data: User[];
 
 export default function FriendsList() {
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [friends, setFriends] = useState<User[]>([]);
+  const { viewedUid } = useLocalSearchParams();
+  const { user } = useContext(AuthContext);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUserId(user.uid);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
+  const currentUserId = typeof viewedUid === 'string'
+    ? viewedUid
+    : Array.isArray(viewedUid)
+      ? viewedUid[0]
+      : user?.uid;
+  
   useFocusEffect(
     useCallback(() => {
       if (!currentUserId) {
@@ -40,6 +38,7 @@ export default function FriendsList() {
             uid: doc.id,
             ...(doc.data() as Omit<User, 'uid'>)
           }));
+          setFriends(data);
         }
       );
 
@@ -55,7 +54,7 @@ export default function FriendsList() {
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
               <ThemedView style={styles.mainContainer}>
-                <UserSearch users={data} placeholder='Search friends' userId={currentUserId}/>
+                <UserSearch users={friends} placeholder='Search friends' userId={currentUserId}/>
               </ThemedView>
           </ScrollView>
       </SafeAreaView>
