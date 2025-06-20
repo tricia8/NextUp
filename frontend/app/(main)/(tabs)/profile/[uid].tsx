@@ -140,7 +140,7 @@ export default function ProfileScreen() {
             <View style={styles.friendsContainer}>
               <TouchableOpacity style={styles.button} onPress={() => router.push({ 
                 pathname: '/friends', 
-                params: { uid: finalUid } 
+                params: { viewedUid: finalUid } 
               })}>
                 <Ionicons name='people-outline' color='white' size={ms(18)}/>
                 <Text style={styles.buttonText}>View Friends</Text>
@@ -192,7 +192,7 @@ function Preview(
         <TouchableOpacity 
           onPress={() => router.push({
             pathname: `./${route}`,
-            params: { uid },
+            params: {uid},
           })}
         >
             <View style={{height: '100%', width: '100%'}}>
