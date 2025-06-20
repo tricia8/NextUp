@@ -6,6 +6,8 @@ import {
   View,
   ColorSchemeName,
   useColorScheme,
+  Pressable,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
@@ -27,6 +29,9 @@ import {
 } from "@gorhom/bottom-sheet";
 import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
 import CategoryPicker from "@/components/forms/CategoryPicker";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 
 interface User {
   username: string;
@@ -47,20 +52,31 @@ export default function currentSublist({
   users,
   onSubmit,
 }: SublistFormProps) {
+  // Sublist fields
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [description, setDesc] = useState(initialDescription);
   const [accessLevel, setAccessLevel] = useState(initialAccess);
+
+  // Share modal
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Colour Styles
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const styles = getStyles(colorScheme);
+
+  // Goal info
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalDesc, setGoalDesc] = useState("");
 
   // Category Picker
   const [selectedTags, setSelectedTags] = useState<string[]>([]); // array of strings
   const [categoryOpen, setCategoryOpen] = useState(false);
 
   //Date-Time Picker
+  const [deadline, setDeadline] = useState("");
+  const [date, setDate] = useState(new Date());
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
 
   const onCategoryOpen = useCallback(() => {
@@ -70,6 +86,40 @@ export default function currentSublist({
   const onDateTimeOpen = useCallback(() => {
     setCategoryOpen(false);
   }, []);
+
+  const toggleDatePicker = () => {
+    setDateTimeOpen(!dateTimeOpen);
+  };
+
+  const onChange = (
+    event: DateTimePickerEvent,
+    selectedDate: Date | undefined
+  ) => {
+    // type refers to event type
+    if (event.type === "set" && selectedDate) {
+      setDate(selectedDate);
+      toggleDatePicker(); // hide picker after selection
+      setDeadline(selectedDate.toDateString());
+    } else {
+      toggleDatePicker();
+    }
+  };
+
+  // Goal submission
+  const onSave = () => {
+    // await addGoal(goal); // POST — send new goal to Firestore
+    // const updated = await getGoals(); // GET — fetch updated list from Firestore
+    // setGoals(updated); // update state/UI with fresh data
+    onCancel();
+  };
+
+  const onCancel = () => {
+    closeSheet();
+    setGoalTitle("");
+    setGoalDesc("");
+    setDeadline("");
+    setSelectedTags([]);
+  };
 
   // set right header as invite collaborators icon
   const navigation = useNavigation();
@@ -208,14 +258,18 @@ export default function currentSublist({
           keyboardBehavior={"extend"}
           enablePanDownToClose
           backgroundStyle={styles.modalBg}
+          enableContentPanningGesture={false}
         >
           <BottomSheetScrollView style={styles.contentContainer}>
-            <View style={styles.modalViewContainer}>
-              <BottomSheetTextInput style={styles.input} placeholder="Title" />
-              <BottomSheetTextInput
-                style={styles.input}
-                placeholder="Add details, timelines, or motivations..."
-              />
+            <SafeAreaView style={styles.modalViewContainer}>
+              <View style={{ paddingHorizontal: 10 }}>
+                <BottomSheetTextInput
+                  style={styles.input}
+                  placeholder="Title"
+                  value={goalTitle}
+                  onChangeText={setGoalTitle}
+                />
+              </View>
               {/* <TitleDescFields
                 title={title}
                 description={description}
@@ -234,19 +288,72 @@ export default function currentSublist({
                 />
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.editingButton,
-                  { backgroundColor: "#618ce0", alignItems: "center" },
-                ]}
-                onPress={() => {
-                  closeSheet();
-                  // add logic for saving to db and updating current screen
+              <View>
+                {dateTimeOpen && (
+                  <DateTimePicker
+                    mode="date"
+                    display="spinner"
+                    value={date}
+                    onChange={onChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+
+                {!dateTimeOpen && (
+                  <Pressable
+                    onPress={toggleDatePicker}
+                    style={{ paddingHorizontal: 10 }}
+                  >
+                    <View pointerEvents="none">
+                      <BottomSheetTextInput
+                        placeholder={"End Date (Optional)"}
+                        value={deadline}
+                        style={styles.input}
+                        onEndEditing={() => Keyboard.dismiss()}
+                      />
+                    </View>
+                  </Pressable>
+                )}
+              </View>
+
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 8,
                 }}
               >
-                <Text>Save</Text>
-              </TouchableOpacity>
-            </View>
+                <BottomSheetTextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Add details, timelines, or motivations..."
+                  value={goalDesc}
+                  multiline={true}
+                  onChangeText={setGoalDesc}
+                />
+                <Ionicons name="checkmark-circle" size={28} color="#1db363" />
+              </View>
+
+              <View style={styles.editHandler}>
+                <TouchableOpacity
+                  style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
+                  onPress={onCancel}
+                >
+                  <ThemedText style={{ color: "#618ce0" }}>Cancel</ThemedText>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.editingButton,
+                    { backgroundColor: "#618ce0", alignItems: "center" },
+                  ]}
+                  onPress={onSave}
+                >
+                  <ThemedText>Save</ThemedText>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
           </BottomSheetScrollView>
         </BottomSheetModal>
       </ThemedView>
@@ -293,7 +400,8 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       padding: 12,
     },
     modalViewContainer: {
-      gap: 10,
+      gap: 17,
+      paddingHorizontal: 5,
     },
     modalBg: {
       borderRadius: 25,
