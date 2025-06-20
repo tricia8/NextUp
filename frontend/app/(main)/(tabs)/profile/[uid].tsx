@@ -171,13 +171,24 @@ export default function ProfileScreen() {
   )
 }
 
+
+type Props = {
+  route: string, 
+  title: string,
+  color: string, 
+  component: React.ReactNode,
+  uid: string,
+}
+
 function Preview(
-      { route, title, color, component}: 
-      { route: string, title: string, color: string, component: React.ReactNode} ) {
+  { route, title, color, component, uid}: Props) {
       
-        return (
+      return (
         <TouchableOpacity 
-          onPress={() => router.navigate(`./${route}`)}
+          onPress={() => router.push({
+            pathname: `./${route}`,
+            params: { uid },
+          })}
         >
             <View style={{height: '100%', width: '100%'}}>
               <View style={{ padding: 15 }}>
