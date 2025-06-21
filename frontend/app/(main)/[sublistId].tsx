@@ -1,4 +1,11 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -32,6 +39,9 @@ import CategoryPicker from "@/components/forms/CategoryPicker";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import { useLocalSearchParams } from "expo-router";
+import { addEvent, getSubBucketList } from "@/firebase/firestore";
+import { AuthContext } from "@/context/AuthContext";
 
 interface User {
   username: string;
@@ -52,6 +62,9 @@ export default function currentSublist({
   users,
   onSubmit,
 }: SublistFormProps) {
+  const { user } = useContext(AuthContext);
+  const { sublistId } = useLocalSearchParams();
+
   // Sublist fields
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(initialTitle);
@@ -106,7 +119,13 @@ export default function currentSublist({
   };
 
   // Goal submission
-  const onSave = () => {
+  const onSave = async () => {
+    await addEvent(user?.uid, sublistId, {
+      title: title,
+      description: description,
+      categories: selectedTags,
+      deadline: deadline,
+    });
     // await addGoal(goal); // POST — send new goal to Firestore
     // const updated = await getGoals(); // GET — fetch updated list from Firestore
     // setGoals(updated); // update state/UI with fresh data
@@ -270,14 +289,7 @@ export default function currentSublist({
                   onChangeText={setGoalTitle}
                 />
               </View>
-              {/* <TitleDescFields
-                title={title}
-                description={description}
-                setTitle={setTitle}
-                setDescription={setDesc}
-                lightLabelBg="#eee"
-                darkLabelBg="#1e1e2f"
-              /> */}
+
               <View>
                 <CategoryPicker
                   open={categoryOpen}
@@ -285,6 +297,7 @@ export default function currentSublist({
                   onOpen={onCategoryOpen}
                   selectedTags={selectedTags}
                   setSelectedTags={setSelectedTags}
+                  max={3}
                 />
               </View>
 
