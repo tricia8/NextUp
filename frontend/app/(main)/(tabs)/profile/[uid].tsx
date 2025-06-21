@@ -24,9 +24,10 @@ export default function ProfileScreen() {
 
   const { uid } = useLocalSearchParams();
   const [userData, setUserData] = useState<User | null>(null);
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [totalEvents, setTotalEvents] = useState(0);
-  const [completedEvents, setCompletedEvents] = useState(0);
+  const [isModalVisible, setModalVisible] = useState<boolean>(false);
+  const [totalEvents, setTotalEvents] = useState<number>(0);
+  const [completedEvents, setCompletedEvents] = useState<number>(0);
+  const [category, setCategory] = useState<string>('--');
 
   const finalUid = typeof uid === 'string' ? uid : Array.isArray(uid) ? uid[0] : auth.currentUser?.uid;
 
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
         const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
           if (docSnapshot.exists()) {
             setUserData(docSnapshot.data() as User);
+            setCategory(docSnapshot.data().category ?? '--')
           }
         });
 
@@ -131,8 +133,8 @@ export default function ProfileScreen() {
 
                 <View>
                     <ThemedText style={styles.dataText}>
-                        <ThemedText type='subtitle'>Travel</ThemedText>{'\n'}
-                        <Text style={styles.subDataText}>TOP{'\n'}CATEGORY</Text>
+                        <ThemedText type='subtitle'>{category}</ThemedText>{'\n'}
+                        <Text style={styles.subDataText}>FAVOURITE{'\n'}CATEGORY</Text>
                     </ThemedText>
                 </View>
             </View>
