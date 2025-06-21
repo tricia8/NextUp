@@ -7,7 +7,7 @@ import { ThemedView } from '@/components/ThemedView';
 import { LegendList } from '@legendapp/list';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
@@ -83,7 +83,7 @@ export default function JourneyScreen() {
             ? ['friends', 'everyone']
             : ['everyone'];
 
-        if (accessLevels.length === 0) return [];
+        if (accessLevels.length === 0) return undefined;
 
         const q = query(ref, where('accessLevel', 'in', accessLevels));
         
@@ -114,6 +114,30 @@ export default function JourneyScreen() {
         setEvents(allEvents);
     }
 
+    useEffect(() => {
+        if (!uid || !relationship) {
+            setSubBucketLists([]);
+            return;
+        }
+
+        let unsubscribe: (() => void) | undefined;
+
+        filterSubBucketLists().then(unsub => {
+            unsubscribe = unsub;
+        });
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [uid, relationship]);
+
+    useEffect(() => {
+        if (subBucketLists.length > 0 && uid) {
+            getEvents();
+        } else {
+            setEvents([]);
+        }
+    }, [subBucketLists, uid]);
 
     function renderItem({ item }: { item: Event }) {
 
