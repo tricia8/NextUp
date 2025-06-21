@@ -133,6 +133,7 @@ export const createSubBucketList = async (
         accessLevel,
         collaborators, // array of userIds
         createdAt: serverTimestamp(), // ensures time format consistency, works better with .toDate()
+        completionStatus: [0, 0],
       }
     ); // go to bucketList collection
     return subBucketListRef.id;
@@ -142,11 +143,9 @@ export const createSubBucketList = async (
   }
 };
 
-const updateSubBucketList = async (
-  userId,
-  subBucketListId,
-  { title, description, accessLevel, collaborators }
-) => {
+// don’t have to pass all fields every time, doesn't overwrite unchanged values
+// fields: title, description, accessLevel, collaborators, completionStatus
+const updateSubBucketList = async (userId, subBucketListId, updates = {}) => {
   try {
     const sublistDocRef = doc(
       db,
@@ -161,13 +160,7 @@ const updateSubBucketList = async (
       throw new Error("List not found");
     }
 
-    await updateDoc(sublistDocRef, {
-      title,
-      description,
-      categories,
-      deadline,
-      isCompleted,
-    });
+    await updateDoc(sublistDocRef, updates); // Pass only fields to update
   } catch (error) {
     console.error("Error updating sub-bucket list:", error);
     throw error;
@@ -191,16 +184,16 @@ export const getSubBucketList = async (userId, subBucketListId) => {
     const accessLevel = data.accessLevel;
     const collaborators = data.collaborators; // should be an array
     const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
-    const formatted = `${dayjs(createdAt).fromNow()} (${dayjs(createdAt).format(
-      "DD MMM YYYY"
-    )})`;
+    const createdAtFormatted = formatDisplayDate(createdAtFormatted);
+    const completionStatus = data.completionStatus;
 
     return {
       title,
       description,
       accessLevel,
       collaborators,
-      formatted,
+      createdAtFormatted,
+      completionStatus,
     };
   } catch (error) {
     console.error("Error fetching sub-bucket list:", error);
@@ -305,8 +298,8 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
     const deadlinePre = data.deadline; // optional field (currently stored as string)
     const deadline = formatDisplayDate(deadlinePre);
     const isCompleted = data.isCompleted;
-    const createdAtPre = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
-    const createdAt = formatDisplayDate(createdAtPre);
+    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
+    const createdAtFormatted = formatDisplayDate(createdAt);
 
     return {
       title,
@@ -314,7 +307,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline,
       isCompleted,
-      formatted: createdAt,
+      createdAtFormatted,
     };
   } catch (error) {
     console.error("Error fetching event:", error);
@@ -322,11 +315,12 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
+// title, description, categories, deadline, isCompleted
 export const updateEvent = async (
   userId,
   subBucketListId,
   eventId,
-  { title, description, categories, deadline, isCompleted }
+  updates = {}
 ) => {
   try {
     const eventDoc = doc(
@@ -338,13 +332,12 @@ export const updateEvent = async (
       "events",
       eventId
     );
-    await updateDoc(eventDoc, {
-      title,
-      description,
-      categories,
-      deadline,
-      isCompleted,
-    });
+    const docSnap = await getDoc(eventDoc);
+    if (!docSnap.exists()) {
+      throw new Error("Event not found");
+    }
+
+    await updateDoc(eventDoc, updates);
   } catch (error) {
     console.error("Error updating event:", error);
     throw error;
