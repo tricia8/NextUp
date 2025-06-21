@@ -10,9 +10,10 @@ import AnimatedTextInput from '@/components/AnimatedTextInput';
 import SideMenu from '@/components/SideMenu';
 import { useCallback, useContext, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collectionGroup, doc, getCountFromServer, limit, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
 import { AuthContext } from '@/context/AuthContext';
+import { Event } from '@/types/event';
 
 
 
@@ -24,6 +25,8 @@ export default function HomeScreen() {
   const [open, setOpen] = useState<boolean>(false);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [completedEvents, setCompletedEvents] = useState<number>(0);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+  const [overdueCount, setOverdueCount] = useState<number>(0);
 
   const toggleOpen = () => {
       setOpen(!open);
@@ -45,6 +48,57 @@ export default function HomeScreen() {
     }, [uid])
   )
     
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!uid) return;
+
+      const now = new Date();
+
+      //Upcoming goals
+      const upcomingQ = query(
+        collectionGroup(db, 'events'),
+        where('ownerId', '==', uid),
+        where('deadline', '>=', Timestamp.fromDate(now)),
+        where('isCompleted', '==', false),
+        orderBy('deadline'),
+        limit(3)
+      );
+
+      const unsubscribeUpcoming = onSnapshot(upcomingQ, (snapshot) => {
+        const upcoming = snapshot.docs.map(doc => ({
+          ...(doc.data() as Event),
+          id: doc.id,
+        }));
+        setUpcomingEvents(upcoming);
+      });
+
+      //Overdue
+      const overdueQ = query(
+        collectionGroup(db, 'events'),
+        where('ownerId', '==', uid),
+        where('deadline', '<', Timestamp.fromDate(now)),
+        where('isCompleted', '==', false)
+      );
+
+      const unsubscribeOverdue = onSnapshot(overdueQ, (snapshot) => {
+        const overdue = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setOverdueCount(overdue.length);
+      });
+
+      return () => {
+        unsubscribeUpcoming();
+        unsubscribeOverdue();
+      };
+    }, [uid])
+  )
+
+
+
+
 
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
@@ -118,7 +172,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    paddingHorizontal: s(20),
+    paddingHorizontal: s(18),
     paddingTop: vs(30),
     gap: s(14),
   },
