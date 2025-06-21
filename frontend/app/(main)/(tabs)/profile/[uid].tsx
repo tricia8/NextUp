@@ -142,7 +142,7 @@ export default function ProfileScreen() {
 
             <View style={styles.friendsContainer}>
               <TouchableOpacity style={styles.button} onPress={() => router.push({ 
-                pathname: '/friends', 
+                pathname: '../friends', 
                 params: { viewedUid: finalUid } 
               })}>
                 <Ionicons name='people-outline' color='white' size={ms(18)}/>
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
 
               {finalUid === auth.currentUser?.uid &&
-                <TouchableOpacity style={styles.button} onPress={() => router.push('/addfriends')}>
+                <TouchableOpacity style={styles.button} onPress={() => router.push('../addfriends')}>
                   <MaterialIcons name='group-add' color='white' size={ms(18)}/>
                 </TouchableOpacity>
               }
