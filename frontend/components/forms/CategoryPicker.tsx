@@ -75,7 +75,7 @@ export default function CategoryPicker({
   return (
     <View style={{ padding: 10 }}>
       <DropDownPicker
-        placeholder="Pick up to 3 tags"
+        placeholder={`Pick up to ${max}`}
         placeholderStyle={{
           paddingHorizontal: 10,
           paddingVertical: 20,
