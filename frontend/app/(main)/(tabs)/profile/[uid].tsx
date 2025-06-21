@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   previewContainer: {
-    height: '50%',
+    //height: '50%',
     overflow: 'hidden',
   }
 });
