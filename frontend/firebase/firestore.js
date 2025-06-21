@@ -161,6 +161,7 @@ export const addEvent = async (
     const eventDoc = await addDoc(
       collection(db, "users", userId, "bucketList", subBucketListId, "events"),
       {
+        ownerId: userId,
         title,
         description,
         categories,
