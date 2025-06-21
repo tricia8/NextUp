@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -11,78 +11,64 @@ import {
   ColorSchemeName,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
-import { FloatingLabelInput } from "react-native-floating-label-input";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
-import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
-import { RFValue } from "react-native-responsive-fontsize";
 import { ThemedView } from "@/components/ThemedView";
 import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
-import DropDownPicker from "react-native-dropdown-picker";
 import SublistField from "@/components/forms/SublistField";
+import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
+import { createSubBucketList } from "@/firebase/firestore";
+import { auth } from "@/firebase/firebaseConfig";
+import { AuthContext } from "@/context/AuthContext";
 
 export default function newSubList() {
+  const { user } = useContext(AuthContext);
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDesc] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
 
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const styles = getStyles(colorScheme);
-  const theme = colorScheme == "dark" ? "DARK" : "LIGHT";
+  const theme = isDark ? "DARK" : "LIGHT";
 
-  // For access picker
+  // Access picker
   const [accessLevel, setAccessLevel] = useState("");
-  const [open, setOpen] = useState(false);
-  const accessOptions = [
-    {
-      label: "Only you can view",
-      value: "private",
-      icon: () => (
-        <Feather
-          name="user"
-          size={24}
-          color={colorScheme == "dark" ? "white" : "black"}
-        />
-      ),
-    },
-    {
-      label: "Only friends can view",
-      value: "friends",
-      icon: () => (
-        <Feather
-          name="users"
-          size={24}
-          color={colorScheme == "dark" ? "white" : "black"}
-        />
-      ),
-    },
-    {
-      label: "Everyone (any user) can view",
-      value: "everyone",
-      icon: () => (
-        <SimpleLineIcons
-          name="globe"
-          size={24}
-          color={colorScheme == "dark" ? "white" : "black"}
-        />
-      ),
-    },
-  ];
 
-  const submit = () => {
-    router.push("/(main)/current-sublist");
-    showMessage({
-      message: "Success!",
-      description: "New sublist added",
-      type: "success",
-      statusBarHeight: StatusBar.currentHeight, //Android only
-      floating: true,
-      icon: "success",
-    });
+  // Invite collaborators
+  const [collaborators, setCollaborators] = useState([]);
+
+  // Sublist submission
+  const submit = async () => {
+    try {
+      const sublistId = await createSubBucketList(user?.uid, {
+        title,
+        description,
+        accessLevel,
+        collaborators,
+      });
+      router.push({ pathname: "/(main)/[sublistId]", params: { sublistId } });
+      showMessage({
+        message: "Success!",
+        description: "New sublist added",
+        type: "success",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "success",
+      });
+    } catch (error) {
+      showMessage({
+        message: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to create sublist",
+        type: "danger",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "danger",
+      });
+    }
   };
 
   interface User {
@@ -137,14 +123,10 @@ export default function newSubList() {
           </View>
 
           <View style={{ marginVertical: 10 }}>
-            <DropDownPicker
-              open={open}
-              value={accessLevel}
-              items={accessOptions}
-              setOpen={setOpen}
-              setValue={setAccessLevel}
-              listMode="SCROLLVIEW"
-              theme={theme}
+            <AccessDropdownPicker
+              accessLevel={accessLevel}
+              onChange={setAccessLevel}
+              theme={isDark ? "DARK" : "LIGHT"}
             />
           </View>
 
