@@ -38,7 +38,7 @@ export default function ProfileScreen() {
         const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
           if (docSnapshot.exists()) {
             setUserData(docSnapshot.data() as User);
-            setCategory(docSnapshot.data().category ?? '--')
+            setCategory(docSnapshot.data().category[0] ?? '--')
           }
         });
 
@@ -134,7 +134,7 @@ export default function ProfileScreen() {
                 <View>
                     <ThemedText style={styles.dataText}>
                         <ThemedText type='subtitle'>{category}</ThemedText>{'\n'}
-                        <Text style={styles.subDataText}>FAVOURITE{'\n'}CATEGORY</Text>
+                        <Text style={styles.subDataText}>FAV{'\n'}CATEGORY</Text>
                     </ThemedText>
                 </View>
             </View>
