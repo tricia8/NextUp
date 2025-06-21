@@ -24,51 +24,51 @@ export default function CategoryPicker({
   const TAG_OPTIONS: ItemType<string>[] = [
     {
       label: "Sports",
-      value: "SPORTS",
+      value: "Sports",
     },
     {
       label: "Travel",
-      value: "TRAVEL",
+      value: "Travel",
     },
     {
       label: "Food",
-      value: "FOOD",
+      value: "Food",
     },
     {
       label: "Music",
-      value: "MUSIC",
+      value: "Music",
     },
     {
       label: "Fitness",
-      value: "FITNESS",
+      value: "Fitness",
     },
     {
       label: "Games",
-      value: "GAMES",
+      value: "Games",
     },
     {
       label: "Education",
-      value: "EDUCATION",
+      value: "Education",
     },
     {
       label: "Social",
-      value: "SOCIAL",
+      value: "Social",
     },
     {
       label: "Volunteering",
-      value: "VOLUNTEERING",
+      value: "Volunteering",
     },
     {
       label: "Arts",
-      value: "ARTS",
+      value: "Arts",
     },
     {
       label: "Tech",
-      value: "TECH",
+      value: "Tech",
     },
     {
       label: "Others",
-      value: "OTHERS",
+      value: "Others",
     },
   ];
 
