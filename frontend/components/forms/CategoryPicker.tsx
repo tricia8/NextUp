@@ -8,6 +8,7 @@ interface CategoryPickerProps {
   onOpen: () => void;
   selectedTags: string[];
   setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>;
+  max: number,
 }
 
 export default function CategoryPicker({
@@ -16,6 +17,7 @@ export default function CategoryPicker({
   onOpen,
   selectedTags,
   setSelectedTags,
+  max,
 }: CategoryPickerProps) {
   const colorScheme = useColorScheme();
 
@@ -84,7 +86,7 @@ export default function CategoryPicker({
         }}
         multiple={true}
         min={0}
-        max={3}
+        max={max}
         value={selectedTags}
         setValue={setSelectedTags}
         open={open}
