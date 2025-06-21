@@ -20,6 +20,7 @@ import { AuthContext } from '@/context/AuthContext';
 export default function HomeScreen() {
   const { user } = useContext(AuthContext);
   const uid = user?.uid;
+  const username = user?.username;
   const [open, setOpen] = useState<boolean>(false);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [completedEvents, setCompletedEvents] = useState<number>(0);
@@ -54,7 +55,7 @@ export default function HomeScreen() {
 
             <View style={styles.mainContainer}>
               <View style={styles.titleContainer}>
-                <ThemedText type="title">Hello, az123!</ThemedText>
+                <ThemedText type="title">Hello {username}!</ThemedText>
 
                 <View style={styles.iconContainer}>
                   <TouchableOpacity>
