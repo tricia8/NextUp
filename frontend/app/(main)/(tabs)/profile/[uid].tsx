@@ -15,6 +15,7 @@ import EditProfile from '@/components/editprofile';
 import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+import LoadingScreen from '@/components/Loading';
 
 
 const PROFILEPICSIZE = ms(80);
@@ -62,7 +63,7 @@ export default function ProfileScreen() {
 
   if (!userData || !finalUid) {
     return (
-      <ActivityIndicator size="large"/>
+      <LoadingScreen />
     )
   }
 
