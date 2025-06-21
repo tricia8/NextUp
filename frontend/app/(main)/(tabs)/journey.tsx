@@ -140,7 +140,9 @@ export default function JourneyScreen() {
             }}>
                 <TouchableOpacity style={styles.itemContainer}>
                     <MaterialCommunityIcons name="flag-variant" size={ms(30)} color="#66cdaa" />
-                    <ThemedText style={styles.itemText}>{item.title}</ThemedText>
+                    <ThemedText style={styles.itemText} numberOfLines={4} ellipsizeMode='tail'>
+                        {item.title}
+                    </ThemedText>
                 </TouchableOpacity>
             </View>
         )
