@@ -142,6 +142,38 @@ export const createSubBucketList = async (
   }
 };
 
+const updateSubBucketList = async (
+  userId,
+  subBucketListId,
+  { title, description, accessLevel, collaborators }
+) => {
+  try {
+    const sublistDocRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId
+    );
+    const docSnap = await getDoc(sublistDocRef);
+
+    if (!docSnap.exists()) {
+      throw new Error("List not found");
+    }
+
+    await updateDoc(sublistDocRef, {
+      title,
+      description,
+      categories,
+      deadline,
+      isCompleted,
+    });
+  } catch (error) {
+    console.error("Error updating sub-bucket list:", error);
+    throw error;
+  }
+};
+
 export const getSubBucketList = async (userId, subBucketListId) => {
   try {
     const sublistDoc = doc(db, "users", userId, "bucketList", subBucketListId);
