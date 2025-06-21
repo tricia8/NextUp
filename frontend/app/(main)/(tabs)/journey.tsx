@@ -12,6 +12,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
 import LoadingScreen from '@/components/Loading';
+import { Event } from '@/types/event';
 
 
 
@@ -24,15 +25,6 @@ type SubBucketList = {
     createdAt: string;
 };
 
-type Event = {
-    id: string,
-    title: string;
-    description: string;
-    categories: string[];      
-    deadline: string;          
-    isCompleted: boolean;      
-    createdAt: string;         
-}
 
 export default function JourneyScreen() {
     const { user } = useContext(AuthContext);
