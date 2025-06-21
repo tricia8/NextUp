@@ -58,6 +58,7 @@ export const createUser = async (user, username) => {
       photoUrl: user.photoURL,
       displayName: "",
       bio: "",
+      category: user.category,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
@@ -227,6 +228,7 @@ export const addEvent = async (
     const eventDoc = await addDoc(
       collection(db, "users", userId, "bucketList", subBucketListId, "events"),
       {
+        ownerId: userId,
         title,
         description,
         categories,
