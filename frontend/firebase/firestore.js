@@ -8,8 +8,15 @@ import {
   updateDoc,
   deleteDoc,
   runTransaction,
+  serverTimestamp,
 } from "firebase/firestore";
 import { debounce } from "lodash";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(relativeTime);
+dayjs.extend(timezone);
 
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
@@ -124,12 +131,46 @@ export const createSubBucketList = async (
         description,
         accessLevel,
         collaborators, // array of userIds
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(), // ensures time format consistency, works better with .toDate()
       }
     ); // go to bucketList collection
     return subBucketListRef.id;
   } catch (error) {
-    console.error("Error creating subbucket list:", error);
+    console.error("Error creating sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSubBucketList = async (userId, subBucketListId) => {
+  try {
+    const sublistDoc = doc(db, "users", userId, "bucketList", subBucketListId);
+
+    const docSnap = await getDoc(sublistDoc);
+
+    if (!docSnap.exists()) {
+      throw new Error("List not found");
+    }
+
+    const data = docSnap.data(); // object
+
+    const title = data.title;
+    const description = data.description;
+    const accessLevel = data.accessLevel;
+    const collaborators = data.collaborators; // should be an array
+    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
+    const formatted = `${dayjs(createdAt).fromNow()} (${dayjs(createdAt).format(
+      "DD MMM YYYY"
+    )})`;
+
+    return {
+      title,
+      description,
+      accessLevel,
+      collaborators,
+      formatted,
+    };
+  } catch (error) {
+    console.error("Error fetching sub-bucket list:", error);
     throw error;
   }
 };
@@ -145,7 +186,7 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
     );
     await deleteDoc(subBucketListRef);
   } catch (error) {
-    console.error("Error deleting bucket list:", error);
+    console.error("Error deleting sub-bucket list:", error);
     throw error;
   }
 };
@@ -195,6 +236,49 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
     updateOverallStats(userId, incrementTotal);
   } catch (error) {
     console.error("Error deleting event:", error);
+    throw error;
+  }
+};
+
+export const getEvent = async (userId, subBucketListId, eventId) => {
+  try {
+    const eventDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId,
+      "events",
+      eventId
+    );
+
+    const docSnap = await getDoc(eventDoc);
+    if (!docSnap.exists()) {
+      throw new Error("Event not found");
+    }
+
+    const data = docSnap.data(); // object
+
+    const title = data.title;
+    const description = data.description; // optional field, check if string empty
+    const categories = data.categories; // array
+    const deadline = data.deadline; // optional field (currently stored as string)
+    const isCompleted = data.isCompleted;
+    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
+    const formatted = `${dayjs(createdAt).fromNow()} (${dayjs(createdAt).format(
+      "DD MMM YYYY"
+    )})`;
+
+    return {
+      title,
+      description,
+      categories,
+      deadline,
+      isCompleted,
+      formatted,
+    };
+  } catch (error) {
+    console.error("Error fetching event:", error);
     throw error;
   }
 };
