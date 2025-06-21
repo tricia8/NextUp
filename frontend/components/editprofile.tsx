@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/ThemedView';
 import Modal from "react-native-modal";
 import { User } from '@/types/user';
 import { updateProfile } from '@/firebase/firestore';
+import CategoryPicker from './forms/CategoryPicker';
 
 
 type editProfileProps = {
@@ -17,8 +18,10 @@ type editProfileProps = {
 }
 
 export default function EditProfile({ visible, onClose, userData }: editProfileProps) {
-
+  
   const [bioText, setBioText] = useState(userData.bio);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string[]>([]);
   const colorScheme = useColorScheme();
   const styles = makeStyles(colorScheme);
 
@@ -33,42 +36,53 @@ export default function EditProfile({ visible, onClose, userData }: editProfileP
   }
 
   return (
-            <Modal
-                isVisible={visible}
-                backdropOpacity={0.4}
-                onBackdropPress={onClose}
-                animationIn="zoomIn"
-                animationOut="zoomOut"
-                useNativeDriver
-            >
-                  <View style={{justifyContent: 'center'}}>
-                      <ThemedView style={styles.mainContainer}>
-                          <View style={styles.profileContainer}>
-                              <FontAwesome name="user-circle-o" size={ms(100)} color="#7b68ee" />
+      <Modal
+          isVisible={visible}
+          backdropOpacity={0.4}
+          onBackdropPress={onClose}
+          animationIn="zoomIn"
+          animationOut="zoomOut"
+          useNativeDriver
+      >
+            <View style={{justifyContent: 'center'}}>
+                <ThemedView style={styles.mainContainer}>
+                    <View style={styles.profileContainer}>
+                        <FontAwesome name="user-circle-o" size={ms(100)} color="#7b68ee" />
 
-                              <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
+                        <ThemedText type='defaultSemiBold'>{userData.username}</ThemedText>  
 
-                              <View style={styles.bioContainer}>
-                                  <ThemedText>Bio:</ThemedText>
-                                  <TextInput
-                                      style={styles.input}
-                                      placeholder='Add your bio'
-                                      placeholderTextColor='gray'
-                                      selectionColor='gray'
-                                      multiline
-                                      value={bioText}
-                                      onChangeText={(text) => setBioText(text)}
-                                  />
-                              </View>
+                        <View style={styles.bioContainer}>
+                            <ThemedText>Bio:</ThemedText>
+                            <TextInput
+                                style={styles.input}
+                                placeholder='Add your bio'
+                                placeholderTextColor='gray'
+                                selectionColor='gray'
+                                multiline
+                                value={bioText}
+                                onChangeText={(text) => setBioText(text)}
+                            />
+                        </View>
 
-                              <TouchableOpacity style={styles.button} onPress={() => handleSave(userData.uid, {bio: bioText})}>
-                                  <Text style={styles.buttonText}>SAVE</Text>
-                              </TouchableOpacity>
-                          </View>
-                      
-                      </ThemedView>
-                  </View>
-            </Modal>
+                        <CategoryPicker
+                          open={categoryOpen}
+                          setOpen={setCategoryOpen}
+                          onOpen={() => {}}
+                          selectedTags={selectedTag}
+                          setSelectedTags={setSelectedTag}
+                          max={1}
+                        />
+
+                        <TouchableOpacity 
+                          style={styles.button} 
+                          onPress={() => handleSave(userData.uid, {bio: bioText, category: selectedTag})}>
+                            <Text style={styles.buttonText}>SAVE</Text>
+                        </TouchableOpacity>
+                    </View>
+                
+                </ThemedView>
+            </View>
+      </Modal>
   )
 }
 
