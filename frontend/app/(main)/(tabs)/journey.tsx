@@ -11,6 +11,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
+import LoadingScreen from '@/components/Loading';
 
 
 
@@ -154,9 +155,7 @@ export default function JourneyScreen() {
     }
     
     if (!uid) {
-        return (
-            <ActivityIndicator size='large'/>
-        )
+        return <LoadingScreen />;
     }
 
     return (
