@@ -74,7 +74,7 @@ export default function HomeScreen() {
 
                 <View style={styles.progressStats}>
                   <View style={styles.donutContainer}>
-                    <DonutChart value={50} radius={ms(60)} strokeWidth={ms(25)}/>
+                    <DonutChart value={completedEvents} max={totalEvents === 0 ? 1 : totalEvents} radius={ms(60)} strokeWidth={ms(25)}/>
                   </View>
 
                     <View style={styles.progressTextContainer}>
