@@ -10,6 +10,7 @@ import { User } from '@/types/user';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
+import LoadingScreen from '@/components/Loading';
 
 
 
@@ -46,7 +47,7 @@ export default function FriendsList() {
   );
 
   if (!currentUserId) {
-    return <ActivityIndicator size="large" />;
+    return <LoadingScreen />;
   }
 
   return (
