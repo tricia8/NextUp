@@ -10,6 +10,7 @@ import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
+import LoadingScreen from '@/components/Loading';
 
 
 
@@ -52,7 +53,7 @@ export default function UsersList() {
   );
 
   if (!currentUserId) {
-      return <ActivityIndicator size="large" />;
+      return <LoadingScreen />;
   }
 
   return (
