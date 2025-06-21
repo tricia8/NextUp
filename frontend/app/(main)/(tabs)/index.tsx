@@ -144,11 +144,22 @@ export default function HomeScreen() {
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                   <View style={[styles.subContainer, { flex: 1 }]}>
                       <Text style={styles.header}>Upcoming</Text>
+                      {upcomingEvents.length === 0 ? (
                         <View>
                           <Text style={[styles.smallText, {color: 'white'}]}>
-                            You have no upcoming goals. Set one now!
+                            You have no scheduled goals. Set one now!
                           </Text>
                         </View>
+                      ) : (
+                        upcomingEvents.map(event => (
+                          <View key={event.id} style={{}}>
+                            <Text style={[styles.smallText, {color: 'white'}]}>
+                              {event.title} — {event.deadline}
+                            </Text>
+                          </View>
+                        ))
+                      )}
+                        
                     </View>
                 </ScrollView>
               </View>
