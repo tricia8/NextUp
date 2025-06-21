@@ -8,18 +8,42 @@ import { ThemedView } from '@/components/ThemedView';
 import DonutChart from '@/components/AnimatedDonutChart';
 import AnimatedTextInput from '@/components/AnimatedTextInput';
 import SideMenu from '@/components/SideMenu';
-import { useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/firebaseConfig';
+import { AuthContext } from '@/context/AuthContext';
 
 
 
 
 export default function HomeScreen() {
-
-  const [open, setOpen] = useState(false);
+  const { user } = useContext(AuthContext);
+  const uid = user?.uid;
+  const [open, setOpen] = useState<boolean>(false);
+  const [totalEvents, setTotalEvents] = useState<number>(0);
+  const [completedEvents, setCompletedEvents] = useState<number>(0);
 
   const toggleOpen = () => {
       setOpen(!open);
   }
+
+   useFocusEffect(
+    useCallback(() => {
+      if (!uid) return;
+
+      const unsubscribe = onSnapshot(doc(db, 'users', uid, 'bucketList', 'stats'), (docSnapshot) => {
+        if (docSnapshot.exists()) {
+          const data = docSnapshot.data();
+          setTotalEvents(data.totalEvents);
+          setCompletedEvents(data.completedEvents);
+        }
+      });
+
+      return () => unsubscribe();
+    }, [uid])
+  )
+    
 
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
@@ -53,9 +77,9 @@ export default function HomeScreen() {
                   </View>
 
                     <View style={styles.progressTextContainer}>
-                      <AnimatedTextInput value={10} textColor='white' size={RFValue(25)}/>
+                      <AnimatedTextInput value={completedEvents} textColor='white' size={RFValue(25)}/>
                       <Text style={styles.progressText}>OUT OF</Text>
-                      <AnimatedTextInput value={20} textColor='white' size={RFValue(25)}/>
+                      <AnimatedTextInput value={totalEvents} textColor='white' size={RFValue(25)}/>
                       <Text style={styles.progressText}>COMPLETED</Text>
                     </View>
                   </View>
