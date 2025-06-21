@@ -9,6 +9,7 @@ import {
   deleteDoc,
   runTransaction,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -204,9 +205,9 @@ export const addEvent = async (
         title,
         description,
         categories,
-        deadline,
+        deadline: Timestamp.fromDate(deadline), // `deadline` is a JS Date
         isCompleted: false,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
       }
     );
 
@@ -240,6 +241,13 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
+// convert Timestamp to string e.g. "3 days ago (14 Jun)"
+const formatDisplayDate = (fetchedDate) => {
+  return `${dayjs(fetchedDate).fromNow()} (${dayjs(fetchedDate).format(
+    "DD MMM YYYY"
+  )})`;
+};
+
 export const getEvent = async (userId, subBucketListId, eventId) => {
   try {
     const eventDoc = doc(
@@ -262,12 +270,11 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
     const title = data.title;
     const description = data.description; // optional field, check if string empty
     const categories = data.categories; // array
-    const deadline = data.deadline; // optional field (currently stored as string)
+    const deadlinePre = data.deadline; // optional field (currently stored as string)
+    const deadline = formatDisplayDate(deadlinePre);
     const isCompleted = data.isCompleted;
-    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
-    const formatted = `${dayjs(createdAt).fromNow()} (${dayjs(createdAt).format(
-      "DD MMM YYYY"
-    )})`;
+    const createdAtPre = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
+    const createdAt = formatDisplayDate(createdAtPre);
 
     return {
       title,
@@ -275,7 +282,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline,
       isCompleted,
-      formatted,
+      formatted: createdAt,
     };
   } catch (error) {
     console.error("Error fetching event:", error);
