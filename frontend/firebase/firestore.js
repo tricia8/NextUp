@@ -50,6 +50,7 @@ export const createUser = async (user, username) => {
       photoUrl: user.photoURL,
       displayName: "",
       bio: "",
+      category: user.category,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
