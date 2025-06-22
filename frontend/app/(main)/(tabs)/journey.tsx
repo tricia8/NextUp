@@ -14,13 +14,10 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "@/context/AuthContext";
-import {
-  doc,
-  onSnapshot,
-} from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import LoadingScreen from "@/components/Loading";
 import { Event } from "@/types/event";
+import { getFilteredSubBucketLists, getAllEvents, getRelationship } from "@/firebase/firestore";
 
 type SubBucketList = {
   id: string;
