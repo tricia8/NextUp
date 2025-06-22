@@ -17,10 +17,8 @@ import {
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import timezone from "dayjs/plugin/timezone";
 
 dayjs.extend(relativeTime);
-dayjs.extend(timezone);
 
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
@@ -105,7 +103,7 @@ export const updateProfile = async (userId, newData) => {
 };
 
 export function getUserProfile(db, uid, onData) {
-  return onSnapshot(doc(db, 'users', uid), (docSnapshot) => {
+  return onSnapshot(doc(db, "users", uid), (docSnapshot) => {
     if (docSnapshot.exists()) {
       onData(docSnapshot.data());
     }
@@ -132,15 +130,18 @@ const updateOverallStats = async (userId, type) => {
 };
 
 export function getUserStats(db, uid, onData) {
-  return onSnapshot(doc(db, 'users', uid, 'bucketList', 'stats'), (docSnapshot) => {
-    if (docSnapshot.exists()) {
-      const data = docSnapshot.data();
-      onData({
-        totalEvents: data.totalEvents,
-        completedEvents: data.completedEvents,
-      });
+  return onSnapshot(
+    doc(db, "users", uid, "bucketList", "stats"),
+    (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        onData({
+          totalEvents: data.totalEvents,
+          completedEvents: data.completedEvents,
+        });
+      }
     }
-  });
+  );
 }
 
 //subbucketlists
@@ -364,7 +365,14 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
 export async function getAllEvents(db, uid, subBucketLists) {
   const allEvents = [];
   for (const sub of subBucketLists) {
-    const eventsRef = collection(db, "users", uid, "bucketList", sub.id, "events");
+    const eventsRef = collection(
+      db,
+      "users",
+      uid,
+      "bucketList",
+      sub.id,
+      "events"
+    );
     const eventsSnap = await getDocs(eventsRef);
     const events = eventsSnap.docs.map((doc) => ({
       id: doc.id,
