@@ -15,6 +15,7 @@ import { AuthContext } from '@/context/AuthContext';
 import { Event } from '@/types/event';
 import LoadingScreen from '@/components/Loading';
 import { getUserStats, getUpcomingEvents, getOverdueEvents } from '@/firebase/firestore';
+import { UserStats } from '@/types/stats';
 
 
 
@@ -36,7 +37,7 @@ export default function HomeScreen() {
     useFocusEffect(
       useCallback(() => {
         if (!uid) return;
-        const unsubscribe = getUserStats(db, uid, (stats) => {
+        const unsubscribe = getUserStats(db, uid, (stats: UserStats) => {
           setTotalEvents(stats.totalEvents);
           setCompletedEvents(stats.completedEvents);
         });
@@ -52,7 +53,7 @@ export default function HomeScreen() {
     const now = new Date();
 
     const unsubscribeUpcoming = getUpcomingEvents(db, uid, now, setUpcomingEvents);
-    const unsubscribeOverdue = getOverdueEvents(db, uid, now, (overdue) => {
+    const unsubscribeOverdue = getOverdueEvents(db, uid, now, (overdue: Event[]) => {
       setOverdueCount(overdue.length);
     });
 
