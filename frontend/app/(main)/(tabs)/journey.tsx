@@ -1,188 +1,218 @@
-import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { RFValue } from 'react-native-responsive-fontsize';
-import { s, ms, vs } from 'react-native-size-matters';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { LegendList } from '@legendapp/list';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { AuthContext } from '@/context/AuthContext';
-import { collection, doc, getDocs, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '@/firebase/firebaseConfig';
-import LoadingScreen from '@/components/Loading';
-import { Event } from '@/types/event';
-
-
+import {
+  StyleSheet,
+  ScrollView,
+  View,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { RFValue } from "react-native-responsive-fontsize";
+import { s, ms, vs } from "react-native-size-matters";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { LegendList } from "@legendapp/list";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { AuthContext } from "@/context/AuthContext";
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "@/firebase/firebaseConfig";
+import LoadingScreen from "@/components/Loading";
+import { Event } from "@/types/event";
 
 type SubBucketList = {
-    id: string,
-    title: string;
-    description: string;
-    accessLevel: string;
-    collaborators: string[];
-    createdAt: string;
+  id: string;
+  title: string;
+  description: string;
+  accessLevel: string;
+  collaborators: string[];
+  createdAt: string;
 };
 
-
 export default function JourneyScreen() {
-    const { user } = useContext(AuthContext);
-    const { uid: paramUid } = useLocalSearchParams();
-    const [relationship, setRelationship] = useState<'self' | 'friend' | 'none'>('none');
-    const [subBucketLists, setSubBucketLists] = useState<SubBucketList[]>([]);
-    const [events, setEvents] = useState<Event[]>([]);
+  const { user } = useContext(AuthContext);
+  const { uid: paramUid } = useLocalSearchParams();
+  const [relationship, setRelationship] = useState<"self" | "friend" | "none">(
+    "none"
+  );
+  const [subBucketLists, setSubBucketLists] = useState<SubBucketList[]>([]);
+  const [events, setEvents] = useState<Event[] | null>(null);
 
+  const finalParamUid = Array.isArray(paramUid) ? paramUid[0] : paramUid;
 
-    const finalParamUid = Array.isArray(paramUid) ? paramUid[0] : paramUid;
+  //Use param uid if viewing a friend's journey,
+  //otherwise use account user's uid from auth context
+  const uid = finalParamUid || user?.uid;
 
-    //Use param uid if viewing a friend's journey,
-    //otherwise use account user's uid from auth context
-    const uid = finalParamUid || user?.uid;
+  useFocusEffect(
+    useCallback(() => {
+      if (!uid || !user?.uid) {
+        return;
+      }
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!uid || !user?.uid) {
-                return;
-            }
+      if (uid === user.uid) {
+        setRelationship("self");
+        return;
+      }
 
-            if (uid === user.uid) {
-                setRelationship('self');
-                return;
-            }
-            
-            const docRef = doc(db, "users", user.uid, "friends", uid);
+      const docRef = doc(db, "users", user.uid, "friends", uid);
 
-            const unsubscribe = onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    setRelationship('friend');
-                } else {
-                    setRelationship('none');
-                }
-            });
-            
-            return () => unsubscribe();
-        }, [user?.uid, uid])
-    );
-
-    
-    async function filterSubBucketLists() {
-        const ref = collection(db, 'users', uid, 'bucketList');
-
-        const accessLevels =
-            relationship === 'self'
-            ? ['private', 'friends', 'everyone']
-            : relationship === 'friend'
-            ? ['friends', 'everyone']
-            : ['everyone'];
-
-        if (accessLevels.length === 0) return undefined;
-
-        const q = query(ref, where('accessLevel', 'in', accessLevels));
-        
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...(doc.data() as Omit<SubBucketList, 'id'>)
-            }));
-            setSubBucketLists(data);
-        });
-
-        return unsubscribe;
-    }
-
-    async function getEvents() {
-        const allEvents: Event[] = [];
-
-        for (const sub of subBucketLists) {
-            const eventsRef = collection(db, 'users', uid, 'bucketList', sub.id, 'events');
-            const eventsSnap = await getDocs(eventsRef);
-            const events = eventsSnap.docs.map(doc => ({
-                id: doc.id,
-                ...(doc.data() as Omit<Event, 'id'>),
-            }));
-            allEvents.push(...events);
-        }
-
-        setEvents(allEvents);
-    }
-
-    useEffect(() => {
-        if (!uid || !relationship) {
-            setSubBucketLists([]);
-            return;
-        }
-
-        let unsubscribe: (() => void) | undefined;
-
-        filterSubBucketLists().then(unsub => {
-            unsubscribe = unsub;
-        });
-
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-    }, [uid, relationship]);
-
-    useEffect(() => {
-        if (subBucketLists.length > 0 && uid) {
-            getEvents();
+      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setRelationship("friend");
         } else {
-            setEvents([]);
+          setRelationship("none");
         }
-    }, [subBucketLists, uid]);
+      });
 
-    function renderItem({ item }: { item: Event }) {
+      return () => unsubscribe();
+    }, [user?.uid, uid])
+  );
 
-        return (
-            <View style={{
-                alignItems: Number(item.id) % 2 === 0 ? 'flex-start' : 'flex-end',
-            }}>
-                <TouchableOpacity style={styles.itemContainer}>
-                    <MaterialCommunityIcons name="flag-variant" size={ms(30)} color="#66cdaa" />
-                    <ThemedText style={styles.itemText} numberOfLines={4} ellipsizeMode='tail'>
-                        {item.title}
-                    </ThemedText>
-                </TouchableOpacity>
-            </View>
-        )
+  async function filterSubBucketLists() {
+    const ref = collection(db, "users", uid, "bucketList");
+
+    const accessLevels =
+      relationship === "self"
+        ? ["private", "friends", "everyone"]
+        : relationship === "friend"
+        ? ["friends", "everyone"]
+        : ["everyone"];
+
+    if (accessLevels.length === 0) return undefined;
+
+    const q = query(ref, where("accessLevel", "in", accessLevels));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<SubBucketList, "id">),
+      }));
+      setSubBucketLists(data);
+    });
+
+    return unsubscribe;
+  }
+
+  async function getEvents() {
+    const allEvents: Event[] = [];
+
+    for (const sub of subBucketLists) {
+      const eventsRef = collection(
+        db,
+        "users",
+        uid,
+        "bucketList",
+        sub.id,
+        "events"
+      );
+      const eventsSnap = await getDocs(eventsRef);
+      const events = eventsSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<Event, "id">),
+      }));
+      allEvents.push(...events);
     }
-    
-    if (!uid) {
-        return <LoadingScreen />;
+
+    setEvents(allEvents);
+  }
+
+  useEffect(() => {
+    if (!uid || !relationship) {
+      setSubBucketLists([]);
+      return;
     }
 
+    let unsubscribe: (() => void) | undefined;
+
+    filterSubBucketLists().then((unsub) => {
+      unsubscribe = unsub;
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [uid, relationship]);
+
+  useEffect(() => {
+    if (subBucketLists.length > 0 && uid) {
+      getEvents();
+    } else {
+      setEvents([]);
+    }
+  }, [subBucketLists, uid]);
+
+  function renderItem({ item }: { item: Event }) {
     return (
-        <SafeAreaView edges={[]} style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                <ThemedView style={styles.mainContainer}>
-                    <LegendList
-                        data={events}
-                        renderItem={renderItem}
-                        keyExtractor={(item: Event) => item.id.toString()}
-                        recycleItems={true}
-                        maintainVisibleContentPosition
-                    />
-                </ThemedView>
-            </ScrollView>
-        </SafeAreaView>        
-    )
+      <View
+        style={{
+          alignItems: Number(item.id) % 2 === 0 ? "flex-start" : "flex-end",
+        }}
+      >
+        <TouchableOpacity style={styles.itemContainer}>
+          <MaterialCommunityIcons
+            name="flag-variant"
+            size={ms(30)}
+            color="#66cdaa"
+          />
+          <ThemedText
+            style={styles.itemText}
+            numberOfLines={4}
+            ellipsizeMode="tail"
+          >
+            {item.title}
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!uid || !events) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <SafeAreaView edges={[]} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ThemedView style={styles.mainContainer}>
+          {events.length === 0 ? (
+            <View style={{alignItems: 'center'}}>
+              <ThemedText>No completed goals.</ThemedText>
+            </View>
+          ) : (
+            <LegendList
+              data={events}
+              renderItem={renderItem}
+              keyExtractor={(item: Event) => item.id.toString()}
+              recycleItems={true}
+              maintainVisibleContentPosition
+            />
+          )}
+        </ThemedView>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
-
 const styles = StyleSheet.create({
-    mainContainer: {
-        flex: 1,
-        paddingHorizontal: s(15),
-        paddingTop: vs(20),
-    },
-    itemContainer: {
-        maxWidth: s(150),
-        flexDirection: 'row',
-    },
-    itemText: {
-        fontSize: RFValue(14),
-        flexShrink: 1, 
-        flexWrap: 'wrap',
-    },
+  mainContainer: {
+    flex: 1,
+    paddingHorizontal: s(15),
+    paddingTop: vs(20),
+  },
+  itemContainer: {
+    maxWidth: s(150),
+    flexDirection: "row",
+  },
+  itemText: {
+    fontSize: RFValue(14),
+    flexShrink: 1,
+    flexWrap: "wrap",
+  },
 });
