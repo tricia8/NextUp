@@ -172,6 +172,7 @@ export default function currentSublist() {
         description: description,
         categories: selectedTags,
         deadline: deadlineDate,
+        collaborators: sharedUids,
       });
       console.log("goal added!");
       // const updated = await getGoals(); // GET — fetch updated list from Firestore
