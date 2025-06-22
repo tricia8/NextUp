@@ -19,8 +19,8 @@ import { Dimensions } from "react-native";
 import SublistField from "@/components/forms/SublistField";
 import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
 import { createSubBucketList } from "@/firebase/firestore";
-import { auth } from "@/firebase/firebaseConfig";
 import { AuthContext } from "@/context/AuthContext";
+import { User } from "@/types/user";
 
 export default function newSubList() {
   const { user } = useContext(AuthContext);
@@ -71,10 +71,6 @@ export default function newSubList() {
     }
   };
 
-  interface User {
-    username: string;
-  }
-
   // dummy data
   const DATA: User[] = [
     {
@@ -93,6 +89,7 @@ export default function newSubList() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
+          ownerId={user?.id}
           data={DATA}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}

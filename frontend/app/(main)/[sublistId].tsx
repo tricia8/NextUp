@@ -169,7 +169,8 @@ export default function currentSublist({
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
-          data={users}
+          ownerId={user?.id}
+          data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
         />
