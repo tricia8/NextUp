@@ -15,12 +15,8 @@ import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import {
-  collection,
   doc,
-  getDocs,
   onSnapshot,
-  query,
-  where,
 } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import LoadingScreen from "@/components/Loading";
@@ -52,25 +48,12 @@ export default function JourneyScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!uid || !user?.uid) {
-        return;
-      }
-
-      if (uid === user.uid) {
-        setRelationship("self");
-        return;
-      }
-
-      const docRef = doc(db, "users", user.uid, "friends", uid);
-
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setRelationship("friend");
-        } else {
-          setRelationship("none");
-        }
-      });
-
+      const unsubscribe = getRelationship(
+        db,
+        user?.uid,
+        uid,
+        setRelationship
+      );
       return () => unsubscribe();
     }, [user?.uid, uid])
   );
@@ -98,7 +81,7 @@ export default function JourneyScreen() {
 
   useEffect(() => {
     if (subBucketLists.length > 0 && uid) {
-      getEvents();
+      getAllEvents();
     } else {
       setEvents([]);
     }
