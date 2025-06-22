@@ -16,6 +16,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import LoadingScreen from '@/components/Loading';
 import { getUserProfile, getUserStats } from '@/firebase/firestore';
+import { UserStats } from '@/types/stats';
 
 
 const PROFILEPICSIZE = ms(80);
@@ -35,7 +36,7 @@ export default function ProfileScreen() {
     useCallback(() => {
       if (!finalUid) return;
 
-      const unsubscribe = getUserProfile(db, finalUid, (user) => {
+      const unsubscribe = getUserProfile(db, finalUid, (user: User) => {
         setUserData(user);
         setCategory(user.category?.[0] ?? '--');
       });
@@ -49,7 +50,7 @@ export default function ProfileScreen() {
     useCallback(() => {
       if (!finalUid) return;
 
-      const unsubscribe = getUserStats(db, finalUid, (stats) => {
+      const unsubscribe = getUserStats(db, finalUid, (stats: UserStats) => {
         setTotalEvents(stats.totalEvents);
         setCompletedEvents(stats.completedEvents);
       });
