@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
-import { useRouter } from "expo-router";
-import { useContext, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useContext, useState } from "react";
 import {
   ScrollView,
   StatusBar,
@@ -18,7 +18,7 @@ import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
 import SublistField from "@/components/forms/SublistField";
 import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
-import { createSubBucketList } from "@/firebase/firestore";
+import { createSubBucketList, getOwnerProfile } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { User } from "@/types/user";
 
@@ -38,7 +38,26 @@ export default function newSubList() {
   const [accessLevel, setAccessLevel] = useState("");
 
   // Invite collaborators
-  const [collaborators, setCollaborators] = useState([]);
+  const [collaborators, setCollaborators] = useState<User[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchOwner = async () => {
+        if (!user?.id) return;
+
+        try {
+          const profile = await getOwnerProfile(user.id);
+          if (profile) {
+            setCollaborators([profile]);
+          }
+        } catch (error) {
+          console.error("Failed to fetch owner profile:", error);
+        }
+      };
+
+      fetchOwner();
+    }, [user?.id])
+  );
 
   // Sublist submission
   const submit = async () => {
@@ -71,26 +90,12 @@ export default function newSubList() {
     }
   };
 
-  // dummy data
-  const DATA: User[] = [
-    {
-      // profile icon (to add),
-      username: "ez123 (You)",
-    },
-    {
-      username: "me321",
-    },
-    {
-      username: "bluess",
-    },
-  ];
-
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
           ownerId={user?.id}
-          data={DATA}
+          data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
         />
