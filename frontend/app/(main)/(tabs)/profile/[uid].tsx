@@ -33,16 +33,14 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-        if (!finalUid) return;
+      if (!finalUid) return;
 
-        const unsubscribe = onSnapshot(doc(db, 'users', finalUid), (docSnapshot) => {
-          if (docSnapshot.exists()) {
-            setUserData(docSnapshot.data() as User);
-            setCategory(docSnapshot.data().category[0] ?? '--')
-          }
-        });
+      const unsubscribe = getUserProfile(db, finalUid, (user) => {
+        setUserData(user);
+        setCategory(user.category?.[0] ?? '--');
+      });
 
-        return () => unsubscribe();
+      return () => unsubscribe();
     }, [finalUid])
   );
     
@@ -51,17 +49,15 @@ export default function ProfileScreen() {
     useCallback(() => {
       if (!finalUid) return;
 
-      const unsubscribe = onSnapshot(doc(db, 'users', finalUid, 'bucketList', 'stats'), (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data();
-          setTotalEvents(data.totalEvents);
-          setCompletedEvents(data.completedEvents);
-        }
+      const unsubscribe = getUserStats(db, finalUid, (stats) => {
+        setTotalEvents(stats.totalEvents);
+        setCompletedEvents(stats.completedEvents);
       });
 
       return () => unsubscribe();
     }, [finalUid])
-  )
+  );
+
 
   if (!userData || !finalUid) {
     return (
