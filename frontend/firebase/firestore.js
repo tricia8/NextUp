@@ -222,6 +222,20 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
+export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
+  if (!uid || !accessLevels.length) return () => {};
+  const ref = collection(db, "users", uid, "bucketList");
+  const q = query(ref, where("accessLevel", "in", accessLevels));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    onData(data);
+  });
+  return unsubscribe;
+}
+
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
     const subBucketListRef = doc(
@@ -343,6 +357,20 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
     throw error;
   }
 };
+
+export async function getAllEvents(db, uid, subBucketLists) {
+  const allEvents = [];
+  for (const sub of subBucketLists) {
+    const eventsRef = collection(db, "users", uid, "bucketList", sub.id, "events");
+    const eventsSnap = await getDocs(eventsRef);
+    const events = eventsSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    allEvents.push(...events);
+  }
+  return allEvents;
+}
 
 // title, description, categories, deadline, isCompleted
 export const updateEvent = async (
