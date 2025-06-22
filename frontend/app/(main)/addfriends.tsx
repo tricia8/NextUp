@@ -11,6 +11,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import LoadingScreen from '@/components/Loading';
+import { getAllUsers, getFriendUids } from '@/firebase/firestore';
 
 
 
@@ -26,24 +27,9 @@ export default function UsersList() {
           return;
         }
 
-        const unsubscribeUsers = onSnapshot(
-          collection(db, "users"),
-          (snapshot) => {
-            const data = snapshot.docs.map(doc => ({
-              uid: doc.id,
-              ...(doc.data() as Omit<User, 'uid'>)
-            }));
-            setUsers(data);
-          }
-        );
+        const unsubscribeUsers = getAllUsers(db, setUsers);
 
-        const unsubscribeFriends = onSnapshot(
-          collection(db, "users", currentUserId, "friends"),
-          (snapshot) => {
-            const uids = snapshot.docs.map(doc => doc.id);
-            setFriendUids(uids);
-          }
-        );
+        const unsubscribeFriends = getFriendUids(db, currentUserId, setFriendUids);
 
         return () => {
           unsubscribeUsers();
