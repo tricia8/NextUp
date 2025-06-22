@@ -93,6 +93,14 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
+export function getUserProfile(db, uid, onData) {
+  return onSnapshot(doc(db, 'users', uid), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      onData(docSnapshot.data());
+    }
+  });
+}
+
 //bucketlist
 const updateOverallStats = async (userId, type) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
