@@ -10,6 +10,9 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
+  query,
+  where,
+  onSnapshot,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -99,6 +102,14 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
+export function getUserProfile(db, uid, onData) {
+  return onSnapshot(doc(db, "users", uid), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      onData(docSnapshot.data());
+    }
+  });
+}
+
 //bucketlist
 const updateOverallStats = async (userId, type) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
@@ -117,6 +128,21 @@ const updateOverallStats = async (userId, type) => {
     throw error;
   }
 };
+
+export function getUserStats(db, uid, onData) {
+  return onSnapshot(
+    doc(db, "users", uid, "bucketList", "stats"),
+    (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        onData({
+          totalEvents: data.totalEvents,
+          completedEvents: data.completedEvents,
+        });
+      }
+    }
+  );
+}
 
 //subbucketlists
 export const createSubBucketList = async (
@@ -199,6 +225,20 @@ export const getSubBucketList = async (userId, subBucketListId) => {
     throw error;
   }
 };
+
+export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
+  if (!uid || !accessLevels.length) return () => {};
+  const ref = collection(db, "users", uid, "bucketList");
+  const q = query(ref, where("accessLevel", "in", accessLevels));
+  const unsubscribe = onSnapshot(q, (snapshot) => {
+    const data = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    onData(data);
+  });
+  return unsubscribe;
+}
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
@@ -322,6 +362,27 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
+export async function getAllEvents(db, uid, subBucketLists) {
+  const allEvents = [];
+  for (const sub of subBucketLists) {
+    const eventsRef = collection(
+      db,
+      "users",
+      uid,
+      "bucketList",
+      sub.id,
+      "events"
+    );
+    const eventsSnap = await getDocs(eventsRef);
+    const events = eventsSnap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    allEvents.push(...events);
+  }
+  return allEvents;
+}
+
 // title, description, categories, deadline, isCompleted
 export const updateEvent = async (
   userId,
@@ -428,3 +489,25 @@ export const deleteFriend = async (userId, friendId) => {
     throw error;
   }
 };
+
+//miscellaneous
+export function getRelationship(db, currentUserId, targetUserId, onChange) {
+  if (!currentUserId || !targetUserId) return () => {};
+
+  if (currentUserId === targetUserId) {
+    onChange("self");
+    return () => {};
+  }
+
+  const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
+
+  const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      onChange("friend");
+    } else {
+      onChange("none");
+    }
+  });
+
+  return unsubscribe;
+}
