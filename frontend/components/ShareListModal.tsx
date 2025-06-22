@@ -17,14 +17,14 @@ import { Image } from "expo-image";
 const PROFILEPICSIZE = ms(55);
 
 type CustomModalProps = {
-  ownerId: string;
+  currentUid: string;
   data: User[];
   visible: boolean;
   onClose: () => void;
 };
 
 export default function ShareListModal({
-  ownerId,
+  currentUid,
   data,
   visible,
   onClose,
@@ -48,7 +48,7 @@ export default function ShareListModal({
 
         <TouchableOpacity>
           <Text style={{ fontSize: RFValue(12) }}>
-            {item.username} + {item.uid == ownerId ? "(Owner)" : ""}
+            {item.username} + {item.uid == currentUid ? "(you)" : ""}
           </Text>
         </TouchableOpacity>
       </View>
