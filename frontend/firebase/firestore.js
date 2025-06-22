@@ -182,11 +182,11 @@ export const getSubBucketList = async (userId, subBucketListId) => {
     const data = docSnap.data(); // object
 
     const title = data.title;
-    const description = data.description;
+    const description = data.description ?? ""; // default to empty string;
     const accessLevel = data.accessLevel;
     const collaborators = data.collaborators; // should be an array
     const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
-    const createdAtFormatted = formatDisplayDate(createdAtFormatted);
+    const createdAtFormatted = formatDisplayDate(createdAt);
     const completionStatus = data.completionStatus;
 
     return {
@@ -226,17 +226,23 @@ export const addEvent = async (
   { title, description, categories, deadline }
 ) => {
   try {
+    const eventData = {
+      ownerId: userId,
+      title,
+      description,
+      categories,
+      isCompleted: false,
+      createdAt: serverTimestamp(),
+    };
+
+    // deadline is optional
+    if (deadline) {
+      eventData.deadline = Timestamp.fromDate(deadline); // `deadline` is a JS Date
+    }
+
     const eventDoc = await addDoc(
       collection(db, "users", userId, "bucketList", subBucketListId, "events"),
-      {
-        ownerId: userId,
-        title,
-        description,
-        categories,
-        deadline: Timestamp.fromDate(deadline), // `deadline` is a JS Date
-        isCompleted: false,
-        createdAt: serverTimestamp(),
-      }
+      eventData
     );
 
     updateOverallStats(userId, incrementTotal);
@@ -296,10 +302,11 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
     const data = docSnap.data(); // object
 
     const title = data.title;
-    const description = data.description; // optional field, check if string empty
-    const categories = data.categories; // array
-    const deadlinePre = data.deadline; // optional field (currently stored as string)
-    const deadline = formatDisplayDate(deadlinePre);
+    const description = data.description ?? ""; // default to empty string
+    const categories = data.categories ?? []; // default to empty array
+    const deadlineFormatted = data.deadline
+      ? formatDisplayDate(data.deadline)
+      : null;
     const isCompleted = data.isCompleted;
     const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
     const createdAtFormatted = formatDisplayDate(createdAt);
@@ -308,7 +315,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       title,
       description,
       categories,
-      deadline,
+      deadline: deadlineFormatted, // could be null
       isCompleted,
       createdAtFormatted,
     };
