@@ -15,34 +15,16 @@ import { ms } from "react-native-size-matters";
 import { Image } from "expo-image";
 
 const PROFILEPICSIZE = ms(55);
-const renderFlatlistItem = ({ item }: { item: User }) => {
-  return (
-    <View style={styles.profile}>
-      {item.photoUrl ? (
-        <Image
-          style={styles.profilePic}
-          source={{ uri: item.photoUrl }}
-          contentFit="cover"
-          transition={500}
-        />
-      ) : (
-        <FontAwesome name="user-circle" size={PROFILEPICSIZE} color="black" />
-      )}
-
-      <TouchableOpacity>
-        <Text style={{ fontSize: RFValue(12) }}>{item.username}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
 
 type CustomModalProps = {
+  ownerId: string;
   data: User[];
   visible: boolean;
   onClose: () => void;
 };
 
 export default function ShareListModal({
+  ownerId,
   data,
   visible,
   onClose,
@@ -50,12 +32,35 @@ export default function ShareListModal({
   const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
+  const renderFlatlistItem = ({ item }: { item: User }) => {
+    return (
+      <View style={styles.profile}>
+        {item.photoUrl ? (
+          <Image
+            style={styles.profilePic}
+            source={{ uri: item.photoUrl }}
+            contentFit="cover"
+            transition={500}
+          />
+        ) : (
+          <FontAwesome name="user-circle" size={PROFILEPICSIZE} color="black" />
+        )}
+
+        <TouchableOpacity>
+          <Text style={{ fontSize: RFValue(12) }}>
+            {item.username} + {item.uid == ownerId ? "(Owner)" : ""}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <Modal visible={visible} transparent={true} animationType="fade">
       <View style={styles.modalContent}>
         <View style={styles.card}>
           <Text style={{ fontSize: RFValue(16), fontWeight: "bold" }}>
-            Share List
+            Share This List
           </Text>
           <TextInput
             placeholder="Add people..."
