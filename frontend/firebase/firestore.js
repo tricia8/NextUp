@@ -503,3 +503,22 @@ export function getRelationship(db, currentUserId, targetUserId, onChange) {
 
   return unsubscribe;
 }
+
+export function getAllUsers(db, onData) {
+  return onSnapshot(collection(db, "users"), (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+    }));
+    onData(data);
+  });
+}
+
+export function getFriendUids(db, currentUserId, onData) {
+  if (!currentUserId) return () => {};
+  const ref = collection(db, "users", currentUserId, "friends");
+  return onSnapshot(ref, (snapshot) => {
+    const uids = snapshot.docs.map(doc => doc.id);
+    onData(uids);
+  });
+}
