@@ -8,7 +8,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from '@/firebase/firebaseConfig';
 import JourneyScreen from '../journey';
 import EditProfile from '@/components/editprofile';
@@ -16,6 +15,7 @@ import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import LoadingScreen from '@/components/Loading';
+import { getUserProfile, getUserStats } from '@/firebase/firestore';
 
 
 const PROFILEPICSIZE = ms(80);
