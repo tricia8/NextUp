@@ -1,8 +1,8 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
