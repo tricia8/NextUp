@@ -128,6 +128,18 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
+export function getUserStats(db, uid, onData) {
+  return onSnapshot(doc(db, 'users', uid, 'bucketList', 'stats'), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      const data = docSnapshot.data();
+      onData({
+        totalEvents: data.totalEvents,
+        completedEvents: data.completedEvents,
+      });
+    }
+  });
+}
+
 //subbucketlists
 export const createSubBucketList = async (
   userId,
