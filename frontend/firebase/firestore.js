@@ -522,14 +522,6 @@ export function getAllUsers(db, onData) {
   });
 }
 
-export function getFriendUids(db, currentUserId, onData) {
-  const ref = collection(db, "users", currentUserId, "friends");
-  return onSnapshot(ref, (snapshot) => {
-    const uids = snapshot.docs.map(doc => doc.id);
-    onData(uids);
-  });
-}
-
 export function getFriends(db, currentUserId, onData) {
   const ref = collection(db, "users", currentUserId, "friends");
   return onSnapshot(ref, (snapshot) => {
