@@ -15,6 +15,26 @@ import { ms } from "react-native-size-matters";
 import { Image } from "expo-image";
 
 const PROFILEPICSIZE = ms(55);
+const renderFlatlistItem = ({ item }: { item: User }) => {
+  return (
+    <View style={styles.profile}>
+      {item.photoUrl ? (
+        <Image
+          style={styles.profilePic}
+          source={{ uri: item.photoUrl }}
+          contentFit="cover"
+          transition={500}
+        />
+      ) : (
+        <FontAwesome name="user-circle" size={PROFILEPICSIZE} color="black" />
+      )}
+
+      <TouchableOpacity>
+        <Text style={{ fontSize: RFValue(12) }}>{item.username}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 type CustomModalProps = {
   currentUid: string;
