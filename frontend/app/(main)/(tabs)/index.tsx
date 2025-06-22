@@ -10,11 +10,11 @@ import AnimatedTextInput from '@/components/AnimatedTextInput';
 import SideMenu from '@/components/SideMenu';
 import { useCallback, useContext, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { collectionGroup, doc, getCountFromServer, limit, onSnapshot, orderBy, query, Timestamp, where } from 'firebase/firestore';
 import { db } from '@/firebase/firebaseConfig';
 import { AuthContext } from '@/context/AuthContext';
 import { Event } from '@/types/event';
 import LoadingScreen from '@/components/Loading';
+import { getUserStats, getUpcomingEvents, getOverdueEvents } from '@/firebase/firestore';
 
 
 
@@ -33,69 +33,35 @@ export default function HomeScreen() {
       setOpen(!open);
   }
 
-   useFocusEffect(
-    useCallback(() => {
-      if (!uid) return;
-
-      const unsubscribe = onSnapshot(doc(db, 'users', uid, 'bucketList', 'stats'), (docSnapshot) => {
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data();
-          setTotalEvents(data.totalEvents);
-          setCompletedEvents(data.completedEvents);
-        }
-      });
-
-      return () => unsubscribe();
-    }, [uid])
-  )
+    useFocusEffect(
+      useCallback(() => {
+        if (!uid) return;
+        const unsubscribe = getUserStats(db, uid, (stats) => {
+          setTotalEvents(stats.totalEvents);
+          setCompletedEvents(stats.completedEvents);
+        });
+        return () => unsubscribe();
+      }, [uid])
+    );
     
 
   useFocusEffect(
-    useCallback(() => {
-      if (!uid) return;
+  useCallback(() => {
+    if (!uid) return;
 
-      const now = new Date();
+    const now = new Date();
 
-      //Upcoming goals
-      const upcomingQ = query(
-        collectionGroup(db, 'events'),
-        where('ownerId', '==', uid),
-        where('deadline', '>=', Timestamp.fromDate(now)),
-        where('isCompleted', '==', false),
-        orderBy('deadline'),
-        limit(3)
-      );
+    const unsubscribeUpcoming = getUpcomingEvents(db, uid, now, setUpcomingEvents);
+    const unsubscribeOverdue = getOverdueEvents(db, uid, now, (overdue) => {
+      setOverdueCount(overdue.length);
+    });
 
-      const unsubscribeUpcoming = onSnapshot(upcomingQ, (snapshot) => {
-        const upcoming = snapshot.docs.map(doc => ({
-          ...(doc.data() as Event),
-          id: doc.id,
-        }));
-        setUpcomingEvents(upcoming);
-      });
-
-      //Overdue
-      const overdueQ = query(
-        collectionGroup(db, 'events'),
-        where('ownerId', '==', uid),
-        where('deadline', '<', Timestamp.fromDate(now)),
-        where('isCompleted', '==', false)
-      );
-
-      const unsubscribeOverdue = onSnapshot(overdueQ, (snapshot) => {
-        const overdue = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setOverdueCount(overdue.length);
-      });
-
-      return () => {
-        unsubscribeUpcoming();
-        unsubscribeOverdue();
-      };
-    }, [uid])
-  )
+    return () => {
+      unsubscribeUpcoming();
+      unsubscribeOverdue();
+    };
+  }, [uid])
+);
 
 
 
