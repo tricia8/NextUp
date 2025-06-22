@@ -13,6 +13,8 @@ import {
   query,
   where,
   onSnapshot,
+  collectionGroup,
+  getDocs
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -451,6 +453,41 @@ export const toggleEventCompletion = async (
   }
 };
 
+export function getUpcomingEvents(db, uid, now, onData) {
+  const upcomingQ = query(
+    collectionGroup(db, 'events'),
+    where('ownerId', '==', uid),
+    where('deadline', '>=', Timestamp.fromDate(now)),
+    where('isCompleted', '==', false),
+    orderBy('deadline'),
+    limit(3)
+  );
+  return onSnapshot(upcomingQ, (snapshot) => {
+    const upcoming = snapshot.docs.map(doc => ({
+      ...(doc.data()),
+      id: doc.id,
+    }));
+    onData(upcoming);
+  });
+}
+
+export function getOverdueEvents(db, uid, now, onData) {
+  const overdueQ = query(
+    collectionGroup(db, 'events'),
+    where('ownerId', '==', uid),
+    where('deadline', '<', Timestamp.fromDate(now)),
+    where('isCompleted', '==', false)
+  );
+  return onSnapshot(overdueQ, (snapshot) => {
+    const overdue = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    onData(overdue);
+  });
+}
+
+
 //friends
 export const addFriend = async (userId, friendId) => {
   try {
@@ -490,6 +527,17 @@ export const deleteFriend = async (userId, friendId) => {
   }
 };
 
+export function getFriends(db, currentUserId, onData) {
+  const ref = collection(db, "users", currentUserId, "friends");
+  return onSnapshot(ref, (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+    }));
+    onData(data);
+  });
+}
+
 //miscellaneous
 export function getRelationship(db, currentUserId, targetUserId, onChange) {
   if (!currentUserId || !targetUserId) return () => {};
@@ -514,25 +562,6 @@ export function getRelationship(db, currentUserId, targetUserId, onChange) {
 
 export function getAllUsers(db, onData) {
   return onSnapshot(collection(db, "users"), (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
-      uid: doc.id,
-      ...doc.data(),
-    }));
-    onData(data);
-  });
-}
-
-export function getFriendUids(db, currentUserId, onData) {
-  const ref = collection(db, "users", currentUserId, "friends");
-  return onSnapshot(ref, (snapshot) => {
-    const uids = snapshot.docs.map(doc => doc.id);
-    onData(uids);
-  });
-}
-
-export function getFriends(db, currentUserId, onData) {
-  const ref = collection(db, "users", currentUserId, "friends");
-  return onSnapshot(ref, (snapshot) => {
     const data = snapshot.docs.map(doc => ({
       uid: doc.id,
       ...doc.data(),
