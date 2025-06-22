@@ -256,7 +256,7 @@ export const createSubBucketList = async (
         title,
         description,
         accessLevel,
-        collaborators, // array of userIds
+        collaborators, // array of userIds (strings)
         createdAt: serverTimestamp(), // ensures time format consistency, works better with .toDate()
         completionStatus: [0, 0],
       }

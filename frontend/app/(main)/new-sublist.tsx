@@ -42,6 +42,7 @@ export default function newSubList() {
   const [accessLevel, setAccessLevel] = useState("");
 
   // Invite collaborators
+  const [sharedUids, setSharedUids] = useState<string[]>([]);
   const [collaborators, setCollaborators] = useState<User[]>([]);
 
   useFocusEffect(
@@ -59,6 +60,7 @@ export default function newSubList() {
 
           if (profile) {
             setCollaborators([profile]);
+            setSharedUids([profile.uid]);
           }
           console.log("collaborators", collaborators);
         } catch (error) {
@@ -77,7 +79,7 @@ export default function newSubList() {
         title,
         description,
         accessLevel,
-        collaborators,
+        collaborators: sharedUids,
       });
       // Delay to allow Firestore to propagate the new document
       await new Promise((res) => setTimeout(res, 300));
@@ -110,7 +112,7 @@ export default function newSubList() {
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
           currentUid={user?.uid}
-          data={collaborators}
+          data={collaborators} // User[]
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
           setModalVisible={setModalVisible}
