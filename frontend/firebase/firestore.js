@@ -478,3 +478,25 @@ export const deleteFriend = async (userId, friendId) => {
     throw error;
   }
 };
+
+//miscellaneous
+export function getRelationship(db, currentUserId, targetUserId, onChange) {
+  if (!currentUserId || !targetUserId) return () => {};
+
+  if (currentUserId === targetUserId) {
+    onChange("self");
+    return () => {};
+  }
+
+  const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
+
+  const unsubscribe = onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      onChange("friend");
+    } else {
+      onChange("none");
+    }
+  });
+
+  return unsubscribe;
+}
