@@ -14,6 +14,7 @@ import { collectionGroup, doc, getCountFromServer, limit, onSnapshot, orderBy, q
 import { db } from '@/firebase/firebaseConfig';
 import { AuthContext } from '@/context/AuthContext';
 import { Event } from '@/types/event';
+import LoadingScreen from '@/components/Loading';
 
 
 
@@ -23,10 +24,10 @@ export default function HomeScreen() {
   const uid = user?.uid;
   const username = user?.username;
   const [open, setOpen] = useState<boolean>(false);
-  const [totalEvents, setTotalEvents] = useState<number>(0);
-  const [completedEvents, setCompletedEvents] = useState<number>(0);
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
-  const [overdueCount, setOverdueCount] = useState<number>(0);
+  const [totalEvents, setTotalEvents] = useState<number | null>(null);
+  const [completedEvents, setCompletedEvents] = useState<number | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<Event[] | null>(null);
+  const [overdueCount, setOverdueCount] = useState<number | null>(null);
 
   const toggleOpen = () => {
       setOpen(!open);
@@ -98,7 +99,9 @@ export default function HomeScreen() {
 
 
 
-
+  if (!uid || !totalEvents || !completedEvents || !upcomingEvents || !overdueCount) {
+    return <LoadingScreen />
+  }
 
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
