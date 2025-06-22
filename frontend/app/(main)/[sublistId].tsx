@@ -15,12 +15,13 @@ import {
   useColorScheme,
   Pressable,
   Keyboard,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import ShareListModal from "@/components/ShareListModal";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -42,34 +43,78 @@ import DateTimePicker, {
 import { useLocalSearchParams } from "expo-router";
 import { addEvent, getSubBucketList } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
+import { showMessage } from "react-native-flash-message";
+import { User } from "@/types/user";
 
-interface User {
-  username: string;
-}
+export default function currentSublist() {
+  // Sublist fields
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDesc] = useState("");
 
-interface SublistFormProps {
-  initialTitle?: string;
-  initialDescription?: string;
-  initialAccess?: string;
-  users: User[];
-  onSubmit: (title: string, description: string, access: string) => void;
-}
+  // Cache original values
+  const [initialTitle, setInitialTitle] = useState("");
+  const [initialDescription, setInitialDescription] = useState("");
 
-export default function currentSublist({
-  initialTitle = "Title", // Dummy Placeholder for UI check
-  initialDescription = "Description", // Dummy Placeholder for UI check
-  initialAccess = "",
-  users,
-  onSubmit,
-}: SublistFormProps) {
+  const [accessLevel, setAccessLevel] = useState("");
+  const [completionStatus, setCompletionStatus] = useState<number[]>([0, 0]); // [completed, total]
+  const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
+  const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
+  const [createdAt, setCreatedAt] = useState("");
+
+  // Fetching sublist data from firestore
   const { user } = useContext(AuthContext);
   const { sublistId } = useLocalSearchParams();
 
-  // Sublist fields
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(initialTitle);
-  const [description, setDesc] = useState(initialDescription);
-  const [accessLevel, setAccessLevel] = useState(initialAccess);
+  useFocusEffect(
+    useCallback(() => {
+      // Async logic only runs when the required values exist
+      let isActive = true;
+
+      const fetchData = async () => {
+        try {
+          if (user?.id && sublistId) {
+            const data = await getSubBucketList(user.id, sublistId);
+
+            if (isActive) {
+              setTitle(data.title);
+              setDesc(data.description);
+              setAccessLevel(data.accessLevel);
+              setSharedUids(data.collaborators); // array of uids
+              setCreatedAt(data.createdAtFormatted);
+              setCompletionStatus(data.completionStatus);
+
+              // Cache initial values
+              setInitialTitle(data.title);
+              setInitialDescription(data.description);
+
+              // fetch Collaborator data
+            }
+          }
+        } catch (error) {
+          // Handle error
+          showMessage({
+            message: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch sublist",
+            type: "danger",
+            statusBarHeight: StatusBar.currentHeight,
+            floating: true,
+            icon: "danger",
+          });
+        }
+      };
+
+      fetchData();
+
+      // Do something when the screen is unfocused
+      return () => {
+        isActive = false;
+      };
+    }, [user?.id, sublistId])
+  );
 
   // Share modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -88,8 +133,8 @@ export default function currentSublist({
   const [categoryOpen, setCategoryOpen] = useState(false);
 
   //Date-Time Picker
-  const [deadline, setDeadline] = useState("");
-  const [date, setDate] = useState(new Date());
+  const [deadlineString, setDeadlineString] = useState(""); // string
+  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date()); // deadline in
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
 
   const onCategoryOpen = useCallback(() => {
@@ -110,9 +155,9 @@ export default function currentSublist({
   ) => {
     // type refers to event type
     if (event.type === "set" && selectedDate) {
-      setDate(selectedDate);
+      setDeadlineDate(selectedDate);
       toggleDatePicker(); // hide picker after selection
-      setDeadline(selectedDate.toDateString());
+      setDeadlineString(selectedDate.toDateString());
     } else {
       toggleDatePicker();
     }
@@ -120,23 +165,37 @@ export default function currentSublist({
 
   // Goal submission
   const onSave = async () => {
-    await addEvent(user?.uid, sublistId, {
-      title: title,
-      description: description,
-      categories: selectedTags,
-      deadline: deadline,
-    });
-    // await addGoal(goal); // POST — send new goal to Firestore
-    // const updated = await getGoals(); // GET — fetch updated list from Firestore
-    // setGoals(updated); // update state/UI with fresh data
-    onCancel();
+    try {
+      await addEvent(user?.uid, sublistId, {
+        // POST — send new goal to Firestore
+        title: title,
+        description: description,
+        categories: selectedTags,
+        deadline: deadlineDate,
+      });
+      console.log("goal added!");
+      // const updated = await getGoals(); // GET — fetch updated list from Firestore
+      // setGoals(updated); // update state/UI with fresh data
+      onCancel(); // reset goal creation fields
+    } catch (error) {
+      // Handle error
+      showMessage({
+        message: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to add goal",
+        type: "danger",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "danger",
+      });
+    }
   };
 
   const onCancel = () => {
     closeSheet();
     setGoalTitle("");
     setGoalDesc("");
-    setDeadline("");
+    setDeadlineString("");
     setSelectedTags([]);
   };
 
@@ -188,7 +247,7 @@ export default function currentSublist({
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
-          data={users}
+          data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
         />
@@ -237,7 +296,7 @@ export default function currentSublist({
                   setIsEditing(false);
                 }}
               >
-                <Text style={{ color: "#618ce0" }}>Reset</Text>
+                <Text style={{ color: "#618ce0" }}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -251,6 +310,12 @@ export default function currentSublist({
             </View>
           </View>
         )}
+
+        <View style={{ marginVertical: 10 }}>
+          <ThemedText style={styles.completionStatus}>
+            {completionStatus[0]} of {completionStatus[1]} complete
+          </ThemedText>
+        </View>
 
         <View style={{ marginVertical: 10 }}>
           <AccessDropdownPicker
@@ -306,7 +371,7 @@ export default function currentSublist({
                   <DateTimePicker
                     mode="date"
                     display="spinner"
-                    value={date}
+                    value={deadlineDate}
                     onChange={onChange}
                     minimumDate={new Date()}
                   />
@@ -320,7 +385,7 @@ export default function currentSublist({
                     <View pointerEvents="none">
                       <BottomSheetTextInput
                         placeholder={"End Date (Optional)"}
-                        value={deadline}
+                        value={deadlineString}
                         style={styles.input}
                         onEndEditing={() => Keyboard.dismiss()}
                       />
@@ -428,5 +493,9 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       lineHeight: 20,
       padding: 8,
       backgroundColor: "rgba(151, 151, 151, 0.25)",
+    },
+    completionStatus: {
+      fontStyle: "italic",
+      fontSize: RFValue(12),
     },
   });
