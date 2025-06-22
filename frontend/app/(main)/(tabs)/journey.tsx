@@ -75,8 +75,12 @@ export default function JourneyScreen() {
     }, [user?.uid, uid])
   );
 
-  async function filterSubBucketLists() {
-    const ref = collection(db, "users", uid, "bucketList");
+
+  useEffect(() => {
+    if (!uid || !relationship) {
+      setSubBucketLists([]);
+      return;
+    }
 
     const accessLevels =
       relationship === "self"
@@ -85,55 +89,7 @@ export default function JourneyScreen() {
         ? ["friends", "everyone"]
         : ["everyone"];
 
-    if (accessLevels.length === 0) return undefined;
-
-    const q = query(ref, where("accessLevel", "in", accessLevels));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<SubBucketList, "id">),
-      }));
-      setSubBucketLists(data);
-    });
-
-    return unsubscribe;
-  }
-
-  async function getEvents() {
-    const allEvents: Event[] = [];
-
-    for (const sub of subBucketLists) {
-      const eventsRef = collection(
-        db,
-        "users",
-        uid,
-        "bucketList",
-        sub.id,
-        "events"
-      );
-      const eventsSnap = await getDocs(eventsRef);
-      const events = eventsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Event, "id">),
-      }));
-      allEvents.push(...events);
-    }
-
-    setEvents(allEvents);
-  }
-
-  useEffect(() => {
-    if (!uid || !relationship) {
-      setSubBucketLists([]);
-      return;
-    }
-
-    let unsubscribe: (() => void) | undefined;
-
-    filterSubBucketLists().then((unsub) => {
-      unsubscribe = unsub;
-    });
+    const unsubscribe = getFilteredSubBucketLists(db, uid, accessLevels, setSubBucketLists);
 
     return () => {
       if (unsubscribe) unsubscribe();
