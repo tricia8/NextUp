@@ -41,10 +41,15 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useLocalSearchParams } from "expo-router";
-import { addEvent, getSubBucketList } from "@/firebase/firestore";
+import {
+  addEvent,
+  getSubBucketList,
+  getUserProfile,
+} from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { User } from "@/types/user";
+import { db } from "@/firebase/firebaseConfig";
 
 export default function currentSublist() {
   // Sublist fields
@@ -65,6 +70,12 @@ export default function currentSublist() {
   // Fetching sublist data from firestore
   const { user } = useContext(AuthContext);
   const { sublistId } = useLocalSearchParams();
+
+  const getOwner = () => {
+    getUserProfile(db, user?.id, (user: User) => {
+      setCollaborators([user]);
+    });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -88,7 +99,17 @@ export default function currentSublist() {
               setInitialTitle(data.title);
               setInitialDescription(data.description);
 
-              // fetch Collaborator data
+              // Add owner
+              getOwner();
+
+              // Fetch Collaborator data
+              sharedUids.forEach((uid) => {
+                if (uid !== user.id) {
+                  getUserProfile(db, uid, (user: User) => {
+                    collaborators.push(user);
+                  });
+                }
+              });
             }
           }
         } catch (error) {
