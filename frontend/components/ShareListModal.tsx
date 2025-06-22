@@ -10,16 +10,24 @@ import {
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
 import { RFValue } from "react-native-responsive-fontsize";
+import { User } from "@/types/user";
+import { ms } from "react-native-size-matters";
+import { Image } from "expo-image";
 
-interface User {
-  // to add profile icon
-  username: string;
-}
-
+const PROFILEPICSIZE = ms(55);
 const renderFlatlistItem = ({ item }: { item: User }) => {
   return (
     <View style={styles.profile}>
-      <FontAwesome name="user-circle" size={20} color="black" />
+      {item.photoUrl ? (
+        <Image
+          style={styles.profilePic}
+          source={{ uri: item.photoUrl }}
+          contentFit="cover"
+          transition={500}
+        />
+      ) : (
+        <FontAwesome name="user-circle" size={PROFILEPICSIZE} color="black" />
+      )}
 
       <TouchableOpacity>
         <Text style={{ fontSize: RFValue(12) }}>{item.username}</Text>
@@ -50,7 +58,7 @@ export default function ShareListModal({
             Share List
           </Text>
           <TextInput
-            placeholder="Add people"
+            placeholder="Add people..."
             value={username}
             onChangeText={setUsername}
             enterKeyHint="search"
@@ -122,5 +130,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+  },
+  profilePic: {
+    height: PROFILEPICSIZE,
+    width: PROFILEPICSIZE,
+    borderRadius: PROFILEPICSIZE / 2,
   },
 });
