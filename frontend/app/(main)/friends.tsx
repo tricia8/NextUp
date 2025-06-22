@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useContext, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
@@ -11,6 +10,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import LoadingScreen from '@/components/Loading';
+import { getFriends } from '@/firebase/firestore';
 
 
 
@@ -31,21 +31,13 @@ export default function FriendsList() {
         return;
       }
 
-      const unsubscribe = onSnapshot(
-        collection(db, "users", currentUserId, "friends"),
-        (snapshot) => {
-          const data = snapshot.docs.map(doc => ({
-            uid: doc.id,
-            ...(doc.data() as Omit<User, 'uid'>)
-          }));
-          setFriends(data);
-        }
-      );
+      const unsubscribe = getFriends(db, currentUserId, setFriends);
 
       return () => unsubscribe();
     }, [currentUserId])
   );
 
+  
   if (!currentUserId) {
     return <LoadingScreen />;
   }
