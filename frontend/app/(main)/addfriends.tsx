@@ -10,7 +10,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import LoadingScreen from '@/components/Loading';
-import { getAllUsers, getFriendUids } from '@/firebase/firestore';
+import { getAllUsers, getFriends } from '@/firebase/firestore';
 
 
 
@@ -28,8 +28,10 @@ export default function UsersList() {
 
         const unsubscribeUsers = getAllUsers(db, setUsers);
 
-        const unsubscribeFriends = getFriendUids(db, currentUserId, setFriendUids);
-
+        const unsubscribeFriends = getFriends(db, currentUserId, (friendsList: User) => {
+              setFriendUids(friendsList.map(friend => friend.uid));
+            });
+            
         return () => {
           unsubscribeUsers();
           unsubscribeFriends();
