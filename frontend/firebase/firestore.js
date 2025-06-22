@@ -8,9 +8,16 @@ import {
   updateDoc,
   deleteDoc,
   runTransaction,
+  serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { debounce } from "lodash";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import timezone from "dayjs/plugin/timezone";
 
+dayjs.extend(relativeTime);
+dayjs.extend(timezone);
 
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
@@ -30,7 +37,13 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = collection(db, "users", user.uid, "bucketList", "stats")
+  const bucketListStatsRef = collection(
+    db,
+    "users",
+    user.uid,
+    "bucketList",
+    "stats"
+  );
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -43,8 +56,9 @@ export const createUser = async (user, username) => {
       username: username,
       email: user.email,
       photoUrl: user.photoURL,
-      displayName: '',
-      bio: '',
+      displayName: "",
+      bio: "",
+      category: user.category,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
@@ -82,40 +96,128 @@ export const updateProfile = async (userId, newData) => {
       console.log("No fields were changed. Skipping update.");
     }
   } catch (error) {
-    console.error("Error updating profile.")
+    console.error("Error updating profile.");
     throw error;
   }
+};
+
+export function getUserProfile(db, uid, onData) {
+  return onSnapshot(doc(db, 'users', uid), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      onData(docSnapshot.data());
+    }
+  });
 }
 
 //bucketlist
 const updateOverallStats = async (userId, type) => {
-  const statsRef = doc(db, "users", userId, "bucketList");
+  const statsRef = doc(db, "users", userId, "bucketList", "stats");
 
   const fieldMap = {
-    incrementTotal: {totalEvents: increment(1)},
-    decrementTotal: {totalEvents: decrement(1)},
-    incrementCompleted: {totalEvents: increment(1)},
-    decrementCompleted: {totalEvents: decrement(1)},
-  }
+    incrementTotal: { totalEvents: increment(1) },
+    decrementTotal: { totalEvents: decrement(1) },
+    incrementCompleted: { totalEvents: increment(1) },
+    decrementCompleted: { totalEvents: decrement(1) },
+  };
 
   try {
     await updateDoc(statsRef, fieldMap[type]);
   } catch (error) {
-    console.log('Error updating stats');
+    console.log("Error updating stats");
     throw error;
   }
+};
+
+export function getUserStats(db, uid, onData) {
+  return onSnapshot(doc(db, 'users', uid, 'bucketList', 'stats'), (docSnapshot) => {
+    if (docSnapshot.exists()) {
+      const data = docSnapshot.data();
+      onData({
+        totalEvents: data.totalEvents,
+        completedEvents: data.completedEvents,
+      });
+    }
+  });
 }
 
 //subbucketlists
-export const createSubBucketList = async (userId, subBucketListData) => {
+export const createSubBucketList = async (
+  userId,
+  { title, description, accessLevel, collaborators }
+) => {
   try {
     const subBucketListRef = await addDoc(
       collection(db, "users", userId, "bucketList"),
-      subBucketListData
-    );
+      {
+        title,
+        description,
+        accessLevel,
+        collaborators, // array of userIds
+        createdAt: serverTimestamp(), // ensures time format consistency, works better with .toDate()
+        completionStatus: [0, 0],
+      }
+    ); // go to bucketList collection
     return subBucketListRef.id;
   } catch (error) {
-    console.error("Error creating subbucket list:", error);
+    console.error("Error creating sub-bucket list:", error);
+    throw error;
+  }
+};
+
+// don’t have to pass all fields every time, doesn't overwrite unchanged values
+// fields: title, description, accessLevel, collaborators, completionStatus
+const updateSubBucketList = async (userId, subBucketListId, updates = {}) => {
+  try {
+    const sublistDocRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId
+    );
+    const docSnap = await getDoc(sublistDocRef);
+
+    if (!docSnap.exists()) {
+      throw new Error("List not found");
+    }
+
+    await updateDoc(sublistDocRef, updates); // Pass only fields to update
+  } catch (error) {
+    console.error("Error updating sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSubBucketList = async (userId, subBucketListId) => {
+  try {
+    const sublistDoc = doc(db, "users", userId, "bucketList", subBucketListId);
+
+    const docSnap = await getDoc(sublistDoc);
+
+    if (!docSnap.exists()) {
+      throw new Error("List not found");
+    }
+
+    const data = docSnap.data(); // object
+
+    const title = data.title;
+    const description = data.description ?? ""; // default to empty string;
+    const accessLevel = data.accessLevel;
+    const collaborators = data.collaborators; // should be an array
+    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
+    const createdAtFormatted = formatDisplayDate(createdAt);
+    const completionStatus = data.completionStatus;
+
+    return {
+      title,
+      description,
+      accessLevel,
+      collaborators,
+      createdAtFormatted,
+      completionStatus,
+    };
+  } catch (error) {
+    console.error("Error fetching sub-bucket list:", error);
     throw error;
   }
 };
@@ -131,7 +233,7 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
     );
     await deleteDoc(subBucketListRef);
   } catch (error) {
-    console.error("Error deleting bucket list:", error);
+    console.error("Error deleting sub-bucket list:", error);
     throw error;
   }
 };
@@ -140,18 +242,25 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
 export const addEvent = async (
   userId,
   subBucketListId,
-  eventData
+  { title, description, categories, deadline }
 ) => {
   try {
+    const eventData = {
+      ownerId: userId,
+      title,
+      description,
+      categories,
+      isCompleted: false,
+      createdAt: serverTimestamp(),
+    };
+
+    // deadline is optional
+    if (deadline) {
+      eventData.deadline = Timestamp.fromDate(deadline); // `deadline` is a JS Date
+    }
+
     const eventDoc = await addDoc(
-      collection(
-        db,
-        "users",
-        userId,
-        "bucketList",
-        subBucketListId,
-        "events"
-      ),
+      collection(db, "users", userId, "bucketList", subBucketListId, "events"),
       eventData
     );
 
@@ -185,11 +294,62 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
+// convert Timestamp to string e.g. "3 days ago (14 Jun)"
+const formatDisplayDate = (fetchedDate) => {
+  return `${dayjs(fetchedDate).fromNow()} (${dayjs(fetchedDate).format(
+    "DD MMM YYYY"
+  )})`;
+};
+
+export const getEvent = async (userId, subBucketListId, eventId) => {
+  try {
+    const eventDoc = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId,
+      "events",
+      eventId
+    );
+
+    const docSnap = await getDoc(eventDoc);
+    if (!docSnap.exists()) {
+      throw new Error("Event not found");
+    }
+
+    const data = docSnap.data(); // object
+
+    const title = data.title;
+    const description = data.description ?? ""; // default to empty string
+    const categories = data.categories ?? []; // default to empty array
+    const deadlineFormatted = data.deadline
+      ? formatDisplayDate(data.deadline)
+      : null;
+    const isCompleted = data.isCompleted;
+    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
+    const createdAtFormatted = formatDisplayDate(createdAt);
+
+    return {
+      title,
+      description,
+      categories,
+      deadline: deadlineFormatted, // could be null
+      isCompleted,
+      createdAtFormatted,
+    };
+  } catch (error) {
+    console.error("Error fetching event:", error);
+    throw error;
+  }
+};
+
+// title, description, categories, deadline, isCompleted
 export const updateEvent = async (
   userId,
   subBucketListId,
   eventId,
-  updates
+  updates = {}
 ) => {
   try {
     const eventDoc = doc(
@@ -201,6 +361,11 @@ export const updateEvent = async (
       "events",
       eventId
     );
+    const docSnap = await getDoc(eventDoc);
+    if (!docSnap.exists()) {
+      throw new Error("Event not found");
+    }
+
     await updateDoc(eventDoc, updates);
   } catch (error) {
     console.error("Error updating event:", error);
@@ -208,7 +373,11 @@ export const updateEvent = async (
   }
 };
 
-export const toggleEventCompletion = async (userId, subBucketListId, eventId) => {
+export const toggleEventCompletion = async (
+  userId,
+  subBucketListId,
+  eventId
+) => {
   try {
     const eventDoc = doc(
       db,
@@ -219,14 +388,14 @@ export const toggleEventCompletion = async (userId, subBucketListId, eventId) =>
       "events",
       eventId
     );
-    
+
     const docSnap = await getDoc(eventDoc);
 
     if (!docSnap.exists()) {
       throw new Error("Event not found");
     }
 
-    const currentCompleted = docSnap.data().completed;
+    const currentCompleted = docSnap.data().isCompleted;
 
     if (currentCompleted) {
       updateOverallStats(userId, decrementCompleted);
@@ -235,13 +404,13 @@ export const toggleEventCompletion = async (userId, subBucketListId, eventId) =>
     }
 
     await updateDoc(eventDoc, {
-      completed: !currentCompleted,
+      isCompleted: !currentCompleted,
     });
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
   }
-}
+};
 
 //friends
 export const addFriend = async (userId, friendId) => {
