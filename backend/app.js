@@ -27,3 +27,21 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+// Cloudinary
+const cloudinary = require('./cloudinary');
+
+app.post('/upload', async (req, res) => {
+  try {
+    const fileStr = req.body.data;
+    const folder = req.body.folder;
+
+    const uploadResponse = await cloudinary.uploader.upload(fileStr, {
+      folder,
+    });
+    res.json({ url: uploadResponse.secure_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Upload failed');
+  }
+});
