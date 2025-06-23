@@ -40,7 +40,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = collection(
+  const bucketListStatsRef = doc(
     db,
     "users",
     user.uid,
@@ -61,7 +61,7 @@ export const createUser = async (user, username) => {
       photoUrl: user.photoURL,
       displayName: "",
       bio: "",
-      category: user.category,
+      category: user.category ?? null,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
@@ -104,14 +104,47 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
-export function getUserProfile(db, uid, onData) {
-  return onSnapshot(doc(db, "users", uid), (docSnapshot) => {
-    if (docSnapshot.exists()) {
-      onData(docSnapshot.data());
-    }
-  });
-}
+export const getUserProfile = async (uid) => {
+  try {
+    const docRef = doc(db, "users", uid);
+    const docSnapshot = await getDoc(docRef);
 
+    if (docSnapshot.exists()) {
+      const data = docSnapshot.data();
+
+      return {
+        uid,
+        username: data.username ?? "",
+        email: data.email ?? "",
+        photoUrl: data.photoUrl ?? null,
+        displayName: data.displayName ?? "",
+        bio: data.bio ?? "",
+        category: data.category,
+      };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
+
+export const getOwnerProfile = async (uid) => {
+  try {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error("User does not exist");
+    }
+
+    return userSnap.data();
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
 //bucketlist
 const updateOverallStats = async (userId, type) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
@@ -131,7 +164,7 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
-export const getUserStats = async (db, uid) => {
+export const getUserStats = async (uid) => {
   try {
     const statsRef = doc(db, "users", uid, "bucketList", "stats");
     const docSnapshot = getDoc(statsRef);
@@ -234,19 +267,29 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
-export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
-  if (!uid || !accessLevels.length) return () => {};
-  const ref = collection(db, "users", uid, "bucketList");
-  const q = query(ref, where("accessLevel", "in", accessLevels));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    onData(data);
-  });
-  return unsubscribe;
-}
+export const getFilteredSubBucketLists = async (uid, accessLevels) => {
+  try {
+    const ref = collection(db, "users", uid, "bucketList");
+    const q = query(ref, where("accessLevel", "in", accessLevels));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        description: data.description ?? "",
+        accessLevel: data.accessLevel,
+        collaborators: data.collaborators,
+        createdAt: data.createdAt,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching filtered subbucketlists:", error);
+    throw error;
+  }
+};
+
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
@@ -370,7 +413,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
-export async function getAllEvents(db, uid, subBucketLists) {
+export async function getAllEvents(uid, subBucketLists) {
   const allEvents = [];
   for (const sub of subBucketLists) {
     const eventsRef = collection(
@@ -381,11 +424,21 @@ export async function getAllEvents(db, uid, subBucketLists) {
       sub.id,
       "events"
     );
+
     const eventsSnap = await getDocs(eventsRef);
-    const events = eventsSnap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+
+    const events = eventsSnap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ownerId: data.ownerId,
+        title: data.title,
+        description: data.description,
+        categories: data.categories,
+        completed: data.completed,
+        deadline: data.deadline,
+      };
+    });
     allEvents.push(...events);
   }
   return allEvents;
@@ -459,7 +512,7 @@ export const toggleEventCompletion = async (
   }
 };
 
-export function getUpcomingEvents(db, uid, now, onData) {
+export function getUpcomingEvents(uid, now, onData) {
   const upcomingQ = query(
     collectionGroup(db, 'events'),
     where('ownerId', '==', uid),
@@ -477,7 +530,7 @@ export function getUpcomingEvents(db, uid, now, onData) {
   });
 }
 
-export function getOverdueEvents(db, uid, now, onData) {
+export function getOverdueEvents(uid, now, onData) {
   const overdueQ = query(
     collectionGroup(db, 'events'),
     where('ownerId', '==', uid),
@@ -533,7 +586,7 @@ export const deleteFriend = async (userId, friendId) => {
   }
 };
 
-export function getFriends(db, currentUserId, onData) {
+export function getFriends(currentUserId, onData) {
   const ref = collection(db, "users", currentUserId, "friends");
   return onSnapshot(ref, (snapshot) => {
     const data = snapshot.docs.map(doc => ({
@@ -545,28 +598,27 @@ export function getFriends(db, currentUserId, onData) {
 }
 
 //miscellaneous
-export function getRelationship(db, currentUserId, targetUserId, onChange) {
-  if (!currentUserId || !targetUserId) return () => {};
-
+export const getRelationship = async (currentUserId, targetUserId) => {
   if (currentUserId === targetUserId) {
-    onChange("self");
-    return () => {};
+    return "self";
   }
 
-  const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
+  try {
+    const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
+    const docSnap = await getDoc(docRef);
 
-  const unsubscribe = onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
-      onChange("friend");
+      return "friend";
     } else {
-      onChange("none");
+      return "none";
     }
-  });
+  } catch (error) {
+    console.error("Error fetching relationship:", error);
+    throw error;
+  }
+};
 
-  return unsubscribe;
-}
-
-export function getAllUsers(db, onData) {
+export function getAllUsers(onData) {
   return onSnapshot(collection(db, "users"), (snapshot) => {
     const data = snapshot.docs.map(doc => ({
       uid: doc.id,
