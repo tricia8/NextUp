@@ -9,20 +9,21 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { ThemedText } from "./ThemedText";
 import { RFValue } from "react-native-responsive-fontsize";
+import { Goal } from "@/types/goal";
 
-type Props = {
+interface Props extends Partial<Goal> {
   title: string;
-  completionStatus: string;
-  tags?: string[];
+  isCompleted: boolean;
+  categories?: string[];
   deadline?: string;
   onPress: () => void;
   colorScheme: ColorSchemeName;
-};
+}
 
 export default function GoalCard({
   title,
-  completionStatus,
-  tags,
+  isCompleted,
+  categories,
   deadline,
   onPress,
   colorScheme,
@@ -40,7 +41,7 @@ export default function GoalCard({
     >
       <TouchableOpacity onPress={onPress} style={{ flex: 1 }}>
         <View style={styles.row}>
-          {tags}
+          {categories}
           <FontAwesome6 name="hourglass-half" size={20} color="black" />
         </View>
 
@@ -53,7 +54,9 @@ export default function GoalCard({
 
         {/* Status Row */}
         <View>
-          <ThemedText style={styles.status}>{completionStatus}</ThemedText>
+          <ThemedText style={styles.status}>
+            Status: {isCompleted ? "Pending" : "Done!"}
+          </ThemedText>
         </View>
       </TouchableOpacity>
     </LinearGradient>
