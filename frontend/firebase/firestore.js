@@ -258,10 +258,17 @@ export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
     const q = query(ref, where("accessLevel", "in", accessLevels));
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    return snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        description: data.description ?? "",
+        accessLevel: data.accessLevel,
+        collaborators: data.collaborators,
+        createdAt: data.createdAt,
+      };
+    });
   } catch (error) {
     console.error("Error fetching filtered subbucketlists:", error);
     throw error;
