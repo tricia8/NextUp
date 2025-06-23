@@ -14,7 +14,7 @@ import {
   where,
   onSnapshot,
   collectionGroup,
-  getDocs
+  getDocs,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -40,13 +40,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = collection(
-    db,
-    "users",
-    user.uid,
-    "bucketList",
-    "stats"
-  );
+  const bucketListStatsRef = doc(db, "users", user.uid, "bucketList", "stats");
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -61,7 +55,7 @@ export const createUser = async (user, username) => {
       photoUrl: user.photoURL,
       displayName: "",
       bio: "",
-      category: user.category,
+      category: user.category ?? null,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
@@ -104,7 +98,7 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
-export const getUserProfile = async (db, uid) => {
+export const getUserProfile = async (uid) => {
   try {
     const docRef = doc(db, "users", uid);
     const docSnapshot = await getDoc(docRef);
@@ -130,6 +124,21 @@ export const getUserProfile = async (db, uid) => {
   }
 };
 
+export const getOwnerProfile = async (uid) => {
+  try {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error("User does not exist");
+    }
+
+    return userSnap.data();
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
 //bucketlist
 const updateOverallStats = async (userId, type) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
@@ -149,7 +158,7 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
-export const getUserStats = async (db, uid) => {
+export const getUserStats = async (uid) => {
   try {
     const statsRef = doc(db, "users", uid, "bucketList", "stats");
     const docSnapshot = getDoc(statsRef);
@@ -168,7 +177,7 @@ export const getUserStats = async (db, uid) => {
     console.error("Error fetching user stats:", error);
     throw error;
   }
-}
+};
 
 //subbucketlists
 export const createSubBucketList = async (
@@ -252,7 +261,7 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
-export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
+export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   try {
     const ref = collection(db, "users", uid, "bucketList");
     const q = query(ref, where("accessLevel", "in", accessLevels));
@@ -274,7 +283,6 @@ export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
     throw error;
   }
 };
-
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
@@ -398,7 +406,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
-export async function getAllEvents(db, uid, subBucketLists) {
+export async function getAllEvents(uid, subBucketLists) {
   const allEvents = [];
   for (const sub of subBucketLists) {
     const eventsRef = collection(
@@ -497,40 +505,39 @@ export const toggleEventCompletion = async (
   }
 };
 
-export function getUpcomingEvents(db, uid, now, onData) {
+export function getUpcomingEvents(uid, now, onData) {
   const upcomingQ = query(
-    collectionGroup(db, 'events'),
-    where('ownerId', '==', uid),
-    where('deadline', '>=', Timestamp.fromDate(now)),
-    where('isCompleted', '==', false),
-    orderBy('deadline'),
+    collectionGroup(db, "events"),
+    where("ownerId", "==", uid),
+    where("deadline", ">=", Timestamp.fromDate(now)),
+    where("isCompleted", "==", false),
+    orderBy("deadline"),
     limit(3)
   );
   return onSnapshot(upcomingQ, (snapshot) => {
-    const upcoming = snapshot.docs.map(doc => ({
-      ...(doc.data()),
+    const upcoming = snapshot.docs.map((doc) => ({
+      ...doc.data(),
       id: doc.id,
     }));
     onData(upcoming);
   });
 }
 
-export function getOverdueEvents(db, uid, now, onData) {
+export function getOverdueEvents(uid, now, onData) {
   const overdueQ = query(
-    collectionGroup(db, 'events'),
-    where('ownerId', '==', uid),
-    where('deadline', '<', Timestamp.fromDate(now)),
-    where('isCompleted', '==', false)
+    collectionGroup(db, "events"),
+    where("ownerId", "==", uid),
+    where("deadline", "<", Timestamp.fromDate(now)),
+    where("isCompleted", "==", false)
   );
   return onSnapshot(overdueQ, (snapshot) => {
-    const overdue = snapshot.docs.map(doc => ({
+    const overdue = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
     onData(overdue);
   });
 }
-
 
 //friends
 export const addFriend = async (userId, friendId) => {
@@ -571,10 +578,10 @@ export const deleteFriend = async (userId, friendId) => {
   }
 };
 
-export function getFriends(db, currentUserId, onData) {
+export function getFriends(currentUserId, onData) {
   const ref = collection(db, "users", currentUserId, "friends");
   return onSnapshot(ref, (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       uid: doc.id,
       ...doc.data(),
     }));
@@ -583,7 +590,7 @@ export function getFriends(db, currentUserId, onData) {
 }
 
 //miscellaneous
-export const getRelationship = async (db, currentUserId, targetUserId) => {
+export const getRelationship = async (currentUserId, targetUserId) => {
   if (currentUserId === targetUserId) {
     return "self";
   }
@@ -603,9 +610,9 @@ export const getRelationship = async (db, currentUserId, targetUserId) => {
   }
 };
 
-export function getAllUsers(db, onData) {
+export function getAllUsers(onData) {
   return onSnapshot(collection(db, "users"), (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       uid: doc.id,
       ...doc.data(),
     }));
