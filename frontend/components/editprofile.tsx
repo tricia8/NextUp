@@ -7,17 +7,20 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import Modal from "react-native-modal";
 import { User } from '@/types/user';
-import { updateProfile } from '@/firebase/firestore';
+import { getUserProfile, updateProfile } from '@/firebase/firestore';
 import CategoryPicker from './forms/CategoryPicker';
+import { db } from '@/firebase/firebaseConfig';
 
 
 type editProfileProps = {
     visible: boolean,
     onClose: () => void,
     userData: User,
+    setUserData: (user: User | null) => void;
+    setCategory: (category: string) => void;
 }
 
-export default function EditProfile({ visible, onClose, userData }: editProfileProps) {
+export default function EditProfile({ visible, onClose, userData, setUserData, setCategory }: editProfileProps) {
   
   const [bioText, setBioText] = useState(userData.bio);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -29,7 +32,10 @@ export default function EditProfile({ visible, onClose, userData }: editProfileP
     try {
         await updateProfile(uid, profileDetails);
         Alert.alert("Saved!");
+        const updatedUser = await getUserProfile(db, uid); // refetch
         onClose();
+        setUserData(updatedUser);
+        setCategory(updatedUser?.category?.[0] ?? '--');
     } catch (error) {
         Alert.alert("Error saving");
     }
