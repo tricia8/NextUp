@@ -13,8 +13,9 @@ import { RFValue } from "react-native-responsive-fontsize";
 import { User } from "@/types/user";
 import { ms } from "react-native-size-matters";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 
-const PROFILEPICSIZE = ms(55);
+const PROFILEPICSIZE = ms(38);
 
 type CustomModalProps = {
   currentUid: string;
@@ -30,6 +31,7 @@ export default function ShareListModal({
   onClose,
 }: CustomModalProps) {
   console.log("Modal data:", data);
+  const router = useRouter();
 
   const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -48,9 +50,16 @@ export default function ShareListModal({
           <FontAwesome name="user-circle" size={PROFILEPICSIZE} color="black" />
         )}
 
-        <TouchableOpacity>
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: "/(main)/(tabs)/profile/[uid]",
+              params: { uid: item.uid },
+            })
+          }
+        >
           <Text key={item.uid} style={{ fontSize: RFValue(12) }}>
-            {item.username} + {item.uid == currentUid ? "(you)" : ""}
+            {item.username} {item.uid == currentUid ? "(you)" : ""}
           </Text>
         </TouchableOpacity>
       </View>
