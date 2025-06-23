@@ -409,11 +409,21 @@ export async function getAllEvents(db, uid, subBucketLists) {
       sub.id,
       "events"
     );
+
     const eventsSnap = await getDocs(eventsRef);
-    const events = eventsSnap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+
+    const events = eventsSnap.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ownerId: data.ownerId,
+        title: data.title,
+        description: data.description,
+        categories: data.categories,
+        completed: data.completed,
+        deadline: data.deadline,
+      };
+    });
     allEvents.push(...events);
   }
   return allEvents;
