@@ -21,9 +21,13 @@ import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
 import { createSubBucketList, getOwnerProfile } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { User } from "@/types/user";
+import LoadingScreen from "@/components/Loading";
 
 export default function newSubList() {
-  const { user } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
+  if (loading || !user?.uid) {
+    return <LoadingScreen />;
+  }
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDesc] = useState("");
@@ -42,21 +46,28 @@ export default function newSubList() {
 
   useFocusEffect(
     useCallback(() => {
+      console.log("useFocusEffect triggered");
+
       const fetchOwner = async () => {
-        if (!user?.id) return;
+        console.log("user?.uid", user?.uid);
+
+        if (!user?.uid) return;
 
         try {
-          const profile = await getOwnerProfile(user.id);
+          const profile = (await getOwnerProfile(user.uid)) as User;
+          console.log("Owner profile:", profile);
+
           if (profile) {
             setCollaborators([profile]);
           }
+          console.log("collaborators", collaborators);
         } catch (error) {
           console.error("Failed to fetch owner profile:", error);
         }
       };
 
       fetchOwner();
-    }, [user?.id])
+    }, [user?.uid])
   );
 
   // Sublist submission
@@ -94,7 +105,7 @@ export default function newSubList() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
-          currentUid={user?.id}
+          currentUid={user?.uid}
           data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
