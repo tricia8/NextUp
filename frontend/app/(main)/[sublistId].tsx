@@ -51,11 +51,19 @@ import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { User } from "@/types/user";
 import { Goal } from "@/types/goal";
+import { FlashList } from "@shopify/flash-list";
+import GoalCard from "@/components/GoalCard";
+import LoadingScreen from "@/components/Loading";
 
 export default function currentSublist() {
   // Fetching sublist data from firestore
-  const { user } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
   const { sublistId } = useLocalSearchParams();
+  console.log("sublistId param:", sublistId);
+
+  if (loading || !user?.uid || !sublistId) {
+    return <LoadingScreen />;
+  }
 
   // Sublist fields
   const [isEditing, setIsEditing] = useState(false);
@@ -74,6 +82,18 @@ export default function currentSublist() {
 
   // Fetched goals
   const [existingGoals, setExistingGoals] = useState<Goal[]>([]);
+  const renderFlatlistGoal = ({ item }: { item: Goal }) => {
+    return (
+      <GoalCard
+        title={item.title}
+        isCompleted={item.isCompleted}
+        categories={item.categories}
+        deadline={item.deadline}
+        onPress={() => {}}
+        colorScheme={colorScheme}
+      />
+    );
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -83,12 +103,15 @@ export default function currentSublist() {
       const fetchData = async () => {
         try {
           if (user?.uid && sublistId) {
+            console.log("Fetching sublist for path:", user.uid, sublistId);
+
             const sublistData = await getSubBucketList(user.uid, sublistId);
 
             const goalData = await getAllEventsFormatted(user.uid, sublistId);
             // returns array of events
             // event object: { id, title, description, categories, isCompleted, createdAt, deadline }
             setExistingGoals(goalData);
+            console.log("existing goals: " + existingGoals);
 
             if (isActive) {
               setTitle(sublistData.title);
@@ -108,7 +131,7 @@ export default function currentSublist() {
               const otherProfiles = await Promise.all(
                 // Fetches all collaborator profiles in parallel
                 sublistData.collaborators
-                  .filter((uid: string) => uid !== user.uid)
+                  .filter((uid: string | undefined) => uid && uid !== user.uid)
                   .map((uid: string) => getOwnerProfile(uid))
               );
 
@@ -127,6 +150,7 @@ export default function currentSublist() {
             statusBarHeight: StatusBar.currentHeight,
             floating: true,
             icon: "danger",
+            duration: 5000,
           });
         }
       };
@@ -198,8 +222,10 @@ export default function currentSublist() {
         deadline: deadlineDate,
       });
       console.log("goal added!");
-      // const updated = await getGoals(); // GET — fetch updated list from Firestore
-      // setGoals(updated); // update state/UI with fresh data
+
+      // GET — fetch updated list from Firestore
+      const updatedGoals = await getAllEventsFormatted(user?.uid, sublistId);
+      setExistingGoals(updatedGoals); // update state/UI with fresh data
       onCancel(); // reset goal creation fields
     } catch (error) {
       // Handle error
@@ -336,9 +362,9 @@ export default function currentSublist() {
           </View>
         )}
 
-        <View style={{ marginVertical: 10 }}>
-          <ThemedText>Created {createdAt}</ThemedText>
-          <ThemedText style={styles.completionStatus}>
+        <View style={{ marginVertical: 10, gap: 8 }}>
+          <ThemedText style={styles.metadata}>Created {createdAt}</ThemedText>
+          <ThemedText style={styles.metadata}>
             {completionStatus[0]} of {completionStatus[1]} complete
           </ThemedText>
         </View>
@@ -358,6 +384,14 @@ export default function currentSublist() {
           <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
           <Ionicons name="add-circle-outline" size={22} color="black" />
         </TouchableOpacity>
+
+        <FlashList
+          data={existingGoals}
+          renderItem={renderFlatlistGoal}
+          estimatedItemSize={20}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          keyExtractor={(item, index) => `${item.title}-${index}`}
+        />
 
         <BottomSheetModal
           ref={bottomSheetModalRef}
@@ -520,7 +554,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       padding: 8,
       backgroundColor: "rgba(151, 151, 151, 0.25)",
     },
-    completionStatus: {
+    metadata: {
       fontStyle: "italic",
       fontSize: RFValue(12),
     },
