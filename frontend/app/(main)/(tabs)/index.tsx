@@ -45,7 +45,7 @@ export default function HomeScreen() {
       if (!uid) return;
       const fetchStats = async () => {
         try {
-          const stats = await getUserStats(db, uid);
+          const stats = await getUserStats(uid);
           setTotalEvents(stats.totalEvents);
           setCompletedEvents(stats.completedEvents);
         } catch (error) {
@@ -64,13 +64,11 @@ export default function HomeScreen() {
       const now = new Date();
 
       const unsubscribeUpcoming = getUpcomingEvents(
-        db,
         uid,
         now,
         setUpcomingEvents
       );
       const unsubscribeOverdue = getOverdueEvents(
-        db,
         uid,
         now,
         (overdue: Event[]) => {
