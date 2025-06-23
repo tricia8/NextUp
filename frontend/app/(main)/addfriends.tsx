@@ -27,11 +27,13 @@ export default function UsersList() {
 
         const fetchData = async () => {
           try {
-            const [users, friendUids] = await Promise.all([
+            const [users, friends] = await Promise.all([
               getAllUsers(),
               getFriends(currentUserId),
             ]);
             setUsers(users);
+
+            const friendUids = friends.map(friend => friend.uid);
             setFriendUids(friendUids);
           } catch (err) {
             console.error("Error fetching users or friends:", err);

@@ -4,17 +4,17 @@ import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useContext, useState } from 'react';
 import UserSearch from '@/components/UserSearch';
-import { User } from '@/types/user';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import LoadingScreen from '@/components/Loading';
 import { getFriends } from '@/firebase/firestore';
+import { PartialUser } from '@/types/partialuser';
 
 
 
 export default function FriendsList() {
-  const [friends, setFriends] = useState<User[]>([]);
+  const [friends, setFriends] = useState<PartialUser[]>([]);
   const { viewedUid } = useLocalSearchParams();
   const { user } = useContext(AuthContext);
 
