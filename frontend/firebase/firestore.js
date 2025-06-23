@@ -252,19 +252,22 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
-export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
-  if (!uid || !accessLevels.length) return () => {};
-  const ref = collection(db, "users", uid, "bucketList");
-  const q = query(ref, where("accessLevel", "in", accessLevels));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((doc) => ({
+export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
+  try {
+    const ref = collection(db, "users", uid, "bucketList");
+    const q = query(ref, where("accessLevel", "in", accessLevels));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    onData(data);
-  });
-  return unsubscribe;
-}
+  } catch (error) {
+    console.error("Error fetching filtered subbucketlists:", error);
+    throw error;
+  }
+};
+
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
