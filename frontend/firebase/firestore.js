@@ -104,7 +104,7 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
-export const getUserProfile = async (db, uid) => {
+export const getUserProfile = async (uid) => {
   try {
     const docRef = doc(db, "users", uid);
     const docSnapshot = await getDoc(docRef);
@@ -149,7 +149,7 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
-export const getUserStats = async (db, uid) => {
+export const getUserStats = async (uid) => {
   try {
     const statsRef = doc(db, "users", uid, "bucketList", "stats");
     const docSnapshot = await getDoc(statsRef);

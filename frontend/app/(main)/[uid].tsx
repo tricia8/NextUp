@@ -48,7 +48,7 @@ export default function ProfileScreen() {
 
       const fetchUser = async () => {
         try {
-          const user = await getUserProfile(db, finalUid);
+          const user = await getUserProfile(finalUid);
           if (user) {
             setUserData(user);
             setCategory(user.category?.[0] ?? "--");
@@ -67,7 +67,7 @@ export default function ProfileScreen() {
       if (!finalUid) return;
 
       const fetchStats = async () => {
-        const stats = await getUserStats(db, finalUid);
+        const stats = await getUserStats(finalUid);
         setTotalEvents(stats.totalEvents);
         setCompletedEvents(stats.completedEvents);
       };
