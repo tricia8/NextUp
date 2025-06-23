@@ -435,8 +435,9 @@ export async function getAllEvents(uid, subBucketLists) {
         title: data.title,
         description: data.description,
         categories: data.categories,
-        completed: data.completed,
+        isCompleted: data.completed,
         deadline: data.deadline,
+        createdAt: data.createdAt,
       };
     });
     allEvents.push(...events);
