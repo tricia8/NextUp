@@ -79,6 +79,9 @@ export default function newSubList() {
         accessLevel,
         collaborators,
       });
+      // Delay to allow Firestore to propagate the new document
+      await new Promise((res) => setTimeout(res, 300));
+
       router.push({ pathname: "/(main)/[sublistId]", params: { sublistId } });
       showMessage({
         message: "Success!",
@@ -97,6 +100,7 @@ export default function newSubList() {
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
         icon: "danger",
+        duration: 5000,
       });
     }
   };
