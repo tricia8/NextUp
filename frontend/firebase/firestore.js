@@ -104,13 +104,21 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
-export function getUserProfile(db, uid, onData) {
-  return onSnapshot(doc(db, "users", uid), (docSnapshot) => {
+export const getUserProfile = async (db, uid) => {
+  try {
+    const docRef = doc(db, "users", uid);
+    const docSnapshot = await getDoc(docRef);
+
     if (docSnapshot.exists()) {
-      onData(docSnapshot.data());
+      return docSnapshot.data();
+    } else {
+      return null;
     }
-  });
-}
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
 
 //bucketlist
 const updateOverallStats = async (userId, type) => {
