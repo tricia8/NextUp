@@ -13,6 +13,7 @@ import {
   query,
   where,
   onSnapshot,
+  getDocs,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -254,7 +255,7 @@ const formatSublistData = (data) => {
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : null,
+    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : "",
     completionStatus: data.completionStatus,
   };
 };
@@ -392,9 +393,9 @@ const formatEventData = (data) => {
     title: data.title,
     description: data.description ?? "", // default to empty string
     categories: data.categories ?? [], // default to empty array
-    deadline: deadline ? formatDisplayDate(deadline) : null,
+    deadline: deadline ? formatDisplayDate(deadline) : "",
     isCompleted: data.isCompleted,
-    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : null,
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
   };
 };
 
@@ -434,7 +435,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline: deadlineFormatted, // could be null
       isCompleted,
-      createdAtFormatted,
+      createdAt: createdAtFormatted,
     };
   } catch (error) {
     console.error("Error fetching event:", error);
