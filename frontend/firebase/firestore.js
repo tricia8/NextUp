@@ -40,7 +40,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = collection(
+  const bucketListStatsRef = doc(
     db,
     "users",
     user.uid,
@@ -61,7 +61,7 @@ export const createUser = async (user, username) => {
       photoUrl: user.photoURL,
       displayName: "",
       bio: "",
-      category: user.category,
+      category: user.category ?? null,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
