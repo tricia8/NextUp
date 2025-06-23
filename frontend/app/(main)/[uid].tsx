@@ -67,9 +67,13 @@ export default function ProfileScreen() {
       if (!finalUid) return;
 
       const fetchStats = async () => {
-        const stats = await getUserStats(finalUid);
-        setTotalEvents(stats.totalEvents);
-        setCompletedEvents(stats.completedEvents);
+        try {
+          const stats = await getUserStats(finalUid);
+          setTotalEvents(stats.totalEvents);
+          setCompletedEvents(stats.completedEvents);
+        } catch (error) {
+          console.log("Error fetching user stats:", error);
+        }
       };
 
       fetchStats();
