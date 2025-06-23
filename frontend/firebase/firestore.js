@@ -13,6 +13,7 @@ import {
   query,
   where,
   onSnapshot,
+  getDocs,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -241,6 +242,33 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
+const formatSublistData = (data) => {
+  // data type: Sublist object
+  const createdAt = data.createdAt?.toDate?.();
+
+  return {
+    title: data.title,
+    description: data.description ?? "", // default to empty string
+    accessLevel: data.accessLevel,
+    collaborators: data.collaborators,
+    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : "",
+    completionStatus: data.completionStatus,
+  };
+};
+
+// for bucketlist screen
+export async function getAllSubBucketLists(uid) {
+  const allSublists = [];
+  const bucketListRef = collection(db, "users", uid, "bucketList");
+  const listSnap = await getDocs(bucketListRef);
+  const sublists = listSnap.docs.map((doc) => ({
+    id: doc.id,
+    ...formatSublistData(doc.data()),
+  }));
+  allSublists.push(...sublists);
+  return allSublists;
+}
+
 export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
   if (!uid || !accessLevels.length) return () => {};
   const ref = collection(db, "users", uid, "bucketList");
@@ -334,6 +362,22 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+const formatEventData = (data) => {
+  // data type: Event object
+  const createdAt = data.createdAt?.toDate?.();
+  const deadline = data.deadline?.toDate?.();
+
+  return {
+    title: data.title,
+    description: data.description ?? "", // default to empty string
+    categories: data.categories ?? [], // default to empty array
+    deadline: deadline ? formatDisplayDate(deadline) : "",
+    isCompleted: data.isCompleted,
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+  };
+};
+
+// for [goalId] screen
 export const getEvent = async (userId, subBucketListId, eventId) => {
   try {
     const eventDoc = doc(
@@ -369,7 +413,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline: deadlineFormatted, // could be null
       isCompleted,
-      createdAtFormatted,
+      createdAt: createdAtFormatted,
     };
   } catch (error) {
     console.error("Error fetching event:", error);
