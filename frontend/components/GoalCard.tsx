@@ -1,0 +1,93 @@
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  ColorSchemeName,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import { ThemedText } from "./ThemedText";
+import { RFValue } from "react-native-responsive-fontsize";
+
+type Props = {
+  title: string;
+  completionStatus: string;
+  tags?: string[];
+  deadline?: string;
+  onPress: () => void;
+  colorScheme: ColorSchemeName;
+};
+
+export default function GoalCard({
+  title,
+  completionStatus,
+  tags,
+  deadline,
+  onPress,
+  colorScheme,
+}: Props) {
+  const styles = getStyles(colorScheme);
+
+  return (
+    <LinearGradient
+      colors={
+        colorScheme === "dark" ? ["#0f2027", "#188991"] : ["#d0e6fa", "#b3d2f2"] // ["#dcf4a9", "#b2df75"]
+      }
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.itemContainer}
+    >
+      <TouchableOpacity onPress={onPress} style={{ flex: 1 }}>
+        <View style={styles.row}>
+          {tags}
+          <FontAwesome6 name="hourglass-half" size={20} color="black" />
+        </View>
+
+        <View style={styles.titleRow}>
+          <ThemedText type="subtitle" style={styles.title}>
+            {title}
+          </ThemedText>
+          <AntDesign name="right" size={18} color="black" />
+        </View>
+
+        {/* Status Row */}
+        <View>
+          <ThemedText style={styles.status}>{completionStatus}</ThemedText>
+        </View>
+      </TouchableOpacity>
+    </LinearGradient>
+  );
+}
+
+const getStyles = (colorScheme: ColorSchemeName) =>
+  StyleSheet.create({
+    itemContainer: {
+      flexDirection: "column",
+      marginVertical: 8,
+      marginHorizontal: 15,
+      padding: 20,
+      justifyContent: "space-between",
+      borderRadius: 5,
+      elevation: 5,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 6,
+    },
+    titleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 2,
+    },
+    title: {
+      fontSize: RFValue(16),
+    },
+    status: {
+      fontSize: 13,
+      color: "#444",
+    },
+  });
