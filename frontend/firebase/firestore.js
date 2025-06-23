@@ -587,15 +587,19 @@ export const deleteFriend = async (userId, friendId) => {
   }
 };
 
-export function getFriends(currentUserId, onData) {
-  const ref = collection(db, "users", currentUserId, "friends");
-  return onSnapshot(ref, (snapshot) => {
+export async function getFriends(currentUserId) {
+  try {
+    const ref = collection(db, "users", currentUserId, "friends");
+    const snapshot = await getDocs(ref);
     const data = snapshot.docs.map(doc => ({
       uid: doc.id,
       ...doc.data(),
     }));
-    onData(data);
-  });
+    return data;
+  } catch (error) {
+    console.error("Error fetching friends:", error);
+    throw error;
+  }
 }
 
 //miscellaneous
@@ -619,12 +623,16 @@ export const getRelationship = async (currentUserId, targetUserId) => {
   }
 };
 
-export function getAllUsers(onData) {
-  return onSnapshot(collection(db, "users"), (snapshot) => {
+export async function getAllUsers() {
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
     const data = snapshot.docs.map(doc => ({
       uid: doc.id,
       ...doc.data(),
     }));
-    onData(data);
-  });
+    return data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
 }
