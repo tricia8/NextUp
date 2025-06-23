@@ -144,7 +144,7 @@ export const getUserStats = async (db, uid) => {
       };
     } else {
       console.log("Stats document does not exist for user:", uid);
-      return null;
+      return { totalEvents: 0, completedEvents: 0 };
     }
   } catch (error) {
     console.error("Error fetching user stats:", error);
