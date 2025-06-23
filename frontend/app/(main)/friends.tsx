@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useContext, useState } from 'react';
-import { db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -31,7 +30,7 @@ export default function FriendsList() {
         return;
       }
 
-      const unsubscribe = getFriends(db, currentUserId, setFriends);
+      const unsubscribe = getFriends(currentUserId, setFriends);
 
       return () => unsubscribe();
     }, [currentUserId])

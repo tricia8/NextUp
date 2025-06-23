@@ -3,7 +3,6 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { vs } from 'react-native-size-matters';
 import { useContext, useEffect, useState } from 'react';
-import { db } from "@/firebase/firebaseConfig";
 import UserSearch from '@/components/UserSearch';
 import { User } from '@/types/user';
 import { useFocusEffect } from 'expo-router';
@@ -26,9 +25,9 @@ export default function UsersList() {
           return;
         }
 
-        const unsubscribeUsers = getAllUsers(db, setUsers);
+        const unsubscribeUsers = getAllUsers(setUsers);
 
-        const unsubscribeFriends = getFriends(db, currentUserId, (friendsList: User) => {
+        const unsubscribeFriends = getFriends(currentUserId, (friendsList: User) => {
               setFriendUids(friendsList.map(friend => friend.uid));
             });
             
