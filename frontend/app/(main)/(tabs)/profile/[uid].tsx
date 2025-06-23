@@ -50,12 +50,13 @@ export default function ProfileScreen() {
     useCallback(() => {
       if (!finalUid) return;
 
-      const unsubscribe = getUserStats(db, finalUid, (stats: UserStats) => {
+      const fetchStats = async () => {
+        const stats = await getUserStats(db, finalUid);
         setTotalEvents(stats.totalEvents);
         setCompletedEvents(stats.completedEvents);
-      });
+      };
 
-      return () => unsubscribe();
+      fetchStats();
     }, [finalUid])
   );
 
