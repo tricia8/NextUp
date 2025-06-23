@@ -131,19 +131,25 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
-export function getUserStats(db, uid, onData) {
-  return onSnapshot(
-    doc(db, "users", uid, "bucketList", "stats"),
-    (docSnapshot) => {
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        onData({
-          totalEvents: data.totalEvents,
-          completedEvents: data.completedEvents,
-        });
-      }
+export const getUserStats = async (db, uid) => {
+  try {
+    const statsRef = doc(db, "users", uid, "bucketList", "stats");
+    const docSnapshot = getDoc(statsRef);
+
+    if (docSnapshot.exists()) {
+      const data = docSnapshot.data();
+      return {
+        totalEvents: data.totalEvents,
+        completedEvents: data.completedEvents,
+      };
+    } else {
+      console.log("Stats document does not exist for user:", uid);
+      return null;
     }
-  );
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
+    throw error;
+  }
 }
 
 //subbucketlists
