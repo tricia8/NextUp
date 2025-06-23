@@ -43,16 +43,20 @@ import DateTimePicker, {
 import { useLocalSearchParams } from "expo-router";
 import {
   addEvent,
+  getAllEventsFormatted,
   getOwnerProfile,
   getSubBucketList,
-  getUserProfile,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { User } from "@/types/user";
-import { db } from "@/firebase/firebaseConfig";
+import { Goal } from "@/types/goal";
 
 export default function currentSublist() {
+  // Fetching sublist data from firestore
+  const { user } = useContext(AuthContext);
+  const { sublistId } = useLocalSearchParams();
+
   // Sublist fields
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -68,9 +72,8 @@ export default function currentSublist() {
   const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
   const [createdAt, setCreatedAt] = useState("");
 
-  // Fetching sublist data from firestore
-  const { user } = useContext(AuthContext);
-  const { sublistId } = useLocalSearchParams();
+  // Fetched goals
+  const [existingGoals, setExistingGoals] = useState<Goal[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -79,27 +82,33 @@ export default function currentSublist() {
 
       const fetchData = async () => {
         try {
-          if (user?.id && sublistId) {
-            const data = await getSubBucketList(user.id, sublistId);
+          if (user?.uid && sublistId) {
+            const sublistData = await getSubBucketList(user.uid, sublistId);
+
+            const goalData = await getAllEventsFormatted(user.uid, sublistId);
+            // returns array of events
+            // event object: { id, title, description, categories, isCompleted, createdAt, deadline }
+            setExistingGoals(goalData);
 
             if (isActive) {
-              setTitle(data.title);
-              setDesc(data.description);
-              setAccessLevel(data.accessLevel);
-              setSharedUids(data.collaborators); // array of uids
-              setCreatedAt(data.createdAtFormatted);
-              setCompletionStatus(data.completionStatus);
+              setTitle(sublistData.title);
+              setDesc(sublistData.description);
+              setAccessLevel(sublistData.accessLevel);
+              setSharedUids(sublistData.collaborators); // array of uids
+              setCreatedAt(sublistData.createdAtFormatted);
+              setCompletionStatus(sublistData.completionStatus);
+              setExistingGoals(goalData);
 
               // Cache initial values
-              setInitialTitle(data.title);
-              setInitialDescription(data.description);
+              setInitialTitle(sublistData.title);
+              setInitialDescription(sublistData.description);
 
               // Fetch owner + collaborators
-              const owner = await getOwnerProfile(user.id);
+              const owner = await getOwnerProfile(user.uid);
               const otherProfiles = await Promise.all(
                 // Fetches all collaborator profiles in parallel
-                data.collaborators
-                  .filter((uid: string) => uid !== user.id)
+                sublistData.collaborators
+                  .filter((uid: string) => uid !== user.uid)
                   .map((uid: string) => getOwnerProfile(uid))
               );
 
@@ -113,7 +122,7 @@ export default function currentSublist() {
             description:
               error instanceof Error
                 ? error.message
-                : "Failed to fetch sublist",
+                : "Failed to fetch sublist data",
             type: "danger",
             statusBarHeight: StatusBar.currentHeight,
             floating: true,
@@ -128,7 +137,7 @@ export default function currentSublist() {
       return () => {
         isActive = false; // Avoids setting state after unmount
       };
-    }, [user?.id, sublistId])
+    }, [user?.uid, sublistId])
   );
 
   // Share modal
@@ -139,7 +148,7 @@ export default function currentSublist() {
   const isDark = colorScheme === "dark";
   const styles = getStyles(colorScheme);
 
-  // Goal info
+  // New Goal info
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDesc, setGoalDesc] = useState("");
 
@@ -214,7 +223,7 @@ export default function currentSublist() {
     setSelectedTags([]);
   };
 
-  // set right header as invite collaborators icon
+  // Set right header as invite collaborators icon
   const navigation = useNavigation();
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -262,7 +271,7 @@ export default function currentSublist() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
-          currentUid={user?.id}
+          currentUid={user?.uid}
           data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
@@ -328,6 +337,7 @@ export default function currentSublist() {
         )}
 
         <View style={{ marginVertical: 10 }}>
+          <ThemedText>Created {createdAt}</ThemedText>
           <ThemedText style={styles.completionStatus}>
             {completionStatus[0]} of {completionStatus[1]} complete
           </ThemedText>
