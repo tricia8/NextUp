@@ -27,7 +27,7 @@ export default function UsersList() {
 
         const unsubscribeUsers = getAllUsers(setUsers);
 
-        const unsubscribeFriends = getFriends(currentUserId, (friendsList: User) => {
+        const unsubscribeFriends = getFriends(currentUserId, (friendsList: User[]) => {
               setFriendUids(friendsList.map(friend => friend.uid));
             });
             
