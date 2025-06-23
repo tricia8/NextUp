@@ -29,6 +29,8 @@ export default function ShareListModal({
   visible,
   onClose,
 }: CustomModalProps) {
+  console.log("Modal data:", data);
+
   const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
@@ -47,7 +49,7 @@ export default function ShareListModal({
         )}
 
         <TouchableOpacity>
-          <Text style={{ fontSize: RFValue(12) }}>
+          <Text key={item.uid} style={{ fontSize: RFValue(12) }}>
             {item.username} + {item.uid == currentUid ? "(you)" : ""}
           </Text>
         </TouchableOpacity>
