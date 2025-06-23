@@ -110,7 +110,17 @@ export const getUserProfile = async (db, uid) => {
     const docSnapshot = await getDoc(docRef);
 
     if (docSnapshot.exists()) {
-      return docSnapshot.data();
+      const data = docSnapshot.data();
+
+      return {
+        uid,
+        username: data.username ?? "",
+        email: data.email ?? "",
+        photoUrl: data.photoUrl ?? null,
+        displayName: data.displayName ?? "",
+        bio: data.bio ?? "",
+        category: data.category,
+      };
     } else {
       return null;
     }
