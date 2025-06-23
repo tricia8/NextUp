@@ -113,7 +113,7 @@ export function getUserProfile(db, uid, onData) {
 export const getOwnerProfile = async (uid) => {
   try {
     const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(docRef);
+    const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
       throw new Error("User does not exist");
