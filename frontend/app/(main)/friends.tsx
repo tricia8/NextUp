@@ -30,9 +30,14 @@ export default function FriendsList() {
         return;
       }
 
-      const unsubscribe = getFriends(currentUserId, setFriends);
-
-      return () => unsubscribe();
+      const fetchFriends = async () => {
+        try {
+          const friends = await getFriends(currentUserId);
+          setFriends(friends);
+        } catch (error) {
+          console.error("Failed to fetch friends", error);
+        }
+      };
     }, [currentUserId])
   );
 

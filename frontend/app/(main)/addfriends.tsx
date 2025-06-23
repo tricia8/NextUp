@@ -25,16 +25,20 @@ export default function UsersList() {
           return;
         }
 
-        const unsubscribeUsers = getAllUsers(setUsers);
-
-        const unsubscribeFriends = getFriends(currentUserId, (friendsList: User[]) => {
-              setFriendUids(friendsList.map(friend => friend.uid));
-            });
-            
-        return () => {
-          unsubscribeUsers();
-          unsubscribeFriends();
+        const fetchData = async () => {
+          try {
+            const [users, friendUids] = await Promise.all([
+              getAllUsers(),
+              getFriends(currentUserId),
+            ]);
+            setUsers(users);
+            setFriendUids(friendUids);
+          } catch (err) {
+            console.error("Error fetching users or friends:", err);
+          }
         };
+
+        fetchData();
     }, [currentUserId])
   );
 
