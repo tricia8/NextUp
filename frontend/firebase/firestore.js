@@ -13,14 +13,14 @@ import {
   query,
   where,
   onSnapshot,
+  collectionGroup,
+  getDocs
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import timezone from "dayjs/plugin/timezone";
 
 dayjs.extend(relativeTime);
-dayjs.extend(timezone);
 
 export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   const normalizedUsername = username.trim().toLowerCase();
@@ -104,13 +104,31 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
-export function getUserProfile(db, uid, onData) {
-  return onSnapshot(doc(db, 'users', uid), (docSnapshot) => {
+export const getUserProfile = async (db, uid) => {
+  try {
+    const docRef = doc(db, "users", uid);
+    const docSnapshot = await getDoc(docRef);
+
     if (docSnapshot.exists()) {
-      onData(docSnapshot.data());
+      const data = docSnapshot.data();
+
+      return {
+        uid,
+        username: data.username ?? "",
+        email: data.email ?? "",
+        photoUrl: data.photoUrl ?? null,
+        displayName: data.displayName ?? "",
+        bio: data.bio ?? "",
+        category: data.category,
+      };
+    } else {
+      return null;
     }
-  });
-}
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    throw error;
+  }
+};
 
 //bucketlist
 const updateOverallStats = async (userId, type) => {
@@ -131,16 +149,25 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
-export function getUserStats(db, uid, onData) {
-  return onSnapshot(doc(db, 'users', uid, 'bucketList', 'stats'), (docSnapshot) => {
+export const getUserStats = async (db, uid) => {
+  try {
+    const statsRef = doc(db, "users", uid, "bucketList", "stats");
+    const docSnapshot = getDoc(statsRef);
+
     if (docSnapshot.exists()) {
       const data = docSnapshot.data();
-      onData({
+      return {
         totalEvents: data.totalEvents,
         completedEvents: data.completedEvents,
-      });
+      };
+    } else {
+      console.log("Stats document does not exist for user:", uid);
+      return { totalEvents: 0, completedEvents: 0 };
     }
-  });
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
+    throw error;
+  }
 }
 
 //subbucketlists
@@ -225,19 +252,22 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
-export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
-  if (!uid || !accessLevels.length) return () => {};
-  const ref = collection(db, "users", uid, "bucketList");
-  const q = query(ref, where("accessLevel", "in", accessLevels));
-  const unsubscribe = onSnapshot(q, (snapshot) => {
-    const data = snapshot.docs.map((doc) => ({
+export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
+  try {
+    const ref = collection(db, "users", uid, "bucketList");
+    const q = query(ref, where("accessLevel", "in", accessLevels));
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
-    onData(data);
-  });
-  return unsubscribe;
-}
+  } catch (error) {
+    console.error("Error fetching filtered subbucketlists:", error);
+    throw error;
+  }
+};
+
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
@@ -364,7 +394,14 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
 export async function getAllEvents(db, uid, subBucketLists) {
   const allEvents = [];
   for (const sub of subBucketLists) {
-    const eventsRef = collection(db, "users", uid, "bucketList", sub.id, "events");
+    const eventsRef = collection(
+      db,
+      "users",
+      uid,
+      "bucketList",
+      sub.id,
+      "events"
+    );
     const eventsSnap = await getDocs(eventsRef);
     const events = eventsSnap.docs.map((doc) => ({
       id: doc.id,
@@ -443,6 +480,41 @@ export const toggleEventCompletion = async (
   }
 };
 
+export function getUpcomingEvents(db, uid, now, onData) {
+  const upcomingQ = query(
+    collectionGroup(db, 'events'),
+    where('ownerId', '==', uid),
+    where('deadline', '>=', Timestamp.fromDate(now)),
+    where('isCompleted', '==', false),
+    orderBy('deadline'),
+    limit(3)
+  );
+  return onSnapshot(upcomingQ, (snapshot) => {
+    const upcoming = snapshot.docs.map(doc => ({
+      ...(doc.data()),
+      id: doc.id,
+    }));
+    onData(upcoming);
+  });
+}
+
+export function getOverdueEvents(db, uid, now, onData) {
+  const overdueQ = query(
+    collectionGroup(db, 'events'),
+    where('ownerId', '==', uid),
+    where('deadline', '<', Timestamp.fromDate(now)),
+    where('isCompleted', '==', false)
+  );
+  return onSnapshot(overdueQ, (snapshot) => {
+    const overdue = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    onData(overdue);
+  });
+}
+
+
 //friends
 export const addFriend = async (userId, friendId) => {
   try {
@@ -482,6 +554,17 @@ export const deleteFriend = async (userId, friendId) => {
   }
 };
 
+export function getFriends(db, currentUserId, onData) {
+  const ref = collection(db, "users", currentUserId, "friends");
+  return onSnapshot(ref, (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+    }));
+    onData(data);
+  });
+}
+
 //miscellaneous
 export function getRelationship(db, currentUserId, targetUserId, onChange) {
   if (!currentUserId || !targetUserId) return () => {};
@@ -502,4 +585,14 @@ export function getRelationship(db, currentUserId, targetUserId, onChange) {
   });
 
   return unsubscribe;
+}
+
+export function getAllUsers(db, onData) {
+  return onSnapshot(collection(db, "users"), (snapshot) => {
+    const data = snapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data(),
+    }));
+    onData(data);
+  });
 }
