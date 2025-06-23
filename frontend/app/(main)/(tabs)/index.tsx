@@ -37,12 +37,18 @@ export default function HomeScreen() {
     useFocusEffect(
       useCallback(() => {
         if (!uid) return;
-        const unsubscribe = getUserStats(db, uid, (stats: UserStats) => {
-          setTotalEvents(stats.totalEvents);
-          setCompletedEvents(stats.completedEvents);
-        });
-        return () => unsubscribe();
-      }, [uid])
+        const fetchStats = async () => {
+          try {
+            const stats = await getUserStats(db, uid);
+            setTotalEvents(stats.totalEvents);
+            setCompletedEvents(stats.completedEvents);
+          } catch (error) {
+            console.error("Error fetching user stats:", error);
+          }
+        };
+
+        fetchStats();
+          }, [uid])
     );
     
 
