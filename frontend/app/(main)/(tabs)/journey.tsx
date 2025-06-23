@@ -31,9 +31,7 @@ type SubBucketList = {
 export default function JourneyScreen() {
   const { user } = useContext(AuthContext);
   const { uid: paramUid } = useLocalSearchParams();
-  const [relationship, setRelationship] = useState<"self" | "friend" | "none">(
-    "none"
-  );
+  const [relationship, setRelationship] = useState<"self" | "friend" | "none">("none");
   const [subBucketLists, setSubBucketLists] = useState<SubBucketList[]>([]);
   const [events, setEvents] = useState<Event[] | null>(null);
 
@@ -43,53 +41,47 @@ export default function JourneyScreen() {
   //otherwise use account user's uid from auth context
   const uid = finalParamUid || user?.uid;
 
-  useEffect(() => {
-    if (!user?.uid || !uid) {
-      setRelationship("none");
-      return;
-    }
-
-    const fetchRelationship = async () => {
-      try {
-        const rel = await getRelationship(db, user.uid, uid);
-        setRelationship(rel);
-      } catch (error) {
-        console.error("Failed to fetch relationship", error);
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.uid || !uid) {
+        setRelationship("none");
+        setSubBucketLists([]);
+        setEvents([]);
+        return;
       }
-    };
 
-    fetchRelationship();
-}, [user?.uid, uid]);
+      const fetchAll = async () => {
+        try {
+          // Fetch relationship
+          const rel = await getRelationship(db, user.uid, uid);
+          setRelationship(rel);
 
+          const accessLevels =
+            relationship === "self"
+              ? ["private", "friends", "everyone"]
+              : relationship === "friend"
+              ? ["friends", "everyone"]
+              : ["everyone"];
 
-  useEffect(() => {
-    if (!uid || !relationship) {
-      setSubBucketLists([]);
-      return;
-    }
+          // Fetch subbucketlists
+          const subLists = await getFilteredSubBucketLists(db, uid, accessLevels);
+          setSubBucketLists(subLists);
 
-    const accessLevels =
-      relationship === "self"
-        ? ["private", "friends", "everyone"]
-        : relationship === "friend"
-        ? ["friends", "everyone"]
-        : ["everyone"];
+          // Fetch events
+          if (subLists.length > 0) {
+            const events = await getAllEvents(db, uid, subLists);
+            setEvents(events);
+          } else {
+            setEvents([]);
+          }
+        } catch (error) {
+          console.error("Error fetching data", error);
+        }
+      };
 
-    const fetchData = async () => {
-      const data = await getFilteredSubBucketLists(db, uid, accessLevels);
-      setSubBucketLists(data);
-    };
-
-    fetchData();
-  }, [uid, relationship]);
-
-  useEffect(() => {
-    if (subBucketLists.length > 0 && uid) {
-      getAllEvents();
-    } else {
-      setEvents([]);
-    }
-  }, [subBucketLists, uid]);
+      fetchAll();
+    }, [user?.uid, uid])
+  );
 
   function renderItem({ item }: { item: Event }) {
     return (
