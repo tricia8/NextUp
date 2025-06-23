@@ -593,7 +593,8 @@ export async function getFriends(currentUserId) {
     const snapshot = await getDocs(ref);
     const data = snapshot.docs.map(doc => ({
       uid: doc.id,
-      ...doc.data(),
+      username: doc.username,
+      photoUrl: doc.photoURL,
     }));
     return data;
   } catch (error) {
@@ -627,8 +628,9 @@ export async function getAllUsers() {
   try {
     const snapshot = await getDocs(collection(db, "users"));
     const data = snapshot.docs.map(doc => ({
-      uid: doc.id,
-      ...doc.data(),
+      uid,
+      username: data.username ?? "",
+      photoUrl: data.photoUrl ?? null,
     }));
     return data;
   } catch (error) {
