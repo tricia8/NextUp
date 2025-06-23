@@ -69,11 +69,12 @@ export default function JourneyScreen() {
         ? ["friends", "everyone"]
         : ["everyone"];
 
-    const unsubscribe = getFilteredSubBucketLists(db, uid, accessLevels, setSubBucketLists);
-
-    return () => {
-      if (unsubscribe) unsubscribe();
+    const fetchData = async () => {
+      const data = await getFilteredSubBucketLists(db, uid, accessLevels);
+      setSubBucketLists(data);
     };
+
+    fetchData();
   }, [uid, relationship]);
 
   useEffect(() => {
