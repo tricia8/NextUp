@@ -119,12 +119,15 @@ export const getOwnerProfile = async (uid) => {
       throw new Error("User does not exist");
     }
 
+    console.log("userSnap.data():", userSnap.data());
+
     return userSnap.data();
   } catch (error) {
     console.error("Error fetching user profile:", error);
     throw error;
   }
 };
+
 //bucketlist
 const updateOverallStats = async (userId, type) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
@@ -207,6 +210,7 @@ const updateSubBucketList = async (userId, subBucketListId, updates = {}) => {
   }
 };
 
+// returns formatted data for [sublistId] screen
 export const getSubBucketList = async (userId, subBucketListId) => {
   try {
     const sublistDoc = doc(db, "users", userId, "bucketList", subBucketListId);
@@ -241,6 +245,33 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
+const formatSublistData = (data) => {
+  // data type: Sublist object
+  const createdAt = data.createdAt?.toDate?.();
+
+  return {
+    title: data.title,
+    description: data.description ?? "", // default to empty string
+    accessLevel: data.accessLevel,
+    collaborators: data.collaborators,
+    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : null,
+    completionStatus: data.completionStatus,
+  };
+};
+
+// for bucketlist screen
+export async function getAllSubBucketLists(uid) {
+  const allSublists = [];
+  const bucketListRef = collection(db, "users", uid, "bucketList");
+  const listSnap = await getDocs(bucketListRef);
+  const sublists = listSnap.docs.map((doc) => ({
+    id: doc.id,
+    ...formatSublistData(doc.data()),
+  }));
+  allSublists.push(...sublists);
+  return allSublists;
+}
+
 export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
   if (!uid || !accessLevels.length) return () => {};
   const ref = collection(db, "users", uid, "bucketList");
@@ -257,6 +288,24 @@ export function getFilteredSubBucketLists(db, uid, accessLevels, onData) {
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
+    const eventsRef = collection(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId,
+      "events"
+    );
+    const eventsSnap = await getDocs(eventsRef);
+
+    // Delete all documents in the events collection
+    const deletePromises = eventsSnap.docs.map((docSnap) =>
+      deleteDoc(docSnap.ref)
+    );
+    // wait for all deletions to complete since deleteDoc is async
+    await Promise.all(deletePromises);
+
+    // delete subBucketList
     const subBucketListRef = doc(
       db,
       "users",
@@ -334,6 +383,22 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+const formatEventData = (data) => {
+  // data type: Event object
+  const createdAt = data.createdAt?.toDate?.();
+  const deadline = data.deadline?.toDate?.();
+
+  return {
+    title: data.title,
+    description: data.description ?? "", // default to empty string
+    categories: data.categories ?? [], // default to empty array
+    deadline: deadline ? formatDisplayDate(deadline) : null,
+    isCompleted: data.isCompleted,
+    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : null,
+  };
+};
+
+// for [goalId] screen
 export const getEvent = async (userId, subBucketListId, eventId) => {
   try {
     const eventDoc = doc(
@@ -356,8 +421,8 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
     const title = data.title;
     const description = data.description ?? ""; // default to empty string
     const categories = data.categories ?? []; // default to empty array
-    const deadlineFormatted = data.deadline
-      ? formatDisplayDate(data.deadline)
+    const deadlineFormatted = data.deadline.toDate()
+      ? formatDisplayDate(data.deadline.toDate())
       : null;
     const isCompleted = data.isCompleted;
     const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
@@ -377,6 +442,30 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
   }
 };
 
+// for [sublistId] screen
+export async function getAllEventsFormatted(uid, subBucketListId) {
+  const allEvents = [];
+
+  const eventsRef = collection(
+    db,
+    "users",
+    uid,
+    "bucketList",
+    subBucketListId,
+    "events"
+  );
+  const eventsSnap = await getDocs(eventsRef);
+
+  const formattedEvents = eventsSnap.docs.map((doc) => ({
+    id: doc.id,
+    ...formatEventData(doc.data()),
+  }));
+
+  allEvents.push(...formattedEvents);
+  return allEvents;
+}
+
+// unformatted
 export async function getAllEvents(db, uid, subBucketLists) {
   const allEvents = [];
   for (const sub of subBucketLists) {
