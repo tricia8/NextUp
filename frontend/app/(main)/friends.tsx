@@ -38,6 +38,8 @@ export default function FriendsList() {
           console.error("Failed to fetch friends", error);
         }
       };
+
+      fetchFriends();
     }, [currentUserId])
   );
 
