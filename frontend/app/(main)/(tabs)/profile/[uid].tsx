@@ -36,12 +36,19 @@ export default function ProfileScreen() {
     useCallback(() => {
       if (!finalUid) return;
 
-      const unsubscribe = getUserProfile(db, finalUid, (user: User) => {
-        setUserData(user);
-        setCategory(user.category?.[0] ?? '--');
-      });
+      const fetchUser = async () => {
+        try {
+          const user = await getUserProfile(db, finalUid);
+          if (user) {
+            setUserData(user);
+            setCategory(user.category?.[0] ?? '--');
+          }
+        } catch (error) {
+          console.error("Failed to fetch user profile", error);
+        }
+      };
 
-      return () => unsubscribe();
+      fetchUser();
     }, [finalUid])
   );
     
