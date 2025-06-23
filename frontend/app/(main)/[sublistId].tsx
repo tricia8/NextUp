@@ -43,6 +43,7 @@ import DateTimePicker, {
 import { useLocalSearchParams } from "expo-router";
 import {
   addEvent,
+  getOwnerProfile,
   getSubBucketList,
   getUserProfile,
 } from "@/firebase/firestore";
@@ -71,12 +72,6 @@ export default function currentSublist() {
   const { user } = useContext(AuthContext);
   const { sublistId } = useLocalSearchParams();
 
-  const getOwner = () => {
-    getUserProfile(db, user?.id, (user: User) => {
-      setCollaborators([user]);
-    });
-  };
-
   useFocusEffect(
     useCallback(() => {
       // Async logic only runs when the required values exist
@@ -99,17 +94,16 @@ export default function currentSublist() {
               setInitialTitle(data.title);
               setInitialDescription(data.description);
 
-              // Add owner
-              getOwner();
+              // Fetch owner + collaborators
+              const owner = await getOwnerProfile(user.id);
+              const otherProfiles = await Promise.all(
+                // Fetches all collaborator profiles in parallel
+                data.collaborators
+                  .filter((uid: string) => uid !== user.id)
+                  .map((uid: string) => getOwnerProfile(uid))
+              );
 
-              // Fetch Collaborator data
-              sharedUids.forEach((uid) => {
-                if (uid !== user.id) {
-                  getUserProfile(db, uid, (user: User) => {
-                    collaborators.push(user);
-                  });
-                }
-              });
+              setCollaborators([owner, ...otherProfiles]);
             }
           }
         } catch (error) {
@@ -132,7 +126,7 @@ export default function currentSublist() {
 
       // Do something when the screen is unfocused
       return () => {
-        isActive = false;
+        isActive = false; // Avoids setting state after unmount
       };
     }, [user?.id, sublistId])
   );
