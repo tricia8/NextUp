@@ -43,17 +43,23 @@ export default function JourneyScreen() {
   //otherwise use account user's uid from auth context
   const uid = finalParamUid || user?.uid;
 
-  useFocusEffect(
-    useCallback(() => {
-      const unsubscribe = getRelationship(
-        db,
-        user?.uid,
-        uid,
-        setRelationship
-      );
-      return () => unsubscribe();
-    }, [user?.uid, uid])
-  );
+  useEffect(() => {
+    if (!user?.uid || !uid) {
+      setRelationship("none");
+      return;
+    }
+
+    const fetchRelationship = async () => {
+      try {
+        const rel = await getRelationship(db, user.uid, uid);
+        setRelationship(rel);
+      } catch (error) {
+        console.error("Failed to fetch relationship", error);
+      }
+    };
+
+    fetchRelationship();
+}, [user?.uid, uid]);
 
 
   useEffect(() => {
