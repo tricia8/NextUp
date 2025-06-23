@@ -14,7 +14,7 @@ import {
   where,
   onSnapshot,
   collectionGroup,
-  getDocs
+  getDocs,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -183,7 +183,7 @@ export const getUserStats = async (db, uid) => {
     console.error("Error fetching user stats:", error);
     throw error;
   }
-}
+};
 
 //subbucketlists
 export const createSubBucketList = async (
@@ -290,7 +290,6 @@ export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
   }
 };
 
-
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
     const subBucketListRef = doc(
@@ -370,6 +369,22 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+const formatEventData = (data) => {
+  // data type: Event object
+  const createdAt = data.createdAt?.toDate?.();
+  const deadline = data.deadline?.toDate?.();
+
+  return {
+    title: data.title,
+    description: data.description ?? "", // default to empty string
+    categories: data.categories ?? [], // default to empty array
+    deadline: deadline ? formatDisplayDate(deadline) : "",
+    isCompleted: data.isCompleted,
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+  };
+};
+
+// for [goalId] screen
 export const getEvent = async (userId, subBucketListId, eventId) => {
   try {
     const eventDoc = doc(
@@ -405,7 +420,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline: deadlineFormatted, // could be null
       isCompleted,
-      createdAtFormatted,
+      createdAt: createdAtFormatted,
     };
   } catch (error) {
     console.error("Error fetching event:", error);
@@ -514,16 +529,16 @@ export const toggleEventCompletion = async (
 
 export function getUpcomingEvents(db, uid, now, onData) {
   const upcomingQ = query(
-    collectionGroup(db, 'events'),
-    where('ownerId', '==', uid),
-    where('deadline', '>=', Timestamp.fromDate(now)),
-    where('isCompleted', '==', false),
-    orderBy('deadline'),
+    collectionGroup(db, "events"),
+    where("ownerId", "==", uid),
+    where("deadline", ">=", Timestamp.fromDate(now)),
+    where("isCompleted", "==", false),
+    orderBy("deadline"),
     limit(3)
   );
   return onSnapshot(upcomingQ, (snapshot) => {
-    const upcoming = snapshot.docs.map(doc => ({
-      ...(doc.data()),
+    const upcoming = snapshot.docs.map((doc) => ({
+      ...doc.data(),
       id: doc.id,
     }));
     onData(upcoming);
@@ -532,20 +547,19 @@ export function getUpcomingEvents(db, uid, now, onData) {
 
 export function getOverdueEvents(db, uid, now, onData) {
   const overdueQ = query(
-    collectionGroup(db, 'events'),
-    where('ownerId', '==', uid),
-    where('deadline', '<', Timestamp.fromDate(now)),
-    where('isCompleted', '==', false)
+    collectionGroup(db, "events"),
+    where("ownerId", "==", uid),
+    where("deadline", "<", Timestamp.fromDate(now)),
+    where("isCompleted", "==", false)
   );
   return onSnapshot(overdueQ, (snapshot) => {
-    const overdue = snapshot.docs.map(doc => ({
+    const overdue = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
     onData(overdue);
   });
 }
-
 
 //friends
 export const addFriend = async (userId, friendId) => {
@@ -589,7 +603,7 @@ export const deleteFriend = async (userId, friendId) => {
 export function getFriends(db, currentUserId, onData) {
   const ref = collection(db, "users", currentUserId, "friends");
   return onSnapshot(ref, (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       uid: doc.id,
       ...doc.data(),
     }));
@@ -620,7 +634,7 @@ export const getRelationship = async (db, currentUserId, targetUserId) => {
 
 export function getAllUsers(db, onData) {
   return onSnapshot(collection(db, "users"), (snapshot) => {
-    const data = snapshot.docs.map(doc => ({
+    const data = snapshot.docs.map((doc) => ({
       uid: doc.id,
       ...doc.data(),
     }));
