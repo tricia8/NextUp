@@ -573,26 +573,25 @@ export function getFriends(db, currentUserId, onData) {
 }
 
 //miscellaneous
-export function getRelationship(db, currentUserId, targetUserId, onChange) {
-  if (!currentUserId || !targetUserId) return () => {};
-
+export const getRelationship = async (db, currentUserId, targetUserId) => {
   if (currentUserId === targetUserId) {
-    onChange("self");
-    return () => {};
+    return "self";
   }
 
-  const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
+  try {
+    const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
+    const docSnap = await getDoc(docRef);
 
-  const unsubscribe = onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
-      onChange("friend");
+      return "friend";
     } else {
-      onChange("none");
+      return "none";
     }
-  });
-
-  return unsubscribe;
-}
+  } catch (error) {
+    console.error("Error fetching relationship:", error);
+    throw error;
+  }
+};
 
 export function getAllUsers(db, onData) {
   return onSnapshot(collection(db, "users"), (snapshot) => {
