@@ -12,9 +12,8 @@ import { ThemedView } from "@/components/ThemedView";
 import { LegendList } from "@legendapp/list";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import { AuthContext } from "@/context/AuthContext";
-import { db } from "@/firebase/firebaseConfig";
 import LoadingScreen from "@/components/Loading";
 import { Event } from "@/types/event";
 import { getFilteredSubBucketLists, getAllEvents, getRelationship } from "@/firebase/firestore";
@@ -53,7 +52,7 @@ export default function JourneyScreen() {
       const fetchAll = async () => {
         try {
           // Fetch relationship
-          const rel = await getRelationship(db, user.uid, uid);
+          const rel = await getRelationship(user.uid, uid);
           setRelationship(rel);
 
           const accessLevels =
@@ -64,12 +63,12 @@ export default function JourneyScreen() {
               : ["everyone"];
 
           // Fetch subbucketlists
-          const subLists = await getFilteredSubBucketLists(db, uid, accessLevels);
+          const subLists = await getFilteredSubBucketLists(uid, accessLevels);
           setSubBucketLists(subLists);
 
           // Fetch events
-          if (subLists.length > 0) {
-            const events = await getAllEvents(db, uid, subLists);
+          if (subBucketLists.length > 0) {
+            const events = await getAllEvents(uid, subLists);
             setEvents(events);
           } else {
             setEvents([]);
