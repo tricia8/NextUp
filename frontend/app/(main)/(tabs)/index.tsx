@@ -16,7 +16,6 @@ import AnimatedTextInput from "@/components/AnimatedTextInput";
 import SideMenu from "@/components/SideMenu";
 import { useCallback, useContext, useState } from "react";
 import { useFocusEffect } from "expo-router";
-import { db } from "@/firebase/firebaseConfig";
 import { AuthContext } from "@/context/AuthContext";
 import { Event } from "@/types/event";
 import LoadingScreen from "@/components/Loading";
@@ -63,23 +62,11 @@ export default function HomeScreen() {
 
       const now = new Date();
 
-      const unsubscribeUpcoming = getUpcomingEvents(
-        uid,
-        now,
-        setUpcomingEvents
-      );
-      const unsubscribeOverdue = getOverdueEvents(
-        uid,
-        now,
-        (overdue: Event[]) => {
-          setOverdueCount(overdue.length);
-        }
-      );
+      getUpcomingEvents(uid, now, setUpcomingEvents);
 
-      return () => {
-        unsubscribeUpcoming();
-        unsubscribeOverdue();
-      };
+      getOverdueEvents(uid, now, (overdue: Event[]) => {
+        setOverdueCount(overdue.length);
+      });
     }, [uid])
   );
 
