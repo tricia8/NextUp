@@ -15,6 +15,8 @@ import {
   onSnapshot,
   collectionGroup,
   getDocs,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -40,7 +42,13 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = doc(db, "users", user.uid, "bucketList", "stats");
+  const bucketListStatsRef = doc(
+    db,
+    "users",
+    user.uid,
+    "bucketList",
+    "stats"
+  );
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
