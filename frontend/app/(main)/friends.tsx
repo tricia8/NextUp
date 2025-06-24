@@ -49,7 +49,7 @@ export default function FriendsList() {
   }
 
   return (
-      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
+      <SafeAreaView edges={[]} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
               <ThemedView style={styles.mainContainer}>
                 <UserSearch users={friends} placeholder='Search friends'/>
