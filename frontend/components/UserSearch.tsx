@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import {
-  Alert,
   StyleSheet,
   View,
   TextInput,
@@ -14,7 +13,6 @@ import { LegendList } from "@legendapp/list";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { User } from "@/types/user";
 import { router } from "expo-router";
-import { addFriend } from "@/firebase/firestore";
 
 type Props = {
   users: User[];
@@ -22,6 +20,7 @@ type Props = {
   placeholder?: string;
   userId?: string;
   friendUids?: string[];
+  handleAddFriend?: (friendId: string) => Promise<void>;
 };
 
 export default function UserSearch({
@@ -30,6 +29,7 @@ export default function UserSearch({
   placeholder = "",
   userId,
   friendUids,
+  handleAddFriend,
 }: Props) {
   const [search, setSearch] = React.useState<string>("");
   const [filteredUsers, setUsers] = React.useState<User[]>([]);
@@ -53,15 +53,6 @@ export default function UserSearch({
     return friendUids?.includes(uid);
   };
 
-  const handleAddFriend = async (friendId: string) => {
-    try {
-      await addFriend(userId, friendId);
-      Alert.alert("Success", "Friend added!");
-    } catch (error) {
-      console.log("Error adding friend");
-      Alert.alert("Error", "Error adding friend.");
-    }
-  };
 
   function renderItem({ item }: { item: User }) {
     return (
@@ -81,7 +72,7 @@ export default function UserSearch({
             </ThemedText>
           </View>
           {showAddButton && !isFriend(item.uid) && userId != item.uid && (
-            <TouchableOpacity onPress={() => handleAddFriend(item.uid)}>
+            <TouchableOpacity onPress={() => handleAddFriend?.(item.uid)}>
               <MaterialIcons
                 name="person-add-alt-1"
                 color="white"

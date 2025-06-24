@@ -15,6 +15,7 @@ import { User } from '@/types/user';
 
 export default function FriendsList() {
   const [friends, setFriends] = useState<User[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
   const { viewedUid } = useLocalSearchParams();
   const { user } = useContext(AuthContext);
 
@@ -32,10 +33,13 @@ export default function FriendsList() {
 
       const fetchFriends = async () => {
         try {
+          setLoadingFriends(true);
           const friends = await getFriends(currentUserId);
           setFriends(friends);
         } catch (error) {
           console.error("Failed to fetch friends", error);
+        } finally {
+          setLoadingFriends(false);
         }
       };
 
@@ -43,8 +47,7 @@ export default function FriendsList() {
     }, [currentUserId])
   );
 
-  
-  if (!currentUserId) {
+  if (!currentUserId || loadingFriends) {
     return <LoadingScreen />;
   }
 
