@@ -7,6 +7,7 @@ import { Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
+import { RFValue } from "react-native-responsive-fontsize";
 
 export default function MainLayout() {
 
@@ -23,10 +24,38 @@ export default function MainLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="friends" />
-        <Stack.Screen name="addfriends" />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="new-sublist"
+          options={{
+            title: "New Sublist",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(26),
+            },
+          }}
+        />
+        <Stack.Screen
+          name="friends"
+          options={{
+            title: "Friends",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(22),
+            },
+          }}
+        />
+        <Stack.Screen
+          name="addfriends"
+          options={{
+            title: "Add friends",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(22),
+            },
+          }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
