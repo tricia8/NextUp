@@ -331,7 +331,7 @@ const formatSublistData = (data) => {
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : null,
+    createdAt: createdAt ? formatDisplayDate(createdAt) : null,
     completionStatus: data.completionStatus,
   };
 };
