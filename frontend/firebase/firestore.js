@@ -54,7 +54,7 @@ export const createUser = async (user, username) => {
       uid: user.uid,
       username: username,
       email: user.email,
-      photoUrl: user.photoURL,
+      photoUrl: user.photoURL ?? null,
       displayName: "",
       bio: "",
       category: user.category ?? null,
@@ -110,11 +110,11 @@ export const getUserProfile = async (uid) => {
 
       return {
         uid: data.id,
-        username: data.username ?? "",
-        email: data.email ?? "",
-        photoUrl: data.photoUrl ?? null,
-        displayName: data.displayName ?? "",
-        bio: data.bio ?? "",
+        username: data.username,
+        email: data.email,
+        photoUrl: data.photoUrl,
+        displayName: data.displayName,
+        bio: data.bio,
         category: data.category,
       };
     } else {
@@ -716,11 +716,14 @@ export async function getFriends(currentUserId) {
   try {
     const ref = collection(db, "users", currentUserId, "friends");
     const snapshot = await getDocs(ref);
-    const data = snapshot.docs.map((doc) => ({
-      uid: doc.id,
-      username: doc.username,
-      photoUrl: doc.photoURL,
-    }));
+    const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+        uid: doc.id,
+        username: docData.username ?? "",
+        photoUrl: docData.photoUrl ?? null,
+      }
+    });
     return data;
   } catch (error) {
     console.error("Error fetching friends:", error);
@@ -752,11 +755,18 @@ export const getRelationship = async (currentUserId, targetUserId) => {
 export async function getAllUsers() {
   try {
     const snapshot = await getDocs(collection(db, "users"));
-    const data = snapshot.docs.map((doc) => ({
-      uid: doc.id,
-      username: doc.username ?? "",
-      photoUrl: doc.photoUrl ?? null,
-    }));
+    const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+        uid: doc.id,
+        username: docData.username,
+        photoUrl: docData.photoUrl,
+        email: docData.email,
+        displayName: docData.displayName,
+        bio: docData.bio,
+        category: docData.category,
+      }
+    });
     return data;
   } catch (error) {
     console.error("Error fetching users:", error);
