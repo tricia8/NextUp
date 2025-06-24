@@ -69,6 +69,10 @@ export default function MainLayout() {
             },
           }}
         />
+        <Stack.Screen
+          name="profile/[uid]"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

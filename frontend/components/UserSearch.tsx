@@ -68,7 +68,7 @@ export default function UserSearch({
       <TouchableOpacity
         onPress={() =>
           router.push({
-            pathname: "/profile",
+            pathname: "/profile/[uid]",
             params: { uid: item.uid },
           })
         }

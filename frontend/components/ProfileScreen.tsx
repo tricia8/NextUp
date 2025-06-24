@@ -16,7 +16,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { auth, db } from "@/firebase/firebaseConfig";
-import JourneyScreen from "./(tabs)/journey";
+import JourneyScreen from "@/app/(main)/(tabs)/journey";
 import EditProfile from "@/components/editprofile";
 import { User } from "@/types/user";
 import { useFocusEffect } from "expo-router";
@@ -26,21 +26,19 @@ import { getUserProfile, getUserStats } from "@/firebase/firestore";
 
 const PROFILEPICSIZE = ms(80);
 
-export default function ProfileScreen() {
+type ProfileProps = {
+    uid?: string,
+}
 
-  const { uid } = useLocalSearchParams();
+export default function ProfileScreen({ uid }: ProfileProps) {
+
   const [userData, setUserData] = useState<User | null>(null);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [completedEvents, setCompletedEvents] = useState<number>(0);
   const [category, setCategory] = useState<string>("--");
 
-  const finalUid =
-    typeof uid === "string"
-      ? uid
-      : Array.isArray(uid)
-      ? uid[0]
-      : auth.currentUser?.uid;
+  const finalUid = uid ?? auth.currentUser?.uid;
 
   useFocusEffect(
     useCallback(() => {
