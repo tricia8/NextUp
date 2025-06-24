@@ -109,7 +109,7 @@ export const getUserProfile = async (uid) => {
       const data = docSnapshot.data();
 
       return {
-        uid,
+        uid: data.id,
         username: data.username ?? "",
         email: data.email ?? "",
         photoUrl: data.photoUrl ?? null,
@@ -711,7 +711,7 @@ export async function getAllUsers() {
   try {
     const snapshot = await getDocs(collection(db, "users"));
     const data = snapshot.docs.map((doc) => ({
-      uid,
+      uid: doc.id,
       username: doc.username ?? "",
       photoUrl: doc.photoUrl ?? null,
     }));
