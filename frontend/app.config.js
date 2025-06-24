@@ -12,6 +12,7 @@ export default {
       "supportsTablet": true
     },*/
     "android": {
+      "package": 'com.nextup.nextup',
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
