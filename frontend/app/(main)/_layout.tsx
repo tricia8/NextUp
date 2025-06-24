@@ -49,6 +49,30 @@ export default function MainLayout() {
             },
           }}
         />
+        <Stack.Screen
+          name="friends"
+          options={{
+            title: "Friends",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(22),
+            },
+          }}
+        />
+        <Stack.Screen
+          name="addfriends"
+          options={{
+            title: "Add friends",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(22),
+            },
+          }}
+        />
+        <Stack.Screen
+          name="profile/[uid]"
+          options={{ headerShown: false }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

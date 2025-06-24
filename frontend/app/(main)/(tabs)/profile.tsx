@@ -1,5 +1,9 @@
-import ProfileScreen from "../[uid]";
+import ProfileScreen from '@/components/ProfileScreen';
+import { useContext } from "react";
+import { AuthContext } from "../../../context/AuthContext";
 
 export default function ProfileIndex() {
-  return <ProfileScreen />;
+  const { user } = useContext(AuthContext);
+
+  return <ProfileScreen uid={user?.uid} />;
 }
