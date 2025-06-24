@@ -145,7 +145,7 @@ export const getOwnerProfile = async (uid) => {
 };
 
 //bucketlist
-const updateOverallStats = async (userId, type, number) => {
+/*const updateStats = async (userId, type, number) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
   const statsSnap = await getDoc(statsRef);
 
@@ -193,7 +193,7 @@ const updateOverallStats = async (userId, type, number) => {
       throw error;
     }
   }
-};
+};*/
 
 export const getUserStats = async (uid) => {
   try {
@@ -215,6 +215,35 @@ export const getUserStats = async (uid) => {
     throw error;
   }
 };
+
+async function updateOverallStats(uid) {
+  try {
+    const q = query(
+      collectionGroup(db, "bucketList"),
+      where("collaborators", "array-contains", uid)
+    );
+
+    const snapshot = await getDocs(q);
+
+    let totalEvents = 0;
+    let completedEvents = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      totalEvents += data.completionStatus[1] || 0;
+      completedEvents += data.completionStatus[0] || 0;
+    });
+
+    const statsRef = doc(db, "users", uid, "bucketList", "stats");
+
+    await setDoc(statsRef, {
+      totalEvents,
+      completedEvents,
+    });
+  } catch (err) {
+    console.error("Error updating stats:", err);
+  }
+}
 
 //subbucketlists
 export const createSubBucketList = async (
@@ -376,17 +405,10 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
       "bucketList",
       subBucketList.id
     );
-    updateOverallStats(
-      userId,
-      decrementCompleted,
-      subBucketList.completionStatus[0]
-    );
-    updateOverallStats(
-      userId,
-      decrementTotal,
-      subBucketList.completionStatus[1]
-    );
+
     await deleteDoc(subBucketListRef);
+
+    updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
     throw error;
@@ -419,7 +441,7 @@ export const addEvent = async (
       eventData
     );
 
-    updateOverallStats(userId, incrementTotal, 1);
+    updateOverallStats(userId);
 
     return eventDoc.id;
   } catch (error) {
@@ -442,7 +464,7 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
 
     await deleteDoc(eventDoc);
 
-    updateOverallStats(userId, incrementTotal, 1);
+    updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -624,15 +646,11 @@ export const toggleEventCompletion = async (
 
     const currentCompleted = docSnap.data().isCompleted;
 
-    if (currentCompleted) {
-      updateOverallStats(userId, decrementCompleted, 1);
-    } else {
-      updateOverallStats(userId, incrementCompleted, 1);
-    }
-
     await updateDoc(eventDoc, {
       isCompleted: !currentCompleted,
     });
+
+    updateOverallStats(userId);
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
@@ -716,13 +734,13 @@ export async function getFriends(currentUserId) {
   try {
     const ref = collection(db, "users", currentUserId, "friends");
     const snapshot = await getDocs(ref);
-    const data = snapshot.docs.map(doc => {
+    const data = snapshot.docs.map((doc) => {
       const docData = doc.data();
       return {
         uid: doc.id,
         username: docData.username ?? "",
         photoUrl: docData.photoUrl ?? null,
-      }
+      };
     });
     return data;
   } catch (error) {
@@ -755,7 +773,7 @@ export const getRelationship = async (currentUserId, targetUserId) => {
 export async function getAllUsers() {
   try {
     const snapshot = await getDocs(collection(db, "users"));
-    const data = snapshot.docs.map(doc => {
+    const data = snapshot.docs.map((doc) => {
       const docData = doc.data();
       return {
         uid: doc.id,
@@ -765,7 +783,7 @@ export async function getAllUsers() {
         displayName: docData.displayName,
         bio: docData.bio,
         category: docData.category,
-      }
+      };
     });
     return data;
   } catch (error) {
