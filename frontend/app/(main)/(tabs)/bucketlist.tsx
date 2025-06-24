@@ -3,10 +3,11 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
 import { FlashList } from "@shopify/flash-list";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useContext, useState } from "react";
 import {
   ColorSchemeName,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -17,49 +18,68 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
 import { LinearGradient } from "expo-linear-gradient";
+import { AuthContext } from "@/context/AuthContext";
+import { getAllSubBucketLists } from "@/firebase/firestore";
+import { Sublist } from "@/types/sublist";
+import LoadingScreen from "@/components/Loading";
+import { showMessage } from "react-native-flash-message";
+import { Chip } from "react-native-paper";
 
 export default function BucketList() {
+  const { user, loading } = useContext(AuthContext);
+  if (loading || !user?.uid) {
+    return <LoadingScreen />;
+  }
+  const uid = user?.uid;
+  const [sublists, setSublists] = useState<Sublist[]>([]);
   const [search, setSearch] = useState("");
   const colorScheme = useColorScheme(); // 'light' or 'dark'
 
-  interface Sublist {
-    title: string;
-    completionStatus: number[];
-    isShared: boolean;
-  }
+  useFocusEffect(
+    useCallback(() => {
+      if (!uid) return;
+      const fetchSubBucketLists = async () => {
+        try {
+          const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
+          setSublists(sublists);
+        } catch (error) {
+          console.error("Error fetching sub-bucket lists:", error);
+          showMessage({
+            message: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch sublists",
+            type: "danger",
+            statusBarHeight: StatusBar.currentHeight,
+            floating: true,
+            icon: "danger",
+            duration: 5000,
+          });
+        }
+      };
 
-  // dummy data
-  const DATA: Sublist[] = [
-    {
-      // icon: ,
-      title: "New Zealand Road Trip",
-      completionStatus: [1, 3],
-      isShared: true,
-    },
-    {
-      // icon: ,
-      title: "Skills to learn",
-      completionStatus: [1, 3],
-      isShared: false,
-    },
-    {
-      title: "Random Stuff",
-      completionStatus: [3, 4],
-      isShared: false,
-    },
-    {
-      title: "Family Goals",
-      completionStatus: [0, 5],
-      isShared: true,
-    },
-    {
-      title: "Hackathons",
-      completionStatus: [1, 4],
-      isShared: false,
-    },
-  ];
+      fetchSubBucketLists();
+    }, [uid])
+  );
 
   const router = useRouter();
+
+  const handlePress = (item: Sublist) => {
+    router.push({
+      pathname: "/(main)/[sublistId]",
+      params: { sublistId: item.id },
+    });
+  };
+
+  const accessColorMap: Record<string, { bg: string; text: string }> = {
+    private: {
+      bg: "rgba(231, 208, 242, 0.61)",
+      text: "#4e4350",
+    },
+    friends: { bg: "rgba(159, 236, 250, 0.56)", text: "#11395d" },
+    everyone: { bg: "rgba(181, 245, 220, 0.4)", text: "#1b5e20" },
+  };
 
   const renderFlatlistItem = ({ item }: { item: Sublist }) => {
     return (
@@ -73,22 +93,39 @@ export default function BucketList() {
         end={{ x: 1, y: 1 }}
         style={styles.itemContainer}
       >
-        <TouchableOpacity style={{ flex: 1 }}>
-          {item.isShared ? (
-            <View>
+        <TouchableOpacity style={{ flex: 1 }} onPress={() => handlePress(item)}>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            {item.collaborators.length > 1 ? (
               <Feather
                 name="users"
                 size={24}
                 color={colorScheme === "dark" ? "white" : "black"}
               />
-            </View>
-          ) : (
-            <View></View>
-          )}
+            ) : (
+              <></>
+            )}
+            <Chip
+              icon="eye"
+              style={{
+                borderRadius: 15,
+                backgroundColor: accessColorMap[item.accessLevel].bg,
+                // colorScheme == "dark" ? "rgba(255,255,255,0.15)" : "#cccaca",
+              }}
+              compact={true}
+              textStyle={{
+                fontSize: RFValue(10),
+                color: accessColorMap[item.accessLevel].text,
+              }}
+            >
+              {item.accessLevel == "private" ? "only you" : item.accessLevel}
+            </Chip>
+          </View>
+
           <View style={styles.SubListRow2}>
             <ThemedText type="subtitle" style={styles.ListName}>
               {item.title}
             </ThemedText>
+
             <AntDesign
               name="right"
               size={20}
@@ -155,7 +192,7 @@ export default function BucketList() {
 
         <View style={{ flex: 0.8 }}>
           <FlashList
-            data={DATA}
+            data={sublists}
             renderItem={renderFlatlistItem}
             estimatedItemSize={20}
             contentContainerStyle={{ paddingBottom: 100 }}
