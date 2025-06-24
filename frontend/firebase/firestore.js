@@ -15,6 +15,8 @@ import {
   onSnapshot,
   collectionGroup,
   getDocs,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -40,13 +42,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = collection(
-    db,
-    "users",
-    user.uid,
-    "bucketList",
-    "stats"
-  );
+  const bucketListStatsRef = doc(db, "users", user.uid, "bucketList", "stats");
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -61,7 +57,7 @@ export const createUser = async (user, username) => {
       photoUrl: user.photoURL,
       displayName: "",
       bio: "",
-      category: user.category,
+      category: user.category ?? null,
     });
 
     transaction.set(usernameRef, { uid: user.uid });
@@ -104,7 +100,7 @@ export const updateProfile = async (userId, newData) => {
   }
 };
 
-export const getUserProfile = async (db, uid) => {
+export const getUserProfile = async (uid) => {
   try {
     const docRef = doc(db, "users", uid);
     const docSnapshot = await getDoc(docRef);
@@ -167,7 +163,7 @@ const updateOverallStats = async (userId, type) => {
   }
 };
 
-export const getUserStats = async (db, uid) => {
+export const getUserStats = async (uid) => {
   try {
     const statsRef = doc(db, "users", uid, "bucketList", "stats");
     const docSnapshot = getDoc(statsRef);
@@ -271,7 +267,7 @@ export const getSubBucketList = async (userId, subBucketListId) => {
   }
 };
 
-export const getFilteredSubBucketLists = async (db, uid, accessLevels) => {
+export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   try {
     const ref = collection(db, "users", uid, "bucketList");
     const q = query(ref, where("accessLevel", "in", accessLevels));
@@ -523,8 +519,9 @@ export async function getAllEvents(db, uid, subBucketLists) {
         title: data.title,
         description: data.description,
         categories: data.categories,
-        completed: data.completed,
+        isCompleted: data.completed,
         deadline: data.deadline,
+        createdAt: data.createdAt,
       };
     });
     allEvents.push(...events);
@@ -600,7 +597,7 @@ export const toggleEventCompletion = async (
   }
 };
 
-export function getUpcomingEvents(db, uid, now, onData) {
+export function getUpcomingEvents(uid, now, onData) {
   const upcomingQ = query(
     collectionGroup(db, "events"),
     where("ownerId", "==", uid),
@@ -618,7 +615,7 @@ export function getUpcomingEvents(db, uid, now, onData) {
   });
 }
 
-export function getOverdueEvents(db, uid, now, onData) {
+export function getOverdueEvents(uid, now, onData) {
   const overdueQ = query(
     collectionGroup(db, "events"),
     where("ownerId", "==", uid),
@@ -673,19 +670,24 @@ export const deleteFriend = async (userId, friendId) => {
   }
 };
 
-export function getFriends(db, currentUserId, onData) {
-  const ref = collection(db, "users", currentUserId, "friends");
-  return onSnapshot(ref, (snapshot) => {
+export async function getFriends(currentUserId) {
+  try {
+    const ref = collection(db, "users", currentUserId, "friends");
+    const snapshot = await getDocs(ref);
     const data = snapshot.docs.map((doc) => ({
       uid: doc.id,
-      ...doc.data(),
+      username: doc.username,
+      photoUrl: doc.photoURL,
     }));
-    onData(data);
-  });
+    return data;
+  } catch (error) {
+    console.error("Error fetching friends:", error);
+    throw error;
+  }
 }
 
 //miscellaneous
-export const getRelationship = async (db, currentUserId, targetUserId) => {
+export const getRelationship = async (currentUserId, targetUserId) => {
   if (currentUserId === targetUserId) {
     return "self";
   }
@@ -705,12 +707,17 @@ export const getRelationship = async (db, currentUserId, targetUserId) => {
   }
 };
 
-export function getAllUsers(db, onData) {
-  return onSnapshot(collection(db, "users"), (snapshot) => {
+export async function getAllUsers() {
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
     const data = snapshot.docs.map((doc) => ({
-      uid: doc.id,
-      ...doc.data(),
+      uid,
+      username: doc.username ?? "",
+      photoUrl: doc.photoUrl ?? null,
     }));
-    onData(data);
-  });
+    return data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
 }
