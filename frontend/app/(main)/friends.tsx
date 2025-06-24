@@ -1,29 +1,28 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, StyleSheet } from 'react-native';
-import { ThemedView } from '@/components/ThemedView';
-import { vs } from 'react-native-size-matters';
-import { useContext, useState } from 'react';
-import UserSearch from '@/components/UserSearch';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback } from 'react';
-import { AuthContext } from '@/context/AuthContext';
-import LoadingScreen from '@/components/Loading';
-import { getFriends } from '@/firebase/firestore';
-import { User } from '@/types/user';
-
-
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView, StyleSheet } from "react-native";
+import { ThemedView } from "@/components/ThemedView";
+import { vs } from "react-native-size-matters";
+import { useContext, useState } from "react";
+import UserSearch from "@/components/UserSearch";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback } from "react";
+import { AuthContext } from "@/context/AuthContext";
+import LoadingScreen from "@/components/Loading";
+import { getFriends } from "@/firebase/firestore";
+import { User } from "@/types/user";
 
 export default function FriendsList() {
   const [friends, setFriends] = useState<User[]>([]);
   const { viewedUid } = useLocalSearchParams();
   const { user } = useContext(AuthContext);
 
-  const currentUserId = typeof viewedUid === 'string'
-    ? viewedUid
-    : Array.isArray(viewedUid)
+  const currentUserId =
+    typeof viewedUid === "string"
+      ? viewedUid
+      : Array.isArray(viewedUid)
       ? viewedUid[0]
       : user?.uid;
-  
+
   useFocusEffect(
     useCallback(() => {
       if (!currentUserId) {
@@ -43,30 +42,24 @@ export default function FriendsList() {
     }, [currentUserId])
   );
 
-  
   if (!currentUserId) {
     return <LoadingScreen />;
   }
 
   return (
-      <SafeAreaView edges={[]} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-              <ThemedView style={styles.mainContainer}>
-                <UserSearch users={friends} placeholder='Search friends'/>
-              </ThemedView>
-          </ScrollView>
-      </SafeAreaView>
-  )
+    <SafeAreaView edges={[]} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ThemedView style={styles.mainContainer}>
+          <UserSearch users={friends} placeholder="Search friends" />
+        </ThemedView>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
-
-
-
-
-
 
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     gap: vs(14),
   },
-})
+});

@@ -14,8 +14,8 @@ import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
-import { auth, db } from "@/firebase/firebaseConfig";
+import { router } from "expo-router";
+import { auth } from "@/firebase/firebaseConfig";
 import JourneyScreen from "@/app/(main)/(tabs)/journey";
 import EditProfile from "@/components/editprofile";
 import { User } from "@/types/user";
@@ -27,11 +27,10 @@ import { getUserProfile, getUserStats } from "@/firebase/firestore";
 const PROFILEPICSIZE = ms(80);
 
 type ProfileProps = {
-    uid?: string,
-}
+  uid?: string;
+};
 
 export default function ProfileScreen({ uid }: ProfileProps) {
-
   const [userData, setUserData] = useState<User | null>(null);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [totalEvents, setTotalEvents] = useState<number>(0);

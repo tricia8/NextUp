@@ -14,7 +14,7 @@ import {
   where,
   onSnapshot,
   collectionGroup,
-  getDocs
+  getDocs,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
@@ -40,13 +40,7 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
 export const createUser = async (user, username) => {
   const userRef = doc(db, "users", user.uid);
   const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = doc(
-    db,
-    "users",
-    user.uid,
-    "bucketList",
-    "stats"
-  );
+  const bucketListStatsRef = doc(db, "users", user.uid, "bucketList", "stats");
 
   await runTransaction(db, async (transaction) => {
     const usernameDoc = await transaction.get(usernameRef);
@@ -183,7 +177,7 @@ export const getUserStats = async (uid) => {
     console.error("Error fetching user stats:", error);
     throw error;
   }
-}
+};
 
 //subbucketlists
 export const createSubBucketList = async (
@@ -289,7 +283,6 @@ export const getFilteredSubBucketLists = async (uid, accessLevels) => {
     throw error;
   }
 };
-
 
 export const deleteSubBucketList = async (userId, subBucketListId) => {
   try {
@@ -515,16 +508,16 @@ export const toggleEventCompletion = async (
 
 export function getUpcomingEvents(uid, now, onData) {
   const upcomingQ = query(
-    collectionGroup(db, 'events'),
-    where('ownerId', '==', uid),
-    where('deadline', '>=', Timestamp.fromDate(now)),
-    where('isCompleted', '==', false),
-    orderBy('deadline'),
+    collectionGroup(db, "events"),
+    where("ownerId", "==", uid),
+    where("deadline", ">=", Timestamp.fromDate(now)),
+    where("isCompleted", "==", false),
+    orderBy("deadline"),
     limit(3)
   );
   return onSnapshot(upcomingQ, (snapshot) => {
-    const upcoming = snapshot.docs.map(doc => ({
-      ...(doc.data()),
+    const upcoming = snapshot.docs.map((doc) => ({
+      ...doc.data(),
       id: doc.id,
     }));
     onData(upcoming);
@@ -533,20 +526,19 @@ export function getUpcomingEvents(uid, now, onData) {
 
 export function getOverdueEvents(uid, now, onData) {
   const overdueQ = query(
-    collectionGroup(db, 'events'),
-    where('ownerId', '==', uid),
-    where('deadline', '<', Timestamp.fromDate(now)),
-    where('isCompleted', '==', false)
+    collectionGroup(db, "events"),
+    where("ownerId", "==", uid),
+    where("deadline", "<", Timestamp.fromDate(now)),
+    where("isCompleted", "==", false)
   );
   return onSnapshot(overdueQ, (snapshot) => {
-    const overdue = snapshot.docs.map(doc => ({
+    const overdue = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
     onData(overdue);
   });
 }
-
 
 //friends
 export const addFriend = async (userId, friendId) => {
@@ -591,13 +583,13 @@ export async function getFriends(currentUserId) {
   try {
     const ref = collection(db, "users", currentUserId, "friends");
     const snapshot = await getDocs(ref);
-    const data = snapshot.docs.map(doc => {
+    const data = snapshot.docs.map((doc) => {
       const docData = doc.data();
       return {
         uid: doc.id,
         username: docData.username ?? "",
         photoUrl: docData.photoUrl ?? null,
-      }
+      };
     });
     return data;
   } catch (error) {
@@ -630,7 +622,7 @@ export const getRelationship = async (currentUserId, targetUserId) => {
 export async function getAllUsers() {
   try {
     const snapshot = await getDocs(collection(db, "users"));
-    const data = snapshot.docs.map(doc => {
+    const data = snapshot.docs.map((doc) => {
       const docData = doc.data();
       return {
         uid: doc.id,
@@ -640,7 +632,7 @@ export async function getAllUsers() {
         displayName: docData.displayName,
         bio: docData.bio,
         category: docData.category,
-      }
+      };
     });
     return data;
   } catch (error) {
