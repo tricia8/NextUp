@@ -23,9 +23,7 @@ import SublistItem from "@/components/SublistItems";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
-  if (loading || !user?.uid) {
-    return <LoadingScreen />;
-  }
+
   const uid = user?.uid;
   const [sublists, setSublists] = useState<Sublist[]>([]);
   const [search, setSearch] = useState("");
@@ -62,6 +60,10 @@ export default function BucketList() {
   const router = useRouter();
 
   const styles = getStyles(colorScheme);
+
+  if (loading || !user?.uid) {
+    return <LoadingScreen />;
+  }
 
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
