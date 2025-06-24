@@ -138,7 +138,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
               <ThemedText style={styles.dataText}>
                 <ThemedText type="subtitle">{totalEvents}</ThemedText>
                 {"\n"}
-                <Text style={styles.subDataText}>GOALS{"\n"}CREATED</Text>
+                <Text style={styles.subDataText}>GOALS{"\n"}ADDED</Text>
               </ThemedText>
             </View>
 
