@@ -631,6 +631,10 @@ export async function getAllUsers() {
       uid: doc.id,
       username: doc.username ?? "",
       photoUrl: doc.photoUrl ?? null,
+      email: user.email,
+      displayName: "",
+      bio: "",
+      category: user.category ?? null,
     }));
     return data;
   } catch (error) {
