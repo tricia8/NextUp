@@ -79,7 +79,7 @@ export default function UserSearch({
           <ThemedText style={{ fontSize: RFValue(14) }}>
             {item.username}
           </ThemedText>
-          {showAddButton && userId && !isFriend(item.uid) && (
+          {showAddButton && !isFriend(item.uid) && userId != item.uid && (
             <TouchableOpacity onPress={() => handleAddFriend(item.uid)}>
               <MaterialIcons name="group-add" color="white" size={ms(18)} />
             </TouchableOpacity>
