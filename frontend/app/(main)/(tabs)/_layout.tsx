@@ -9,10 +9,8 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { RFValue } from "react-native-responsive-fontsize";
 import Entypo from "@expo/vector-icons/Entypo";
-import { FontAwesome5 } from '@expo/vector-icons';
-import { MaterialIcons } from '@expo/vector-icons';
-
-
+import { FontAwesome5 } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -59,16 +57,19 @@ export default function TabLayout() {
       <Tabs.Screen
         name="journey"
         options={{
-          title: 'Journey',
-          tabBarIcon: ({ color }) => <MaterialIcons size={28} name="landscape" color={color} />,
+          title: "Journey",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons size={28} name="landscape" color={color} />
+          ),
           headerShown: true,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <FontAwesome5 size={28} name="user-alt" color={color} />,
+          title: "Profile",
+          tabBarIcon: ({ color }) => (
+            <FontAwesome5 size={28} name="user-alt" color={color} />
           ),
         }}
       />
