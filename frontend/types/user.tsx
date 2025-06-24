@@ -5,4 +5,5 @@ export type User = {
   photoUrl: string | null;
   displayName?: string | null;
   bio?: string | null;
+  category?: string[] | null,
 };
