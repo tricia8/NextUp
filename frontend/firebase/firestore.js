@@ -629,8 +629,8 @@ export async function getAllUsers() {
     const snapshot = await getDocs(collection(db, "users"));
     const data = snapshot.docs.map(doc => ({
       uid,
-      username: data.username ?? "",
-      photoUrl: data.photoUrl ?? null,
+      username: doc.username ?? "",
+      photoUrl: doc.photoUrl ?? null,
     }));
     return data;
   } catch (error) {
