@@ -145,21 +145,53 @@ export const getOwnerProfile = async (uid) => {
 };
 
 //bucketlist
-const updateOverallStats = async (userId, type) => {
+const updateOverallStats = async (userId, type, number) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
+  const statsSnap = await getDoc(statsRef);
 
-  const fieldMap = {
-    incrementTotal: { totalEvents: increment(1) },
-    decrementTotal: { totalEvents: decrement(1) },
-    incrementCompleted: { totalEvents: increment(1) },
-    decrementCompleted: { totalEvents: decrement(1) },
-  };
+  if (!statsSnap.exists()) {
+    console.warn("Stats document does not exist.");
+    return;
+  }
 
-  try {
-    await updateDoc(statsRef, fieldMap[type]);
-  } catch (error) {
-    console.log("Error updating stats");
-    throw error;
+  const stats = statsSnap.data();
+  let update = null;
+
+  switch (type) {
+    case "incrementTotal":
+      update = { totalEvents: increment(number) };
+      break;
+    case "decrementTotal":
+      if ((stats.totalEvents ?? 0) - number < 0) {
+        // prevent negative values
+        console.warn("Prevented decrement: totalEvents would go negative.");
+        return;
+      }
+      update = { totalEvents: decrement(number) };
+      break;
+    case "incrementCompleted":
+      update = { completedEvents: increment(number) };
+      break;
+    case "decrementCompleted":
+      if ((stats.completedEvents ?? 0) - number < 0) {
+        // prevent negative values
+        console.warn("Prevented decrement: completedEvents would go negative.");
+        return;
+      }
+      update = { completedEvents: decrement(number) };
+      break;
+    default:
+      console.warn(`Invalid update type: ${type}`);
+      return;
+  }
+
+  if (update) {
+    try {
+      await updateDoc(statsRef, update);
+    } catch (error) {
+      console.log("Error updating stats:", error);
+      throw error;
+    }
   }
 };
 
@@ -317,22 +349,22 @@ export async function getAllSubBucketLists(uid) {
   return allSublists;
 }
 
-export const deleteSubBucketList = async (userId, subBucketListId) => {
+export const deleteSubBucketList = async (userId, subBucketList) => {
   try {
     const eventsRef = collection(
       db,
       "users",
       userId,
       "bucketList",
-      subBucketListId,
+      subBucketList.id,
       "events"
     );
     const eventsSnap = await getDocs(eventsRef);
 
     // Delete all documents in the events collection
-    const deletePromises = eventsSnap.docs.map((docSnap) =>
-      deleteDoc(docSnap.ref)
-    );
+    const deletePromises = eventsSnap.docs.map((docSnap) => {
+      deleteDoc(docSnap.ref);
+    });
     // wait for all deletions to complete since deleteDoc is async
     await Promise.all(deletePromises);
 
@@ -342,7 +374,17 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
       "users",
       userId,
       "bucketList",
-      subBucketListId
+      subBucketList.id
+    );
+    updateOverallStats(
+      userId,
+      decrementCompleted,
+      subBucketList.completionStatus[0]
+    );
+    updateOverallStats(
+      userId,
+      decrementTotal,
+      subBucketList.completionStatus[1]
     );
     await deleteDoc(subBucketListRef);
   } catch (error) {
@@ -377,7 +419,7 @@ export const addEvent = async (
       eventData
     );
 
-    updateOverallStats(userId, incrementTotal);
+    updateOverallStats(userId, incrementTotal, 1);
 
     return eventDoc.id;
   } catch (error) {
@@ -400,7 +442,7 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
 
     await deleteDoc(eventDoc);
 
-    updateOverallStats(userId, incrementTotal);
+    updateOverallStats(userId, incrementTotal, 1);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -583,9 +625,9 @@ export const toggleEventCompletion = async (
     const currentCompleted = docSnap.data().isCompleted;
 
     if (currentCompleted) {
-      updateOverallStats(userId, decrementCompleted);
+      updateOverallStats(userId, decrementCompleted, 1);
     } else {
-      updateOverallStats(userId, incrementCompleted);
+      updateOverallStats(userId, incrementCompleted, 1);
     }
 
     await updateDoc(eventDoc, {
