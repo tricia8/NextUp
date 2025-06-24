@@ -54,7 +54,7 @@ export const createUser = async (user, username) => {
       uid: user.uid,
       username: username,
       email: user.email,
-      photoUrl: user.photoURL,
+      photoUrl: user.photoURL ?? null,
       displayName: "",
       bio: "",
       category: user.category ?? null,
@@ -110,11 +110,11 @@ export const getUserProfile = async (uid) => {
 
       return {
         uid: data.id,
-        username: data.username ?? "",
-        email: data.email ?? "",
-        photoUrl: data.photoUrl ?? null,
-        displayName: data.displayName ?? "",
-        bio: data.bio ?? "",
+        username: data.username,
+        email: data.email,
+        photoUrl: data.photoUrl,
+        displayName: data.displayName,
+        bio: data.bio,
         category: data.category,
       };
     } else {
@@ -712,12 +712,12 @@ export async function getAllUsers() {
     const snapshot = await getDocs(collection(db, "users"));
     const data = snapshot.docs.map((doc) => ({
       uid: doc.id,
-      username: doc.username ?? "",
-      photoUrl: doc.photoUrl ?? null,
-      email: user.email,
-      displayName: "",
-      bio: "",
-      category: user.category ?? null,
+      username: doc.username,
+      photoUrl: doc.photoUrl,
+      email: doc.email,
+      displayName: doc.displayName,
+      bio: doc.bio,
+      category: doc.category,
     }));
     return data;
   } catch (error) {
