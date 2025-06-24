@@ -73,7 +73,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
 
 
     return (
-        <View>
+        <View style={{flex: 1}}>
             <View style={styles.searchContainer}>
                 <TextInput
                     style={styles.input}
