@@ -9,12 +9,12 @@ import { useCallback } from 'react';
 import { AuthContext } from '@/context/AuthContext';
 import LoadingScreen from '@/components/Loading';
 import { getFriends } from '@/firebase/firestore';
-import { PartialUser } from '@/types/partialuser';
+import { User } from '@/types/user';
 
 
 
 export default function FriendsList() {
-  const [friends, setFriends] = useState<PartialUser[]>([]);
+  const [friends, setFriends] = useState<User[]>([]);
   const { viewedUid } = useLocalSearchParams();
   const { user } = useContext(AuthContext);
 

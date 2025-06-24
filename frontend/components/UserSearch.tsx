@@ -5,7 +5,7 @@ import { s, ms, vs } from 'react-native-size-matters';
 import { ThemedText } from '@/components/ThemedText';
 import { LegendList } from '@legendapp/list';
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
-import { PartialUser } from '@/types/partialuser';
+import { User } from '@/types/user';
 import { router } from 'expo-router';
 import { addFriend } from '@/firebase/firestore';
 
@@ -14,7 +14,7 @@ import { addFriend } from '@/firebase/firestore';
 
 
 type Props = {
-  users: PartialUser[];
+  users: User[];
   showAddButton?: boolean;
   placeholder?: string;
   userId?: string;
@@ -50,7 +50,7 @@ export default function UserSearch({users, showAddButton = false, placeholder = 
         }
     }
 
-    function renderItem({item}: {item: PartialUser}) {
+    function renderItem({item}: {item: User}) {
           return (
             <TouchableOpacity style={styles.userRowContainer} 
               onPress={() => router.push({
