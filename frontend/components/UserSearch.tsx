@@ -66,7 +66,6 @@ export default function UserSearch({
   function renderItem({ item }: { item: User }) {
     return (
       <TouchableOpacity
-        style={styles.userRowContainer}
         onPress={() =>
           router.push({
             pathname: "/profile",
@@ -74,14 +73,20 @@ export default function UserSearch({
           })
         }
       >
-        <View style={styles.userDisplay}>
-          <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
-          <ThemedText style={{ fontSize: RFValue(14) }}>
-            {item.username}
-          </ThemedText>
+        <View style={styles.userRowContainer}>
+          <View style={styles.userDisplay}>
+            <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
+            <ThemedText style={{ fontSize: RFValue(14) }}>
+              {item.username}
+            </ThemedText>
+          </View>
           {showAddButton && !isFriend(item.uid) && userId != item.uid && (
             <TouchableOpacity onPress={() => handleAddFriend(item.uid)}>
-              <MaterialIcons name="group-add" color="white" size={ms(18)} />
+              <MaterialIcons
+                name="person-add-alt-1"
+                color="white"
+                size={ms(22)}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -133,10 +138,12 @@ const makeStyles = (colorScheme: any) =>
     },
     userRowContainer: {
       justifyContent: "space-between",
-    },
-    userDisplay: {
+      flexDirection: "row",
       paddingHorizontal: s(20),
       paddingVertical: vs(4),
+      alignItems: "center",
+    },
+    userDisplay: {
       flexDirection: "row",
       alignItems: "center",
       gap: s(12),
