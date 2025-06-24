@@ -1,8 +1,5 @@
 import { ThemedText } from "@/components/ThemedText";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
-import { FlashList } from "@shopify/flash-list";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useContext, useState } from "react";
 import {
@@ -17,13 +14,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
-import { LinearGradient } from "expo-linear-gradient";
 import { AuthContext } from "@/context/AuthContext";
 import { getAllSubBucketLists } from "@/firebase/firestore";
 import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
-import { Chip } from "react-native-paper";
+import SublistItem from "@/components/SublistItems";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -64,84 +60,6 @@ export default function BucketList() {
   );
 
   const router = useRouter();
-
-  const handlePress = (item: Sublist) => {
-    router.push({
-      pathname: "/(main)/[sublistId]",
-      params: { sublistId: item.id },
-    });
-  };
-
-  const accessColorMap: Record<string, { bg: string; text: string }> = {
-    private: {
-      bg: "rgba(231, 208, 242, 0.61)",
-      text: "#4e4350",
-    },
-    friends: { bg: "rgba(159, 236, 250, 0.56)", text: "#11395d" },
-    everyone: { bg: "rgba(181, 245, 220, 0.4)", text: "#1b5e20" },
-  };
-
-  const renderFlatlistItem = ({ item }: { item: Sublist }) => {
-    return (
-      <LinearGradient
-        colors={
-          colorScheme === "dark"
-            ? ["#0f2027", "#188991"]
-            : ["#dcf4a9", "#b2df75"]
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.itemContainer}
-      >
-        <TouchableOpacity style={{ flex: 1 }} onPress={() => handlePress(item)}>
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            {item.collaborators.length > 1 ? (
-              <Feather
-                name="users"
-                size={24}
-                color={colorScheme === "dark" ? "white" : "black"}
-              />
-            ) : (
-              <></>
-            )}
-            <Chip
-              icon="eye"
-              style={{
-                borderRadius: 15,
-                backgroundColor: accessColorMap[item.accessLevel].bg,
-                // colorScheme == "dark" ? "rgba(255,255,255,0.15)" : "#cccaca",
-              }}
-              compact={true}
-              textStyle={{
-                fontSize: RFValue(10),
-                color: accessColorMap[item.accessLevel].text,
-              }}
-            >
-              {item.accessLevel == "private" ? "only you" : item.accessLevel}
-            </Chip>
-          </View>
-
-          <View style={styles.SubListRow2}>
-            <ThemedText type="subtitle" style={styles.ListName}>
-              {item.title}
-            </ThemedText>
-
-            <AntDesign
-              name="right"
-              size={20}
-              color="black"
-              style={{ marginTop: 6 }}
-            />
-          </View>
-          <View>
-            <ThemedText style={styles.StatusText}>
-              {item.completionStatus[0]} of {item.completionStatus[1]} complete
-            </ThemedText>
-          </View>
-        </TouchableOpacity>
-      </LinearGradient>
-    );
-  };
 
   const styles = getStyles(colorScheme);
 
@@ -191,12 +109,11 @@ export default function BucketList() {
         </View>
 
         <View style={{ flex: 0.8 }}>
-          <FlashList
+          <SublistItem
+            uid={uid}
             data={sublists}
-            renderItem={renderFlatlistItem}
-            estimatedItemSize={20}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            keyExtractor={(item, index) => `${item.title}-${index}`}
+            updateData={setSublists}
+            colorScheme={colorScheme}
           />
         </View>
 
@@ -204,7 +121,7 @@ export default function BucketList() {
           <TouchableOpacity
             onPress={() => router.push("../new-sublist")}
             activeOpacity={0.8}
-            style={styles.AddButton}
+            style={styles.addButton}
           >
             <Ionicons name="add-circle" size={75} color="#39a64b" />
           </TouchableOpacity>
@@ -222,26 +139,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     themedView: {
       flex: 1,
     },
-    itemContainer: {
-      flexDirection: "column",
-      marginVertical: 8,
-      marginHorizontal: 15,
-      padding: 20,
-      justifyContent: "space-between",
-      borderRadius: 5,
-      elevation: 5,
-    },
-    SubListRow2: {
-      flexDirection: "row",
-      padding: 2,
-      justifyContent: "space-between",
-    },
-    ListName: {
-      fontSize: RFValue(16),
-    },
-    StatusText: {
-      fontSize: RFValue(11),
-    },
     searchFilterBar: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -250,7 +147,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       marginVertical: 10,
       marginHorizontal: 10,
     },
-    AddButton: {
+    addButton: {
       position: "absolute",
       bottom: 20,
       right: 20,
