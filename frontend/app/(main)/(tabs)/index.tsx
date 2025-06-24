@@ -72,10 +72,10 @@ export default function HomeScreen() {
 
   if (
     !uid ||
-    !totalEvents ||
-    !completedEvents ||
-    !upcomingEvents ||
-    !overdueCount
+    totalEvents === null ||
+    completedEvents === null||
+    upcomingEvents === null||
+    overdueCount === null
   ) {
     return <LoadingScreen />;
   }
