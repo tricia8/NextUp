@@ -8,7 +8,6 @@ import {
   View,
   StyleSheet,
   StatusBar,
-  Modal,
 } from "react-native";
 import { ThemedText } from "./ThemedText";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -16,25 +15,16 @@ import { Chip } from "react-native-paper";
 import { FlashList } from "@shopify/flash-list";
 import { RFValue } from "react-native-responsive-fontsize";
 import { ReactNode, useState } from "react";
-import Reanimated, {
-  SharedValue,
-  useAnimatedStyle,
-  interpolate,
-  Extrapolation,
-} from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { deleteSubBucketList } from "@/firebase/firestore";
 import { showMessage } from "react-native-flash-message";
 import SwipeableRow from "./SwipeableRow";
-import { ThemedView } from "./ThemedView";
 import DeleteModal from "./DeleteModal";
 
 interface ItemProps {
   uid: string;
   data: Sublist[];
   updateData: React.Dispatch<React.SetStateAction<Sublist[]>>;
+  toggleVersion?: () => void; // optional, used to trigger refetch of data
   colorScheme: ColorSchemeName;
 }
 
@@ -43,6 +33,7 @@ export default function SublistItems({
   data,
   updateData,
   colorScheme,
+  toggleVersion = () => {},
 }: ItemProps): ReactNode | Promise<ReactNode> {
   const router = useRouter();
   const styles = getStyles(colorScheme);
@@ -62,7 +53,8 @@ export default function SublistItems({
       text: "#4e4350",
     },
     friends: { bg: "rgba(159, 236, 250, 0.56)", text: "#11395d" },
-    everyone: { bg: "rgba(181, 245, 220, 0.4)", text: "#1b5e20" },
+    everyone: { bg: "rgba(181, 245, 220, 0.4)", text: "#0a5201" },
+    default: { bg: "rgba(255, 255, 255, 0.5)", text: "#000" },
   };
 
   // delete sublist
@@ -76,6 +68,17 @@ export default function SublistItems({
       updateData((prevSublists) =>
         prevSublists.filter((list) => list.id !== sublist.id)
       );
+      toggleVersion?.();
+      setModalVisible(false); // clsose modal after deletion
+      showMessage({
+        message: "Success",
+        description: "Sublist deleted successfully",
+        type: "success",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "success",
+        duration: 5000,
+      });
     } catch (error) {
       showMessage({
         message: "Error",
@@ -91,38 +94,14 @@ export default function SublistItems({
   };
 
   const renderFlatlistItem = ({ item }: { item: Sublist }) => {
+    if (!item) return null; // handle case where item is undefined
+    const access = accessColorMap[item.accessLevel?.toLowerCase() ?? "default"];
+
     return (
       <SwipeableRow
         onDelete={() => {
-          /* try {
-            console.log("deleting sublist");
-            console.log("userid", uid);
-            await deleteSubBucketList(uid, item);
-            showMessage({
-              message: "Success",
-              description: "Sublist deleted successfully",
-              type: "success",
-              statusBarHeight: StatusBar.currentHeight,
-              floating: true,
-              icon: "success",
-              duration: 5000,
-            }); */
           setSelectedItem(item);
           setModalVisible(true);
-          /* } catch (error) {
-            showMessage({
-              message: "Error",
-              description:
-                error instanceof Error
-                  ? error.message
-                  : "Error deleting sublist",
-              type: "danger",
-              statusBarHeight: StatusBar.currentHeight,
-              floating: true,
-              icon: "danger",
-              duration: 5000,
-            });
-          } */
         }}
       >
         <LinearGradient
@@ -153,15 +132,19 @@ export default function SublistItems({
                 icon="eye"
                 style={{
                   borderRadius: 15,
-                  backgroundColor: accessColorMap[item.accessLevel].bg,
+                  backgroundColor: access.bg,
                 }}
                 compact={true}
                 textStyle={{
                   fontSize: RFValue(10),
-                  color: accessColorMap[item.accessLevel].text,
+                  color: access.text,
                 }}
               >
-                {item.accessLevel == "private" ? "only you" : item.accessLevel}
+                {item.accessLevel
+                  ? item.accessLevel === "private"
+                    ? "only you"
+                    : item.accessLevel
+                  : "unknown"}
               </Chip>
             </View>
 
@@ -179,7 +162,7 @@ export default function SublistItems({
             </View>
             <View>
               <ThemedText style={styles.statusText}>
-                {item.completionStatus[0]} of {item.completionStatus[1]}
+                {item.completionStatus[0]} of {item.completionStatus[1]}{" "}
                 complete
               </ThemedText>
             </View>
@@ -191,18 +174,18 @@ export default function SublistItems({
 
   return (
     <>
-      <DeleteModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        item={selectedItem}
-        handleItemDelete={handleDelete}
-      />
       <FlashList
         data={data}
         renderItem={renderFlatlistItem}
         estimatedItemSize={20}
         contentContainerStyle={{ paddingBottom: 100 }}
         keyExtractor={(item, index) => `${item.title}-${index}`}
+      />
+      <DeleteModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        item={selectedItem}
+        handleItemDelete={handleDelete}
       />
     </>
   );
