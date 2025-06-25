@@ -26,6 +26,7 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { deleteSubBucketList } from "@/firebase/firestore";
 import { showMessage } from "react-native-flash-message";
+import SwipeableRow from "./SwipeableRow";
 
 interface ItemProps {
   uid: string;
@@ -83,62 +84,9 @@ export default function SublistItem({
     }
   };
 
-  function renderRightAction(
-    progress: SharedValue<number>,
-    dragX: SharedValue<number>,
-    onDelete: () => void
-  ) {
-    const styleAnimation = useAnimatedStyle(() => {
-      console.log("showLeftProgress:", progress.value);
-      console.log("appliedTranslation:", dragX.value);
-
-      // const translateX = dragX.value - 50;
-      const translateX = dragX.value + 50;
-
-      // Makes icon grow as swipe progresses
-      const scale = interpolate(
-        progress.value,
-        [0, 1],
-        [0.5, 1],
-        Extrapolation.CLAMP
-      );
-
-      // Fades icon in as user swipes more.
-      const opacity = interpolate(
-        progress.value,
-        [0, 1],
-        [0, 1],
-        Extrapolation.CLAMP
-      );
-
-      return {
-        transform: [{ translateX }, { scale }],
-        opacity,
-      };
-    });
-
-    return (
-      <Reanimated.View style={styleAnimation} pointerEvents="auto">
-        <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
-          <MaterialIcons name="delete" size={30} color="white" />
-        </TouchableOpacity>
-      </Reanimated.View>
-    );
-  }
-
   const renderFlatlistItem = ({ item }: { item: Sublist }) => {
-    const panGesture = Gesture.Pan();
-
     return (
-      <ReanimatedSwipeable
-        simultaneousWithExternalGesture={panGesture}
-        friction={2}
-        enableTrackpadTwoFingerGesture
-        leftThreshold={50}
-        renderRightActions={(progress, dragX) =>
-          renderRightAction(progress, dragX, () => handleDelete(item))
-        }
-      >
+      <SwipeableRow onDelete={() => handleDelete(item)}>
         <LinearGradient
           colors={
             colorScheme === "dark"
@@ -199,7 +147,7 @@ export default function SublistItem({
             </View>
           </TouchableOpacity>
         </LinearGradient>
-      </ReanimatedSwipeable>
+      </SwipeableRow>
     );
   };
 
