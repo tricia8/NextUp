@@ -20,12 +20,14 @@ import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
 import SublistItems from "@/components/SublistItems";
+import SublistSearchBar from "@/components/SublistSearchBar";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
 
   const uid = user?.uid;
   const [sublists, setSublists] = useState<Sublist[]>([]);
+  const [filteredSublists, setFilteredSublists] = useState<Sublist[]>([]);
   const [search, setSearch] = useState("");
   const [version, setVersion] = useState(false); // toggle to trigger refetch
 
@@ -72,37 +74,11 @@ export default function BucketList() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View style={styles.searchFilterBar}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Search list..."
-              style={{
-                color: colorScheme === "dark" ? "#e3e3e3" : "black",
-                borderRadius: 10,
-                padding: 15,
-                fontSize: RFValue(13),
-              }}
-              value={search}
-              onChangeText={setSearch}
-              placeholderTextColor={
-                colorScheme === "light" ? "#727573" : "white"
-              }
-              inputMode="search"
-              returnKeyLabel="search"
-              underlineColorAndroid="transparent"
-            />
-            {search.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearch("")}
-                style={styles.clearButton}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={24}
-                  color={colorScheme === "dark" ? "#34403e" : "#999"}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
+          <SublistSearchBar
+            setFilteredSublists={setFilteredSublists}
+            filteredSublists={filteredSublists}
+            sublists={sublists}
+          />
 
           <TouchableOpacity style={{ justifyContent: "center" }}>
             <Ionicons
@@ -116,7 +92,7 @@ export default function BucketList() {
         <View style={{ flex: 0.8 }}>
           <SublistItems
             uid={uid}
-            data={sublists}
+            data={filteredSublists}
             updateData={setSublists}
             toggleVersion={() => setVersion(!version)}
             colorScheme={colorScheme}
