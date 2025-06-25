@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { cloudinary } from './cloudinary';
 
 // Create Express app
 const app = express();
@@ -28,9 +29,8 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
-// Cloudinary
-const cloudinary = require('./cloudinary');
 
+// Cloudinary
 app.post('/upload', async (req, res) => {
   try {
     const fileStr = req.body.data;
