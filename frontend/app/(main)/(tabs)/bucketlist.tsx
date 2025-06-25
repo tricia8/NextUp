@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useContext, useState } from "react";
 import {
   ColorSchemeName,
+  Modal,
   StatusBar,
   StyleSheet,
   TextInput,
@@ -15,7 +16,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
 import { AuthContext } from "@/context/AuthContext";
-import { getAllSubBucketLists } from "@/firebase/firestore";
+import {
+  deleteSubBucketList,
+  getAllSubBucketLists,
+} from "@/firebase/firestore";
 import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
@@ -54,7 +58,7 @@ export default function BucketList() {
       };
 
       fetchSubBucketLists();
-    }, [uid])
+    }, [uid, sublists])
   );
 
   const router = useRouter();
