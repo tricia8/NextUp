@@ -18,6 +18,8 @@ import { ReactNode } from "react";
 import Reanimated, {
   SharedValue,
   useAnimatedStyle,
+  interpolate,
+  Extrapolation,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -60,7 +62,9 @@ export default function SublistItem({
   // delete sublist
   const handleDelete = async (sublist: Sublist) => {
     try {
+      console.log("deleting sublist");
       await deleteSubBucketList(uid, sublist);
+      console.log("deleted!");
       // update sublists state
       updateData((prevSublists) =>
         prevSublists.filter((list) => list.id !== sublist.id)
@@ -79,7 +83,7 @@ export default function SublistItem({
     }
   };
 
-  function renderLeftAction(
+  function renderRightAction(
     progress: SharedValue<number>,
     dragX: SharedValue<number>,
     onDelete: () => void
@@ -88,15 +92,51 @@ export default function SublistItem({
       console.log("showLeftProgress:", progress.value);
       console.log("appliedTranslation:", dragX.value);
 
+      // const translateX = dragX.value - 50;
+      const translateX = dragX.value + 50;
+
+      // Makes icon grow as swipe progresses
+      const scale = interpolate(
+        progress.value,
+        [0, 1],
+        [0.5, 1],
+        Extrapolation.CLAMP
+        /* dragX.value,
+        [-150, 0],
+        [1, 0.5],
+        // [0, 100],
+        // [0.5, 1],
+        Extrapolation.CLAMP */
+      );
+
+      // Fades icon in as user swipes more.
+      const opacity = interpolate(
+        progress.value,
+        [0, 1],
+        [0, 1],
+        Extrapolation.CLAMP
+        /* dragX.value,
+        [-150, -30],
+        [1, 0],
+        // [0, 80],
+        // [0, 1],
+        Extrapolation.CLAMP */
+      );
+
       return {
-        transform: [{ translateX: dragX.value - 50 }],
+        transform: [{ translateX }, { scale }],
+        opacity,
       };
+
+      /* return {
+        transform: [{ translateX: dragX.value - 50 }],
+      }; */
     });
 
     return (
-      <Reanimated.View style={styleAnimation}>
+      <Reanimated.View style={styleAnimation} pointerEvents="auto">
         <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
-          <MaterialIcons name="delete" size={24} color="white" />
+          <MaterialIcons name="delete" size={30} color="white" />
         </TouchableOpacity>
       </Reanimated.View>
     );
@@ -108,13 +148,15 @@ export default function SublistItem({
     return (
       // <GestureDetector gesture={panGesture}>
       <ReanimatedSwipeable
-        // simultaneousWithExternalGesture={panGesture}
-        // containerStyle={styles.swipeable}
+        simultaneousWithExternalGesture={panGesture}
         friction={2}
         enableTrackpadTwoFingerGesture
-        rightThreshold={40}
-        renderLeftActions={(progress, dragX) =>
-          renderLeftAction(progress, dragX, () => handleDelete(item))
+        leftThreshold={50}
+        renderRightActions={
+          (progress, dragX) =>
+            renderRightAction(progress, dragX, () => handleDelete(item))
+          /* renderLeftActions={(progress, dragX) =>
+          renderLeftAction(progress, dragX, () => handleDelete(item)) */
         }
       >
         <LinearGradient
@@ -146,7 +188,6 @@ export default function SublistItem({
                 style={{
                   borderRadius: 15,
                   backgroundColor: accessColorMap[item.accessLevel].bg,
-                  // colorScheme == "dark" ? "rgba(255,255,255,0.15)" : "#cccaca",
                 }}
                 compact={true}
                 textStyle={{
@@ -221,5 +262,9 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       paddingVertical: 15,
       justifyContent: "center",
       alignItems: "center",
+      backgroundColor: "#ec4b6a",
+      height: "100%",
+      borderRadius: 5,
+      zIndex: 100,
     },
   });
