@@ -19,7 +19,7 @@ import { getAllSubBucketLists } from "@/firebase/firestore";
 import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
-import SublistItem from "@/components/SublistItems";
+import SublistItems from "@/components/SublistItems";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -111,7 +111,7 @@ export default function BucketList() {
         </View>
 
         <View style={{ flex: 0.8 }}>
-          <SublistItem
+          <SublistItems
             uid={uid}
             data={sublists}
             updateData={setSublists}
