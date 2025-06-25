@@ -8,13 +8,14 @@ import {
   View,
   StyleSheet,
   StatusBar,
+  Modal,
 } from "react-native";
 import { ThemedText } from "./ThemedText";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { Chip } from "react-native-paper";
 import { FlashList } from "@shopify/flash-list";
 import { RFValue } from "react-native-responsive-fontsize";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import Reanimated, {
   SharedValue,
   useAnimatedStyle,
@@ -27,6 +28,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { deleteSubBucketList } from "@/firebase/firestore";
 import { showMessage } from "react-native-flash-message";
 import SwipeableRow from "./SwipeableRow";
+import { ThemedView } from "./ThemedView";
+import DeleteModal from "./DeleteModal";
 
 interface ItemProps {
   uid: string;
@@ -35,7 +38,7 @@ interface ItemProps {
   colorScheme: ColorSchemeName;
 }
 
-export default function SublistItem({
+export default function SublistItems({
   uid,
   data,
   updateData,
@@ -43,6 +46,8 @@ export default function SublistItem({
 }: ItemProps): ReactNode | Promise<ReactNode> {
   const router = useRouter();
   const styles = getStyles(colorScheme);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Sublist | null>(null);
 
   const handleSublistPress = (item: Sublist) => {
     router.push({
@@ -64,6 +69,7 @@ export default function SublistItem({
   const handleDelete = async (sublist: Sublist) => {
     try {
       console.log("deleting sublist");
+      console.log("userid", uid);
       await deleteSubBucketList(uid, sublist);
       console.log("deleted!");
       // update sublists state
@@ -86,7 +92,39 @@ export default function SublistItem({
 
   const renderFlatlistItem = ({ item }: { item: Sublist }) => {
     return (
-      <SwipeableRow onDelete={() => handleDelete(item)}>
+      <SwipeableRow
+        onDelete={() => {
+          /* try {
+            console.log("deleting sublist");
+            console.log("userid", uid);
+            await deleteSubBucketList(uid, item);
+            showMessage({
+              message: "Success",
+              description: "Sublist deleted successfully",
+              type: "success",
+              statusBarHeight: StatusBar.currentHeight,
+              floating: true,
+              icon: "success",
+              duration: 5000,
+            }); */
+          setSelectedItem(item);
+          setModalVisible(true);
+          /* } catch (error) {
+            showMessage({
+              message: "Error",
+              description:
+                error instanceof Error
+                  ? error.message
+                  : "Error deleting sublist",
+              type: "danger",
+              statusBarHeight: StatusBar.currentHeight,
+              floating: true,
+              icon: "danger",
+              duration: 5000,
+            });
+          } */
+        }}
+      >
         <LinearGradient
           colors={
             colorScheme === "dark"
@@ -102,7 +140,7 @@ export default function SublistItem({
             onPress={() => handleSublistPress(item)}
           >
             <View style={{ flexDirection: "row", gap: 12 }}>
-              {item.collaborators.length > 1 ? (
+              {item?.collaborators?.length > 1 ? (
                 <Feather
                   name="users"
                   size={24}
@@ -141,7 +179,7 @@ export default function SublistItem({
             </View>
             <View>
               <ThemedText style={styles.statusText}>
-                {item.completionStatus[0]} of {item.completionStatus[1]}{" "}
+                {item.completionStatus[0]} of {item.completionStatus[1]}
                 complete
               </ThemedText>
             </View>
@@ -152,13 +190,21 @@ export default function SublistItem({
   };
 
   return (
-    <FlashList
-      data={data}
-      renderItem={renderFlatlistItem}
-      estimatedItemSize={20}
-      contentContainerStyle={{ paddingBottom: 100 }}
-      keyExtractor={(item, index) => `${item.title}-${index}`}
-    />
+    <>
+      <DeleteModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        item={selectedItem}
+        handleItemDelete={handleDelete}
+      />
+      <FlashList
+        data={data}
+        renderItem={renderFlatlistItem}
+        estimatedItemSize={20}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        keyExtractor={(item, index) => `${item.title}-${index}`}
+      />
+    </>
   );
 }
 
