@@ -1,9 +1,4 @@
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  TouchableOpacity,
-} from "react-native";
+import { StyleSheet, ScrollView, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
@@ -16,7 +11,11 @@ import { useCallback, useContext, useState } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import LoadingScreen from "@/components/Loading";
 import { Event } from "@/types/event";
-import { getFilteredSubBucketLists, getAllEvents, getRelationship } from "@/firebase/firestore";
+import {
+  getFilteredSubBucketLists,
+  getAllEvents,
+  getRelationship,
+} from "@/firebase/firestore";
 
 type SubBucketList = {
   id: string;
@@ -30,7 +29,9 @@ type SubBucketList = {
 export default function JourneyScreen() {
   const { user } = useContext(AuthContext);
   const { uid: paramUid } = useLocalSearchParams();
-  const [relationship, setRelationship] = useState<"self" | "friend" | "none">("none");
+  const [relationship, setRelationship] = useState<"self" | "friend" | "none">(
+    "none"
+  );
   const [subBucketLists, setSubBucketLists] = useState<SubBucketList[]>([]);
   const [events, setEvents] = useState<Event[] | null>(null);
 
@@ -116,8 +117,8 @@ export default function JourneyScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
           {events.length === 0 ? (
-            <View style={{alignItems: 'center'}}>
-              <ThemedText>No completed goals.</ThemedText>
+            <View style={{ alignItems: "center" }}>
+              <ThemedText>No visible completed goals.</ThemedText>
             </View>
           ) : (
             <LegendList
