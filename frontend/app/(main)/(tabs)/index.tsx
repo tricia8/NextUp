@@ -23,12 +23,13 @@ import {
   getUserStats,
   getUpcomingEvents,
   getOverdueEvents,
+  getUserProfile,
 } from "@/firebase/firestore";
 
 export default function HomeScreen() {
   const { user } = useContext(AuthContext);
   const uid = user?.uid;
-  const username = user?.username;
+  const [name, setName] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
   const [totalEvents, setTotalEvents] = useState<number | null>(null);
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
@@ -42,17 +43,21 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!uid) return;
-      const fetchStats = async () => {
-        try {
-          const stats = await getUserStats(uid);
-          setTotalEvents(stats.totalEvents);
-          setCompletedEvents(stats.completedEvents);
-        } catch (error) {
-          console.error("Error fetching user stats:", error);
-        }
-      };
 
-      fetchStats();
+      const fetchUserData = async () => {
+      try {
+        const user = await getUserProfile(uid);
+        setName(user?.displayName);
+
+        const stats = await getUserStats(uid);
+        setTotalEvents(stats.totalEvents);
+        setCompletedEvents(stats.completedEvents);
+      } catch (error) {
+        console.error("Error fetching user data and stats:", error);
+      }
+    };
+
+      fetchUserData();
     }, [uid])
   );
 
@@ -88,7 +93,7 @@ export default function HomeScreen() {
 
           <View style={styles.mainContainer}>
             <View style={styles.titleContainer}>
-              <ThemedText type="title">Hello {username}!</ThemedText>
+              <ThemedText type="title">Hello {name}!</ThemedText>
 
               <View style={styles.iconContainer}>
                 <TouchableOpacity>
