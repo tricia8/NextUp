@@ -359,7 +359,7 @@ const formatSublistData = (data) => {
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : null,
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
     completionStatus: data.completionStatus,
   };
 };
@@ -369,10 +369,12 @@ export async function getAllSubBucketLists(uid) {
   const allSublists = [];
   const bucketListRef = collection(db, "users", uid, "bucketList");
   const listSnap = await getDocs(bucketListRef);
-  const sublists = listSnap.docs.map((doc) => ({
-    id: doc.id,
-    ...formatSublistData(doc.data()),
-  }));
+  const sublists = listSnap.docs
+    .filter((doc) => doc.id !== "stats")
+    .map((doc) => ({
+      id: doc.id,
+      ...formatSublistData(doc.data()),
+    }));
   allSublists.push(...sublists);
   return allSublists;
 }
