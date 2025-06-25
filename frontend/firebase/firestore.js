@@ -269,8 +269,11 @@ export const getSubBucketList = async (userId, subBucketListId) => {
 
 export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   try {
-    const ref = collection(db, "users", uid, "bucketList");
-    const q = query(ref, where("accessLevel", "in", accessLevels));
+    const q = query(
+    collectionGroup(db, 'bucketList'),
+    where("collaborators", "array-contains", uid),
+    where("accessLevel", "in", accessLevels),
+  );
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map((doc) => {
