@@ -34,21 +34,25 @@ app.listen(PORT, () => {
 app.post('/signature', (req, res) => {
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = req.body.folder;
+  const public_id = req.body.public_id;
 
   const paramsToSign = {
     timestamp,
     folder,
+    public_id,
+    overwrite: true,
   };
 
   const signature = cloudinary.utils.api_sign_request(
     paramsToSign,
-    process.env.CLOUDINARY_API_SECRET
+    process.env.CLOUDINARY_API_SECRET,
   );
 
   res.json({
     timestamp,
     signature,
     folder,
+    public_id,
     apiKey: process.env.CLOUDINARY_API_KEY,
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
   });
