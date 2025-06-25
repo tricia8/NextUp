@@ -325,7 +325,7 @@ export const deleteSubBucketList = async (userId, subBucketListId) => {
 export const addEvent = async (
   userId,
   subBucketListId,
-  { title, description, categories, deadline }
+  { title, description, categories, deadline, collaborators }
 ) => {
   try {
     const eventData = {
@@ -333,6 +333,7 @@ export const addEvent = async (
       title,
       description,
       categories,
+      collaborators,
       isCompleted: false,
       createdAt: serverTimestamp(),
     };
@@ -426,6 +427,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       ? formatDisplayDate(data.deadline.toDate())
       : null;
     const isCompleted = data.isCompleted;
+    const collaborators = data.collaborators;
     const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
     const createdAtFormatted = formatDisplayDate(createdAt);
 
@@ -435,6 +437,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline: deadlineFormatted, // could be null
       isCompleted,
+      collaborators,
       createdAt: createdAtFormatted,
     };
   } catch (error) {
@@ -488,7 +491,7 @@ export async function getAllEvents(db, uid, subBucketLists) {
   return allEvents;
 }
 
-// title, description, categories, deadline, isCompleted
+// title, description, categories, deadline, isCompleted, collaborators
 export const updateEvent = async (
   userId,
   subBucketListId,
