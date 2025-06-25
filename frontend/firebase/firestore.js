@@ -12,7 +12,6 @@ import {
   Timestamp,
   query,
   where,
-  onSnapshot,
   collectionGroup,
   getDocs,
   orderBy,
@@ -54,7 +53,7 @@ export const createUser = async (user, username) => {
       uid: user.uid,
       username: username,
       email: user.email,
-      photoUrl: user.photoURL,
+      photoUrl: user.photoURL ?? null,
       displayName: "",
       bio: "",
       category: user.category ?? null,
@@ -110,11 +109,11 @@ export const getUserProfile = async (uid) => {
 
       return {
         uid: data.id,
-        username: data.username ?? "",
-        email: data.email ?? "",
-        photoUrl: data.photoUrl ?? null,
-        displayName: data.displayName ?? "",
-        bio: data.bio ?? "",
+        username: data.username,
+        email: data.email,
+        photoUrl: data.photoUrl,
+        displayName: data.displayName,
+        bio: data.bio,
         category: data.category,
       };
     } else {
@@ -145,7 +144,7 @@ export const getOwnerProfile = async (uid) => {
 };
 
 //bucketlist
-const updateOverallStats = async (userId, type, number) => {
+/*const updateStats = async (userId, type, number) => {
   const statsRef = doc(db, "users", userId, "bucketList", "stats");
   const statsSnap = await getDoc(statsRef);
 
@@ -193,7 +192,7 @@ const updateOverallStats = async (userId, type, number) => {
       throw error;
     }
   }
-};
+};*/
 
 export const getUserStats = async (uid) => {
   try {
@@ -215,6 +214,35 @@ export const getUserStats = async (uid) => {
     throw error;
   }
 };
+
+async function updateOverallStats(uid) {
+  try {
+    const q = query(
+      collectionGroup(db, "bucketList"),
+      where("collaborators", "array-contains", uid)
+    );
+
+    const snapshot = await getDocs(q);
+
+    let totalEvents = 0;
+    let completedEvents = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      totalEvents += data.completionStatus[1] || 0;
+      completedEvents += data.completionStatus[0] || 0;
+    });
+
+    const statsRef = doc(db, "users", uid, "bucketList", "stats");
+
+    await setDoc(statsRef, {
+      totalEvents,
+      completedEvents,
+    });
+  } catch (err) {
+    console.error("Error updating stats:", err);
+  }
+}
 
 //subbucketlists
 export const createSubBucketList = async (
@@ -376,17 +404,10 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
       "bucketList",
       subBucketList.id
     );
-    updateOverallStats(
-      userId,
-      decrementCompleted,
-      subBucketList.completionStatus[0]
-    );
-    updateOverallStats(
-      userId,
-      decrementTotal,
-      subBucketList.completionStatus[1]
-    );
+
     await deleteDoc(subBucketListRef);
+
+    updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
     throw error;
@@ -397,7 +418,7 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
 export const addEvent = async (
   userId,
   subBucketListId,
-  { title, description, categories, deadline }
+  { title, description, categories, deadline, collaborators }
 ) => {
   try {
     const eventData = {
@@ -405,6 +426,7 @@ export const addEvent = async (
       title,
       description,
       categories,
+      collaborators,
       isCompleted: false,
       createdAt: serverTimestamp(),
     };
@@ -419,7 +441,7 @@ export const addEvent = async (
       eventData
     );
 
-    updateOverallStats(userId, incrementTotal, 1);
+    updateOverallStats(userId);
 
     return eventDoc.id;
   } catch (error) {
@@ -442,7 +464,7 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
 
     await deleteDoc(eventDoc);
 
-    updateOverallStats(userId, incrementTotal, 1);
+    updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -498,6 +520,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       ? formatDisplayDate(data.deadline.toDate())
       : null;
     const isCompleted = data.isCompleted;
+    const collaborators = data.collaborators;
     const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
     const createdAtFormatted = formatDisplayDate(createdAt);
 
@@ -507,6 +530,7 @@ export const getEvent = async (userId, subBucketListId, eventId) => {
       categories,
       deadline: deadlineFormatted, // could be null
       isCompleted,
+      collaborators,
       createdAt: createdAtFormatted,
     };
   } catch (error) {
@@ -571,7 +595,7 @@ export async function getAllEvents(db, uid, subBucketLists) {
   return allEvents;
 }
 
-// title, description, categories, deadline, isCompleted
+// title, description, categories, deadline, isCompleted, collaborators
 export const updateEvent = async (
   userId,
   subBucketListId,
@@ -624,53 +648,104 @@ export const toggleEventCompletion = async (
 
     const currentCompleted = docSnap.data().isCompleted;
 
-    if (currentCompleted) {
-      updateOverallStats(userId, decrementCompleted, 1);
-    } else {
-      updateOverallStats(userId, incrementCompleted, 1);
-    }
-
     await updateDoc(eventDoc, {
       isCompleted: !currentCompleted,
     });
+
+    updateOverallStats(userId);
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
   }
 };
 
-export function getUpcomingEvents(uid, now, onData) {
-  const upcomingQ = query(
-    collectionGroup(db, "events"),
-    where("ownerId", "==", uid),
-    where("deadline", ">=", Timestamp.fromDate(now)),
-    where("isCompleted", "==", false),
-    orderBy("deadline"),
-    limit(3)
-  );
-  return onSnapshot(upcomingQ, (snapshot) => {
-    const upcoming = snapshot.docs.map((doc) => ({
-      ...doc.data(),
-      id: doc.id,
-    }));
-    onData(upcoming);
-  });
+export async function getUpcomingEvents(uid, now, onData) {
+  try {
+    const q = query(
+      collectionGroup(db, "bucketList"),
+      where("collaborators", "array-contains", uid)
+    );
+
+    const snapshot = await getDocs(q);
+
+    // Create an array of promises for event queries
+    const eventPromises = snapshot.docs.map(async (doc) => {
+      const subBucketListId = doc.id;
+      const parentPath = doc.ref.parent.parent;
+      if (!parentPath) return [];
+
+      const eventsRef = collection(
+        parentPath,
+        "bucketList",
+        subBucketListId,
+        "events"
+      );
+
+      const eventsQuery = query(
+        eventsRef,
+        where("deadline", ">=", Timestamp.fromDate(now)),
+        where("isCompleted", "==", false),
+        orderBy("deadline"),
+        limit(3)
+      );
+
+      const eventSnap = await getDocs(eventsQuery);
+      return eventSnap.docs.map((eventDoc) => ({
+        id: eventDoc.id,
+        ...eventDoc.data(),
+      }));
+    });
+
+    const eventsArrays = await Promise.all(eventPromises);
+    const allEvents = eventsArrays.flat();
+
+    onData(allEvents);
+  } catch (err) {
+    console.error("Error fetching upcoming:", err);
+  }
 }
 
-export function getOverdueEvents(uid, now, onData) {
-  const overdueQ = query(
-    collectionGroup(db, "events"),
-    where("ownerId", "==", uid),
-    where("deadline", "<", Timestamp.fromDate(now)),
-    where("isCompleted", "==", false)
-  );
-  return onSnapshot(overdueQ, (snapshot) => {
-    const overdue = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-    onData(overdue);
-  });
+export async function getOverdueEvents(uid, now, onData) {
+  try {
+    const q = query(
+      collectionGroup(db, "bucketList"),
+      where("collaborators", "array-contains", uid)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const eventPromises = snapshot.docs.map(async (doc) => {
+      const subBucketListId = doc.id;
+      const parentPath = doc.ref.parent.parent;
+      if (!parentPath) return [];
+
+      const eventsRef = collection(
+        parentPath,
+        "bucketList",
+        subBucketListId,
+        "events"
+      );
+
+      const eventsQuery = query(
+        eventsRef,
+        where("deadline", "<", Timestamp.fromDate(now)),
+        where("isCompleted", "==", false)
+      );
+
+      const eventSnap = await getDocs(eventsQuery);
+      return eventSnap.docs.map((eventDoc) => ({
+        id: eventDoc.id,
+        ...eventDoc.data(),
+      }));
+    });
+
+    const eventsArrays = await Promise.all(eventPromises);
+    const allEvents = eventsArrays.flat();
+
+    onData(allEvents);
+  } catch (err) {
+    console.error("Error fetching overdue:", err);
+  }
 }
 
 //friends
@@ -716,11 +791,14 @@ export async function getFriends(currentUserId) {
   try {
     const ref = collection(db, "users", currentUserId, "friends");
     const snapshot = await getDocs(ref);
-    const data = snapshot.docs.map((doc) => ({
-      uid: doc.id,
-      username: doc.username,
-      photoUrl: doc.photoURL,
-    }));
+    const data = snapshot.docs.map((doc) => {
+      const docData = doc.data();
+      return {
+        uid: doc.id,
+        username: docData.username ?? "",
+        photoUrl: docData.photoUrl ?? null,
+      };
+    });
     return data;
   } catch (error) {
     console.error("Error fetching friends:", error);
@@ -752,11 +830,18 @@ export const getRelationship = async (currentUserId, targetUserId) => {
 export async function getAllUsers() {
   try {
     const snapshot = await getDocs(collection(db, "users"));
-    const data = snapshot.docs.map((doc) => ({
-      uid: doc.id,
-      username: doc.username ?? "",
-      photoUrl: doc.photoUrl ?? null,
-    }));
+    const data = snapshot.docs.map((doc) => {
+      const docData = doc.data();
+      return {
+        uid: doc.id,
+        username: docData.username,
+        photoUrl: docData.photoUrl,
+        email: docData.email,
+        displayName: docData.displayName,
+        bio: docData.bio,
+        category: docData.category,
+      };
+    });
     return data;
   } catch (error) {
     console.error("Error fetching users:", error);
