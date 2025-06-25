@@ -101,12 +101,6 @@ export default function SublistItem({
         [0, 1],
         [0.5, 1],
         Extrapolation.CLAMP
-        /* dragX.value,
-        [-150, 0],
-        [1, 0.5],
-        // [0, 100],
-        // [0.5, 1],
-        Extrapolation.CLAMP */
       );
 
       // Fades icon in as user swipes more.
@@ -115,22 +109,12 @@ export default function SublistItem({
         [0, 1],
         [0, 1],
         Extrapolation.CLAMP
-        /* dragX.value,
-        [-150, -30],
-        [1, 0],
-        // [0, 80],
-        // [0, 1],
-        Extrapolation.CLAMP */
       );
 
       return {
         transform: [{ translateX }, { scale }],
         opacity,
       };
-
-      /* return {
-        transform: [{ translateX: dragX.value - 50 }],
-      }; */
     });
 
     return (
@@ -146,17 +130,13 @@ export default function SublistItem({
     const panGesture = Gesture.Pan();
 
     return (
-      // <GestureDetector gesture={panGesture}>
       <ReanimatedSwipeable
         simultaneousWithExternalGesture={panGesture}
         friction={2}
         enableTrackpadTwoFingerGesture
         leftThreshold={50}
-        renderRightActions={
-          (progress, dragX) =>
-            renderRightAction(progress, dragX, () => handleDelete(item))
-          /* renderLeftActions={(progress, dragX) =>
-          renderLeftAction(progress, dragX, () => handleDelete(item)) */
+        renderRightActions={(progress, dragX) =>
+          renderRightAction(progress, dragX, () => handleDelete(item))
         }
       >
         <LinearGradient
@@ -220,7 +200,6 @@ export default function SublistItem({
           </TouchableOpacity>
         </LinearGradient>
       </ReanimatedSwipeable>
-      // </GestureDetector>
     );
   };
 
