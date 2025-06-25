@@ -40,6 +40,11 @@ export default function SublistItems({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sublist | null>(null);
 
+  // Delete modal text
+  const heading = "Are you sure you want to delete this sublist?";
+  const body =
+    "This will permanently delete all goals in this list, including completed ones. This action cannot be undone.";
+
   const handleSublistPress = (item: Sublist) => {
     router.push({
       pathname: "/(main)/[sublistId]",
@@ -186,6 +191,8 @@ export default function SublistItems({
         setModalVisible={setModalVisible}
         item={selectedItem}
         handleItemDelete={handleDelete}
+        heading={heading}
+        body={body}
       />
     </>
   );
