@@ -1,4 +1,3 @@
-import { ThemedText } from "@/components/ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useContext, useState } from "react";
@@ -16,10 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
 import { AuthContext } from "@/context/AuthContext";
-import {
-  deleteSubBucketList,
-  getAllSubBucketLists,
-} from "@/firebase/firestore";
+import { getAllSubBucketLists } from "@/firebase/firestore";
 import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
@@ -31,6 +27,8 @@ export default function BucketList() {
   const uid = user?.uid;
   const [sublists, setSublists] = useState<Sublist[]>([]);
   const [search, setSearch] = useState("");
+  const [version, setVersion] = useState(false); // toggle to trigger refetch
+
   const colorScheme = useColorScheme(); // 'light' or 'dark'
 
   useFocusEffect(
@@ -40,6 +38,7 @@ export default function BucketList() {
         try {
           const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
           setSublists(sublists);
+          console.log("Fetched sub-bucket lists:", sublists);
         } catch (error) {
           console.error("Error fetching sub-bucket lists:", error);
           showMessage({
@@ -58,7 +57,7 @@ export default function BucketList() {
       };
 
       fetchSubBucketLists();
-    }, [uid, sublists])
+    }, [uid, version]) // `version` toggling triggers refetch
   );
 
   const router = useRouter();
@@ -119,6 +118,7 @@ export default function BucketList() {
             uid={uid}
             data={sublists}
             updateData={setSublists}
+            toggleVersion={() => setVersion(!version)}
             colorScheme={colorScheme}
           />
         </View>
