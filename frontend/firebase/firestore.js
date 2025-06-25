@@ -662,44 +662,22 @@ export const toggleEventCompletion = async (
 export async function getUpcomingEvents(uid, now, onData) {
   try {
     const q = query(
-      collectionGroup(db, "bucketList"),
-      where("collaborators", "array-contains", uid)
+      collectionGroup(db, "events"),
+      where("collaborators", "array-contains", uid),
+      where("deadline", ">=", Timestamp.fromDate(now)),
+      where("isCompleted", "==", false),
+      orderBy("deadline"),
+      limit(3)
     );
 
     const snapshot = await getDocs(q);
 
-    // Create an array of promises for event queries
-    const eventPromises = snapshot.docs.map(async (doc) => {
-      const subBucketListId = doc.id;
-      const parentPath = doc.ref.parent.parent;
-      if (!parentPath) return [];
+    const events = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-      const eventsRef = collection(
-        parentPath,
-        "bucketList",
-        subBucketListId,
-        "events"
-      );
-
-      const eventsQuery = query(
-        eventsRef,
-        where("deadline", ">=", Timestamp.fromDate(now)),
-        where("isCompleted", "==", false),
-        orderBy("deadline"),
-        limit(3)
-      );
-
-      const eventSnap = await getDocs(eventsQuery);
-      return eventSnap.docs.map((eventDoc) => ({
-        id: eventDoc.id,
-        ...eventDoc.data(),
-      }));
-    });
-
-    const eventsArrays = await Promise.all(eventPromises);
-    const allEvents = eventsArrays.flat();
-
-    onData(allEvents);
+    onData(events);
   } catch (err) {
     console.error("Error fetching upcoming:", err);
   }
@@ -709,40 +687,19 @@ export async function getOverdueEvents(uid, now, onData) {
   try {
     const q = query(
       collectionGroup(db, "bucketList"),
-      where("collaborators", "array-contains", uid)
+      where("collaborators", "array-contains", uid),
+      where("deadline", "<", Timestamp.fromDate(now)),
+      where("isCompleted", "==", false)
     );
 
     const snapshot = await getDocs(q);
 
-    const eventPromises = snapshot.docs.map(async (doc) => {
-      const subBucketListId = doc.id;
-      const parentPath = doc.ref.parent.parent;
-      if (!parentPath) return [];
+    const events = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-      const eventsRef = collection(
-        parentPath,
-        "bucketList",
-        subBucketListId,
-        "events"
-      );
-
-      const eventsQuery = query(
-        eventsRef,
-        where("deadline", "<", Timestamp.fromDate(now)),
-        where("isCompleted", "==", false)
-      );
-
-      const eventSnap = await getDocs(eventsQuery);
-      return eventSnap.docs.map((eventDoc) => ({
-        id: eventDoc.id,
-        ...eventDoc.data(),
-      }));
-    });
-
-    const eventsArrays = await Promise.all(eventPromises);
-    const allEvents = eventsArrays.flat();
-
-    onData(allEvents);
+    onData(events);
   } catch (err) {
     console.error("Error fetching overdue:", err);
   }
