@@ -31,17 +31,25 @@ app.listen(PORT, () => {
 
 
 // Cloudinary
-app.post('/upload', async (req, res) => {
-  try {
-    const fileStr = req.body.data;
-    const folder = req.body.folder;
+app.post('/signature', (req, res) => {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = req.body.folder;
 
-    const uploadResponse = await cloudinary.uploader.upload(fileStr, {
-      folder,
-    });
-    res.json({ url: uploadResponse.secure_url });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Upload failed');
-  }
+  const paramsToSign = {
+    timestamp,
+    folder,
+  };
+
+  const signature = cloudinary.utils.api_sign_request(
+    paramsToSign,
+    process.env.CLOUDINARY_API_SECRET
+  );
+
+  res.json({
+    timestamp,
+    signature,
+    folder,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+  });
 });
