@@ -17,6 +17,8 @@ type DeleteModalProps = {
   setModalVisible: (visible: boolean) => void;
   item: Sublist | null;
   handleItemDelete: (sublist: Sublist) => void;
+  heading: string;
+  body: string;
 };
 
 export default function DeleteModal({
@@ -24,6 +26,8 @@ export default function DeleteModal({
   setModalVisible,
   item,
   handleItemDelete,
+  heading,
+  body,
 }: DeleteModalProps) {
   const colorScheme = useColorScheme();
 
@@ -72,7 +76,7 @@ export default function DeleteModal({
                 textAlign: "center",
               }}
             >
-              Are you sure you want to delete this sublist?
+              {heading}
             </ThemedText>
             <ThemedText
               style={{
@@ -80,8 +84,7 @@ export default function DeleteModal({
                 marginBottom: 16,
               }}
             >
-              This will permanently delete all goals in this list, including
-              completed ones. This action cannot be undone.
+              {body}
             </ThemedText>
             <View
               style={{ flexDirection: "row", justifyContent: "space-around" }}
