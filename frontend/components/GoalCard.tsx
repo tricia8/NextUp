@@ -10,6 +10,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { ThemedText } from "./ThemedText";
 import { RFValue } from "react-native-responsive-fontsize";
 import { Goal } from "@/types/goal";
+import CategoryChips from "./CategoryChips";
 
 interface Props extends Partial<Goal> {
   title: string;
@@ -23,7 +24,7 @@ interface Props extends Partial<Goal> {
 export default function GoalCard({
   title,
   isCompleted,
-  categories,
+  categories = [],
   deadline,
   onPress,
   colorScheme,
@@ -41,8 +42,10 @@ export default function GoalCard({
     >
       <TouchableOpacity onPress={onPress} style={{ flex: 1 }}>
         <View style={styles.row}>
-          {categories}
-          <FontAwesome6 name="hourglass-half" size={20} color="black" />
+          {deadline && (
+            <FontAwesome6 name="hourglass-half" size={20} color="#f64b4b" />
+          )}
+          <CategoryChips selectedTags={categories} />
         </View>
 
         <View style={styles.titleRow}>
@@ -76,9 +79,10 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     row: {
       flexDirection: "row",
-      justifyContent: "space-between",
+      justifyContent: "flex-start",
       alignItems: "center",
       marginBottom: 6,
+      gap: 8,
     },
     titleRow: {
       flexDirection: "row",
