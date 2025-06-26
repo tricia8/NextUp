@@ -4,6 +4,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -26,10 +27,13 @@ import {
   getUserProfile,
 } from "@/firebase/firestore";
 
+const PROFILEPICSIZE = ms(50);
+
 export default function HomeScreen() {
   const { user } = useContext(AuthContext);
   const uid = user?.uid;
   const [name, setName] = useState<string>("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [totalEvents, setTotalEvents] = useState<number | null>(null);
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
@@ -45,17 +49,18 @@ export default function HomeScreen() {
       if (!uid) return;
 
       const fetchUserData = async () => {
-      try {
-        const user = await getUserProfile(uid);
-        setName(user?.displayName);
+        try {
+          const user = await getUserProfile(uid);
+          setName(user?.displayName);
+          setPhotoUrl(user?.photoUrl);
 
-        const stats = await getUserStats(uid);
-        setTotalEvents(stats.totalEvents);
-        setCompletedEvents(stats.completedEvents);
-      } catch (error) {
-        console.error("Error fetching user data and stats:", error);
-      }
-    };
+          const stats = await getUserStats(uid);
+          setTotalEvents(stats.totalEvents);
+          setCompletedEvents(stats.completedEvents);
+        } catch (error) {
+          console.error("Error fetching user data and stats:", error);
+        }
+      };
 
       fetchUserData();
     }, [uid])
@@ -78,8 +83,8 @@ export default function HomeScreen() {
   if (
     !uid ||
     totalEvents === null ||
-    completedEvents === null||
-    upcomingEvents === null||
+    completedEvents === null ||
+    upcomingEvents === null ||
     overdueCount === null
   ) {
     return <LoadingScreen />;
@@ -105,11 +110,22 @@ export default function HomeScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={toggleOpen}>
-                  <FontAwesome
-                    name="user-circle"
-                    size={ms(50)}
-                    color="#6a5acd"
-                  />
+                  {photoUrl ? (
+                    <Image
+                      source={{ uri: photoUrl }}
+                      style={{
+                        width: PROFILEPICSIZE,
+                        height: PROFILEPICSIZE,
+                        borderRadius: PROFILEPICSIZE / 2,
+                      }}
+                    />
+                  ) : (
+                    <FontAwesome
+                      name="user-circle"
+                      size={PROFILEPICSIZE}
+                      color="#6a5acd"
+                    />
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
