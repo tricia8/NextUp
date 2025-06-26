@@ -46,6 +46,7 @@ import {
   getAllEventsFormatted,
   getOwnerProfile,
   getSubBucketList,
+  updateSubBucketList,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
@@ -54,14 +55,16 @@ import { Goal } from "@/types/goal";
 import { FlashList } from "@shopify/flash-list";
 import GoalCard from "@/components/GoalCard";
 import LoadingScreen from "@/components/Loading";
+import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
 
 export default function currentSublist() {
   // Fetching sublist data from firestore
   const { user, loading } = useContext(AuthContext);
+  const uid = user?.uid;
   const { sublistId } = useLocalSearchParams();
   console.log("sublistId param:", sublistId);
 
-  if (loading || !user?.uid || !sublistId) {
+  if (loading || !uid || !sublistId) {
     return <LoadingScreen />;
   }
 
@@ -80,16 +83,23 @@ export default function currentSublist() {
   const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
   const [createdAt, setCreatedAt] = useState("");
 
+  // boolean toggle to trigger re-render
+  const [isUpdated, setIsUpdated] = useState(false);
+
+  // keyboard hook
+  const keyboardVisible = useKeyboardStatus();
+
   // Fetched goals
   const [existingGoals, setExistingGoals] = useState<Goal[]>([]);
-  const renderFlatlistGoal = ({ item }: { item: Goal }) => {
+  const renderFlashlistGoal = ({ item }: { item: Goal }) => {
+    console.log("Rendering goal:", item);
     return (
       <GoalCard
         title={item.title}
         isCompleted={item.isCompleted}
         categories={item.categories}
         deadline={item.deadline}
-        onPress={() => {}}
+        onPress={() => {}} // dynamic routing to [goalId].tsx
         colorScheme={colorScheme}
       />
     );
@@ -131,7 +141,12 @@ export default function currentSublist() {
               const otherProfiles = await Promise.all(
                 // Fetches all collaborator profiles in parallel
                 sublistData.collaborators
-                  .filter((uid: string | undefined) => uid && uid !== user.uid)
+                  .filter(
+                    (uid: string | undefined) =>
+                      /* uid && uid !== user.uid */ typeof uid === "string" &&
+                      uid.length > 0 &&
+                      uid !== user.uid
+                  )
                   .map((uid: string) => getOwnerProfile(uid))
               );
 
@@ -161,7 +176,7 @@ export default function currentSublist() {
       return () => {
         isActive = false; // Avoids setting state after unmount
       };
-    }, [user?.uid, sublistId])
+    }, [uid, sublistId, isUpdated])
   );
 
   // Share modal
@@ -214,10 +229,10 @@ export default function currentSublist() {
   // Goal submission
   const onSave = async () => {
     try {
-      await addEvent(user?.uid, sublistId, {
+      await addEvent(uid, sublistId, {
         // POST — send new goal to Firestore
-        title: title,
-        description: description,
+        title: goalTitle,
+        description: goalDesc,
         categories: selectedTags,
         deadline: deadlineDate,
         collaborators: sharedUids,
@@ -225,7 +240,7 @@ export default function currentSublist() {
       console.log("goal added!");
 
       // GET — fetch updated list from Firestore
-      const updatedGoals = await getAllEventsFormatted(user?.uid, sublistId);
+      const updatedGoals = await getAllEventsFormatted(uid, sublistId);
       setExistingGoals(updatedGoals); // update state/UI with fresh data
       onCancel(); // reset goal creation fields
     } catch (error) {
@@ -326,6 +341,15 @@ export default function currentSublist() {
             <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
               {description}
             </ThemedText>
+
+            <View style={{ marginVertical: 10 }}>
+              <AccessDropdownPicker
+                accessLevel={accessLevel}
+                onChange={setAccessLevel}
+                theme={isDark ? "DARK" : "LIGHT"}
+                isDisabled={true}
+              />
+            </View>
           </View>
         )}
 
@@ -339,6 +363,13 @@ export default function currentSublist() {
               lightLabelBg="#a2e6ff"
               darkLabelBg="#141515"
             />
+            <View style={{ marginVertical: 10 }}>
+              <AccessDropdownPicker
+                accessLevel={accessLevel}
+                onChange={setAccessLevel}
+                theme={isDark ? "DARK" : "LIGHT"}
+              />
+            </View>
             <View style={styles.editHandler}>
               <TouchableOpacity
                 style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
@@ -353,8 +384,30 @@ export default function currentSublist() {
 
               <TouchableOpacity
                 style={[styles.editingButton, { backgroundColor: "#618ce0" }]}
-                onPress={() => {
-                  setIsEditing(false);
+                onPress={async () => {
+                  try {
+                    setIsEditing(false);
+                    // Save changes to Firestore
+                    await updateSubBucketList(uid, sublistId, {
+                      title,
+                      description,
+                      accessLevel,
+                    });
+                    setIsUpdated(!isUpdated); // trigger re-render
+                  } catch (error) {
+                    showMessage({
+                      message: "Error",
+                      description:
+                        error instanceof Error
+                          ? error.message
+                          : "Failed to update sublist",
+                      type: "danger",
+                      statusBarHeight: StatusBar.currentHeight,
+                      floating: true,
+                      icon: "danger",
+                      duration: 5000,
+                    });
+                  }
                 }}
               >
                 <Text>Save</Text>
@@ -370,14 +423,6 @@ export default function currentSublist() {
           </ThemedText>
         </View>
 
-        <View style={{ marginVertical: 10 }}>
-          <AccessDropdownPicker
-            accessLevel={accessLevel}
-            onChange={setAccessLevel}
-            theme={isDark ? "DARK" : "LIGHT"}
-          />
-        </View>
-
         <TouchableOpacity
           style={styles.addButton}
           onPress={handlePresentModalPress}
@@ -388,7 +433,7 @@ export default function currentSublist() {
 
         <FlashList
           data={existingGoals}
-          renderItem={renderFlatlistGoal}
+          renderItem={renderFlashlistGoal}
           estimatedItemSize={20}
           contentContainerStyle={{ paddingBottom: 100 }}
           keyExtractor={(item, index) => `${item.title}-${index}`}
@@ -424,6 +469,7 @@ export default function currentSublist() {
                   selectedTags={selectedTags}
                   setSelectedTags={setSelectedTags}
                   max={3}
+                  noun="categories"
                 />
               </View>
 
@@ -465,18 +511,30 @@ export default function currentSublist() {
                 }}
               >
                 <BottomSheetTextInput
-                  style={[styles.input, { flex: 1 }]}
-                  placeholder="Add details, timelines, or motivations..."
+                  style={[styles.input, { flex: 1, padding: 14 }]}
+                  placeholder="Add details, timelines, or motivations... (Optional)"
                   value={goalDesc}
                   multiline={true}
                   onChangeText={setGoalDesc}
                 />
-                <Ionicons name="checkmark-circle" size={28} color="#1db363" />
+                {goalDesc && keyboardVisible && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss();
+                    }}
+                  >
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={28}
+                      color="#1db363"
+                    />
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={styles.editHandler}>
                 <TouchableOpacity
-                  style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
+                  style={[styles.editingButton, { backgroundColor: "#dedede" }]}
                   onPress={onCancel}
                 >
                   <ThemedText style={{ color: "#618ce0" }}>Cancel</ThemedText>
@@ -539,7 +597,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       padding: 12,
     },
     modalViewContainer: {
-      gap: 17,
+      gap: 15,
       paddingHorizontal: 5,
     },
     modalBg: {
@@ -552,11 +610,11 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       borderRadius: 10,
       fontSize: 16,
       lineHeight: 20,
-      padding: 8,
-      backgroundColor: "rgba(151, 151, 151, 0.25)",
+      padding: 13,
+      backgroundColor: "rgba(151, 151, 151, 0.98)",
     },
     metadata: {
       fontStyle: "italic",
-      fontSize: RFValue(12),
+      fontSize: RFValue(11),
     },
   });
