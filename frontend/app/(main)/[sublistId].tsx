@@ -252,6 +252,7 @@ export default function currentSublist() {
           data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
+          setModalVisible={setModalVisible}
         />
         {!isEditing && (
           <View style={{ gap: 10 }}>
