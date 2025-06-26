@@ -4,6 +4,9 @@ import morgan from "morgan";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import cloudinary from './cloudinary.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Create Express app
 const app = express();
@@ -25,10 +28,9 @@ app.get("/", (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
 
 // Cloudinary
 app.post('/signature', (req, res) => {
@@ -59,6 +61,7 @@ app.post('/signature', (req, res) => {
     signature,
     folder,
     public_id,
+    overwrite,
     apiKey: process.env.CLOUDINARY_API_KEY,
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
   });
