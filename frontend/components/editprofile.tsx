@@ -88,15 +88,17 @@ export default function EditProfile({
       <View style={{ justifyContent: "center" }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            {image ? (
-              <Image source={{ uri: image }} style={styles.profilePic} />
-            ) : (
-              <FontAwesome
-                name="user-circle-o"
-                size={PROFILEPICSIZE}
-                color="#7b68ee"
-              />
-            )}
+            <TouchableOpacity onPress={handlePickImage}>
+              {image ? (
+                <Image source={{ uri: image }} style={styles.profilePic} />
+              ) : (
+                <FontAwesome
+                  name="user-circle-o"
+                  size={PROFILEPICSIZE}
+                  color="#7b68ee"
+                />
+              )}
+            </TouchableOpacity>
 
             <ThemedText type="defaultSemiBold">{userData.username}</ThemedText>
 
