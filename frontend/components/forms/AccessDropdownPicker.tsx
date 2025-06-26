@@ -10,6 +10,7 @@ interface AccessDropdownPickerProps {
   onChangeValue?: (value: string | string[] | null) => void;
   theme: "LIGHT" | "DARK" | "DEFAULT";
   zindex?: number | undefined;
+  isDisabled?: boolean;
 }
 
 export default function AccessDropdownPicker({
@@ -18,6 +19,7 @@ export default function AccessDropdownPicker({
   onChangeValue = () => {},
   theme = "DEFAULT", // default option is LIGHT
   zindex,
+  isDisabled = false,
 }: AccessDropdownPickerProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -63,6 +65,7 @@ export default function AccessDropdownPicker({
       listMode="SCROLLVIEW"
       theme={theme}
       zIndex={zindex}
+      disabled={isDisabled}
       onChangeValue={onChangeValue}
     />
   );
