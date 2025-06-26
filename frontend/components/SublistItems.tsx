@@ -36,7 +36,6 @@ export default function SublistItems({
   toggleVersion = () => {},
 }: ItemProps): ReactNode | Promise<ReactNode> {
   const router = useRouter();
-  const styles = getStyles(colorScheme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sublist | null>(null);
 
@@ -190,7 +189,12 @@ export default function SublistItems({
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
         item={selectedItem}
-        handleItemDelete={handleDelete}
+        handleItemDelete={(item) => {
+          // type check to ensure item is a Sublist
+          if (item && "accessLevel" in item) {
+            handleDelete(item);
+          }
+        }}
         heading={heading}
         body={body}
       />
@@ -198,36 +202,25 @@ export default function SublistItems({
   );
 }
 
-const getStyles = (colorScheme: ColorSchemeName) =>
-  StyleSheet.create({
-    itemContainer: {
-      flexDirection: "column",
-      marginVertical: 8,
-      marginHorizontal: 15,
-      padding: 20,
-      justifyContent: "space-between",
-      borderRadius: 5,
-      elevation: 5,
-    },
-    subListRow2: {
-      flexDirection: "row",
-      padding: 2,
-      justifyContent: "space-between",
-    },
-    listName: {
-      fontSize: RFValue(16),
-    },
-    statusText: {
-      fontSize: RFValue(11),
-    },
-    deleteButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 15,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#ec4b6a",
-      height: "100%",
-      borderRadius: 5,
-      zIndex: 100,
-    },
-  });
+const styles = StyleSheet.create({
+  itemContainer: {
+    flexDirection: "column",
+    marginVertical: 8,
+    marginHorizontal: 15,
+    padding: 20,
+    justifyContent: "space-between",
+    borderRadius: 5,
+    elevation: 5,
+  },
+  subListRow2: {
+    flexDirection: "row",
+    padding: 2,
+    justifyContent: "space-between",
+  },
+  listName: {
+    fontSize: RFValue(16),
+  },
+  statusText: {
+    fontSize: RFValue(11),
+  },
+});
