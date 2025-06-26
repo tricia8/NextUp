@@ -9,6 +9,7 @@ interface AccessDropdownPickerProps {
   onChange: React.Dispatch<React.SetStateAction<string>>;
   theme: "LIGHT" | "DARK" | "DEFAULT";
   zindex?: number | undefined;
+  isDisabled?: boolean;
 }
 
 export default function AccessDropdownPicker({
@@ -16,6 +17,7 @@ export default function AccessDropdownPicker({
   onChange,
   theme = "DEFAULT", // default option is LIGHT
   zindex,
+  isDisabled = false,
 }: AccessDropdownPickerProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -61,6 +63,7 @@ export default function AccessDropdownPicker({
       listMode="SCROLLVIEW"
       theme={theme}
       zIndex={zindex}
+      disabled={isDisabled}
     />
   );
 }
