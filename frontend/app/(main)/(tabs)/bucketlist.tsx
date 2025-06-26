@@ -28,8 +28,8 @@ export default function BucketList() {
   const uid = user?.uid;
   const [sublists, setSublists] = useState<Sublist[]>([]);
   const [filteredSublists, setFilteredSublists] = useState<Sublist[]>([]);
-  const [search, setSearch] = useState("");
   const [version, setVersion] = useState(false); // toggle to trigger refetch
+  const [isLoading, setIsLoading] = useState(false); // loading state for sublists
 
   const colorScheme = useColorScheme(); // 'light' or 'dark'
 
@@ -38,8 +38,10 @@ export default function BucketList() {
       if (!uid) return;
       const fetchSubBucketLists = async () => {
         try {
+          setIsLoading(true);
           const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
           setSublists(sublists);
+          setIsLoading(false);
           console.log("Fetched sub-bucket lists:", sublists);
         } catch (error) {
           console.error("Error fetching sub-bucket lists:", error);
@@ -89,15 +91,19 @@ export default function BucketList() {
           </TouchableOpacity>
         </View>
 
-        <View style={{ flex: 0.8 }}>
-          <SublistItems
-            uid={uid}
-            data={filteredSublists}
-            updateData={setSublists}
-            toggleVersion={() => setVersion(!version)}
-            colorScheme={colorScheme}
-          />
-        </View>
+        {isLoading ? (
+          <LoadingScreen />
+        ) : (
+          <View style={{ flex: 0.8 }}>
+            <SublistItems
+              uid={uid}
+              data={filteredSublists}
+              updateData={setSublists}
+              toggleVersion={() => setVersion(!version)}
+              colorScheme={colorScheme}
+            />
+          </View>
+        )}
 
         <View style={{ flex: 0.2 }}>
           <TouchableOpacity
