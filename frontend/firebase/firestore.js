@@ -413,7 +413,7 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
 
     await deleteDoc(subBucketListRef);
 
-    updateOverallStats(userId);
+    await updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
     throw error;
@@ -447,7 +447,11 @@ export const addEvent = async (
       eventData
     );
 
-    updateOverallStats(userId);
+    await updateSubBucketList(userId, subBucketListId, {
+      completionStatus: [completionStatus[0], completionStatus[1]++],
+    });
+
+    await updateOverallStats(userId);
 
     return eventDoc.id;
   } catch (error) {
@@ -458,7 +462,7 @@ export const addEvent = async (
 
 export const deleteEvent = async (userId, subBucketListId, eventId) => {
   try {
-    const eventDoc = doc(
+    const eventDocRef = doc(
       db,
       "users",
       userId,
@@ -468,9 +472,27 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
       eventId
     );
 
-    await deleteDoc(eventDoc);
+    const eventSnap = await getDoc(eventDocRef);
 
-    updateOverallStats(userId);
+    if (!eventSnap.exists()) {
+      throw new Error("Event not found.");
+    }
+
+    const isCompleted = eventSnap.data().isCompleted;
+
+    const [completed, total] = completionStatus;
+
+    await deleteDoc(eventDocRef);
+
+    const updatedStatus = isCompleted
+      ? [completed - 1, total - 1]
+      : [completed, total - 1];
+
+    await updateSubBucketList(userId, subBucketListId, {
+      completionStatus: updatedStatus,
+    });
+
+    await updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -658,7 +680,7 @@ export const toggleEventCompletion = async (
       isCompleted: !currentCompleted,
     });
 
-    updateOverallStats(userId);
+    await updateOverallStats(userId);
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
