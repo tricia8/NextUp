@@ -108,7 +108,7 @@ export const getUserProfile = async (uid) => {
       const data = docSnapshot.data();
 
       return {
-        uid: data.id,
+        uid: docSnapshot.id,
         username: data.username,
         email: data.email,
         photoUrl: data.photoUrl,
