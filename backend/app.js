@@ -36,11 +36,17 @@ app.post('/signature', (req, res) => {
   const folder = req.body.folder;
   const public_id = req.body.public_id;
 
+  let overwrite = false;
+
+  if (public_id.includes("profile_pic")) {
+    overwrite = true;
+  }
+
   const paramsToSign = {
     timestamp,
     folder,
     public_id,
-    overwrite: true,
+    overwrite,
   };
 
   const signature = cloudinary.utils.api_sign_request(
