@@ -9,6 +9,7 @@ import {
   StyleSheet,
   useColorScheme,
   ColorSchemeName,
+  Keyboard,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +23,7 @@ import { createSubBucketList, getOwnerProfile } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { User } from "@/types/user";
 import LoadingScreen from "@/components/Loading";
+import { RFValue } from "react-native-responsive-fontsize";
 
 export default function newSubList() {
   const { user, loading } = useContext(AuthContext);
@@ -44,6 +46,35 @@ export default function newSubList() {
   // Invite collaborators
   const [sharedUids, setSharedUids] = useState<string[]>([]);
   const [collaborators, setCollaborators] = useState<User[]>([]);
+
+  // Validate required fields
+  const [errors, setErrors] = useState<{
+    title?: string;
+    accessLevel?: string;
+  }>({});
+
+  const validateForm = () => {
+    // returns boolean
+    const formErrors: typeof errors = {};
+    if (!title) formErrors.title = "Please enter a title";
+    if (!accessLevel) formErrors.accessLevel = "Please select an access level";
+    setErrors(formErrors);
+    return Object.keys(formErrors).length == 0; // check if all required fields are filled
+  };
+
+  const handleTitleChange = (title: string) => {
+    setTitle(title);
+    if (errors.title) {
+      setErrors((prev) => ({ ...prev, title: "" })); // remove error message when user types something
+    }
+  };
+
+  const handleAccessChange = (access: string) => {
+    setAccessLevel(access);
+    if (access && errors.accessLevel) {
+      setErrors((prev) => ({ ...prev, accessLevel: "" })); // remove error message when user selects an access level
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -73,6 +104,8 @@ export default function newSubList() {
   );
 
   // Sublist submission
+  const [isLoading, setIsLoading] = useState(false);
+
   const submit = async () => {
     try {
       const sublistId = await createSubBucketList(user?.uid, {
@@ -107,24 +140,35 @@ export default function newSubList() {
     }
   };
 
+  const handleSubmission = () => {
+    Keyboard.dismiss();
+
+    if (validateForm()) {
+      setIsLoading(true);
+      submit();
+      setIsLoading(false);
+    } else {
+      showMessage({
+        message: "Validation Error",
+        description: "Please fill in all required fields.",
+        type: "warning",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "warning",
+      });
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
-        <ShareListModal
-          currentUid={user?.uid}
-          data={collaborators} // User[]
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          setModalVisible={setModalVisible}
-        />
         <ScrollView>
           <View style={styles.titleShareBar}>
             <SublistField
-              label="Title"
-              onChangeText={(value) => setTitle(value)}
+              label="Title *"
+              onChangeText={handleTitleChange}
               value={title}
             />
-
             <TouchableOpacity
               style={styles.shareButton}
               onPress={() => setModalVisible(true)}
@@ -132,6 +176,15 @@ export default function newSubList() {
               <MaterialIcons name="group-add" size={35} color="black" />
             </TouchableOpacity>
           </View>
+          {errors.title && (
+            <ThemedText
+              style={styles.errorText}
+              lightColor="#c40028"
+              darkColor="#ffb1c1"
+            >
+              {errors.title}
+            </ThemedText>
+          )}
 
           <View style={{ marginVertical: 10 }}>
             <SublistField
@@ -147,16 +200,35 @@ export default function newSubList() {
               accessLevel={accessLevel}
               onChange={setAccessLevel}
               theme={isDark ? "DARK" : "LIGHT"}
+              onChangeValue={(value) => {
+                if (typeof value === "string") handleAccessChange(value);
+              }}
             />
           </View>
+          {errors.accessLevel && (
+            <ThemedText
+              style={styles.errorText}
+              lightColor="#c40028"
+              darkColor="#ffb1c1"
+            >
+              {errors.accessLevel}
+            </ThemedText>
+          )}
 
           <TouchableOpacity
-            onPress={submit}
+            onPress={handleSubmission}
             style={[styles.addButton, styles.submitButton]}
           >
             <ThemedText>Create Sublist</ThemedText>
           </TouchableOpacity>
         </ScrollView>
+        <ShareListModal
+          currentUid={user?.uid}
+          data={collaborators} // User[]
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          setModalVisible={setModalVisible}
+        />
       </ThemedView>
     </SafeAreaView>
   );
@@ -202,5 +274,8 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     submitButton: {
       backgroundColor: "#4d8ce5",
+    },
+    errorText: {
+      fontSize: RFValue(12),
     },
   });
