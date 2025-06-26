@@ -22,7 +22,7 @@ type editProfileProps = {
 
 export default function EditProfile({ visible, onClose, userData, setUserData, setCategory }: editProfileProps) {
   
-  const [bioText, setBioText] = useState(userData.bio);
+  const [bioText, setBioText] = useState(userData.bio ?? "");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string[]>([]);
   const colorScheme = useColorScheme();
