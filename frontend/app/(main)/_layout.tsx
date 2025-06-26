@@ -5,7 +5,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { Stack, useRouter } from "expo-router";
-import { Redirect } from "expo-router";
+import { Redirect, useRootNavigationState } from "expo-router";
 import { AuthContext } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFonts } from "expo-font";
@@ -17,6 +17,9 @@ import { ThemedText } from "@/components/ThemedText";
 
 export default function MainLayout() {
   const { user, loading } = useContext(AuthContext);
+  const rootNavigationState = useRootNavigationState();
+
+  if (!rootNavigationState?.key) return null; // Wait for navigation to be ready
 
   const colorScheme = useColorScheme();
 
