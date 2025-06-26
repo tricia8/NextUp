@@ -1,6 +1,6 @@
-export async function uploadToCloudinary(base64Image, uid) {
-  const public_id = `nextup/users/${uid}/profile_pic`;
-  const folder = `nextup/users/${uid}`;
+export async function uploadToCloudinary(base64Image, uid, subfolder) {
+  const public_id = `nextup/users/${uid}/${subfolder}`;
+  const folder = `nextup/users/${uid}/${subfolder}`;
 
   const res = await fetch("http://localhost:3000/signature", {
     method: "POST",
