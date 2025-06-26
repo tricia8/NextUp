@@ -56,6 +56,7 @@ import { FlashList } from "@shopify/flash-list";
 import GoalCard from "@/components/GoalCard";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
+import GoalList from "@/components/GoalList";
 
 export default function currentSublist() {
   // Fetching sublist data from firestore
@@ -312,12 +313,6 @@ export default function currentSublist() {
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
-        <ShareListModal
-          currentUid={user?.uid}
-          data={collaborators}
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-        />
         {!isEditing && (
           <View style={{ gap: 10 }}>
             <View style={styles.titleEditBar}>
@@ -423,20 +418,40 @@ export default function currentSublist() {
           </ThemedText>
         </View>
 
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handlePresentModalPress}
-        >
-          <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
-          <Ionicons name="add-circle-outline" size={22} color="black" />
-        </TouchableOpacity>
+        <View pointerEvents="box-none">
+          {/* <Pressable
+            style={({ pressed }) => [
+              styles.addButton,
+              pressed && { opacity: 0.4 },
+            ]}
+            onPress={handlePresentModalPress}
+            hitSlop={10}
+          > */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handlePresentModalPress}
+            hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
+          >
+            <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
+            <Ionicons name="add-circle-outline" size={22} color="black" />
+          </TouchableOpacity>
+        </View>
+        {/* </TouchableOpacity> */}
 
-        <FlashList
+        <GoalList
+          uid={uid}
+          sublistId={sublistId as string}
           data={existingGoals}
-          renderItem={renderFlashlistGoal}
-          estimatedItemSize={20}
-          contentContainerStyle={{ paddingBottom: 100 }}
-          keyExtractor={(item, index) => `${item.title}-${index}`}
+          updateData={setExistingGoals}
+          colorScheme={colorScheme}
+        />
+
+        <ShareListModal
+          currentUid={user?.uid}
+          data={collaborators}
+          visible={modalVisible}
+          setModalVisible={setModalVisible}
+          onClose={() => setModalVisible(false)}
         />
 
         <BottomSheetModal
@@ -481,6 +496,7 @@ export default function currentSublist() {
                     value={deadlineDate}
                     onChange={onChange}
                     minimumDate={new Date()}
+                    themeVariant={isDark ? "dark" : "light"}
                   />
                 )}
 
