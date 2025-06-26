@@ -55,7 +55,8 @@ export default function EditProfile({
   const handleSave = async (uid: string, profileDetails: Partial<User>) => {
     try {
       if (base64) {
-        const imageUrl = await uploadToCloudinary(base64, "profile_pic");
+        const imageUrl = await uploadToCloudinary(base64, uid, "profile_pic");
+        console.log(imageUrl)
         profileDetails.photoUrl = imageUrl; // attach before saving
       }
       await updateProfile(uid, profileDetails);
@@ -65,6 +66,7 @@ export default function EditProfile({
       setUserData(updatedUser);
       setCategory(updatedUser?.category?.[0] ?? "--");
     } catch (error) {
+      console.log(error)
       Alert.alert("Error saving");
     }
   };
