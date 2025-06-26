@@ -55,7 +55,7 @@ export default function GoalCard({
         {/* Status Row */}
         <View>
           <ThemedText style={styles.status}>
-            Status: {isCompleted ? "Pending" : "Done!"}
+            Status: {isCompleted ? "Done!" : "Pending "}
           </ThemedText>
         </View>
       </TouchableOpacity>
@@ -91,6 +91,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     status: {
       fontSize: 13,
-      color: "#444",
+      color: "#bfbfbf",
     },
   });
