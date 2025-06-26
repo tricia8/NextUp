@@ -459,15 +459,16 @@ export const addEvent = async (
     // run transaction to ensure atomicity, ensures data consistency even with concurrent edits
     // good practice for user collaboration
     await runTransaction(db, async (transaction) => {
-      // add new event
-      transaction.set(newEventRef, eventData);
-
       // update subBucketList completionStatus
       const subBucketListSnap = await transaction.get(subBucketListRef);
 
       if (!subBucketListSnap.exists()) {
         throw new Error("Sub-bucket list not found.");
       }
+
+      // add new event
+      transaction.set(newEventRef, eventData);
+
       const completionStatus = subBucketListSnap.data().completionStatus || [
         0, 0,
       ]; // default fallback set
