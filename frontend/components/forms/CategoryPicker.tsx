@@ -8,7 +8,8 @@ interface CategoryPickerProps {
   onOpen: () => void;
   selectedTags: string[];
   setSelectedTags: React.Dispatch<React.SetStateAction<string[]>>;
-  max: number,
+  max: number;
+  noun?: string; // optional prop for custom noun
 }
 
 export default function CategoryPicker({
@@ -18,6 +19,7 @@ export default function CategoryPicker({
   selectedTags,
   setSelectedTags,
   max,
+  noun = "",
 }: CategoryPickerProps) {
   const colorScheme = useColorScheme();
 
@@ -75,7 +77,7 @@ export default function CategoryPicker({
   return (
     <View style={{ padding: 10 }}>
       <DropDownPicker
-        placeholder={`Pick up to ${max}`}
+        placeholder={`Pick up to ${max} ${noun}`}
         placeholderStyle={{
           paddingHorizontal: 10,
           paddingVertical: 20,
