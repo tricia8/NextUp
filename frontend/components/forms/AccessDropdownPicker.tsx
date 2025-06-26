@@ -7,6 +7,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 interface AccessDropdownPickerProps {
   accessLevel: string;
   onChange: React.Dispatch<React.SetStateAction<string>>;
+  onChangeValue?: (value: string | string[] | null) => void;
   theme: "LIGHT" | "DARK" | "DEFAULT";
   zindex?: number | undefined;
 }
@@ -14,6 +15,7 @@ interface AccessDropdownPickerProps {
 export default function AccessDropdownPicker({
   accessLevel,
   onChange,
+  onChangeValue = () => {},
   theme = "DEFAULT", // default option is LIGHT
   zindex,
 }: AccessDropdownPickerProps) {
@@ -61,6 +63,7 @@ export default function AccessDropdownPicker({
       listMode="SCROLLVIEW"
       theme={theme}
       zIndex={zindex}
+      onChangeValue={onChangeValue}
     />
   );
 }
