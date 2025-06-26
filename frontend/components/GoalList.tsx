@@ -2,7 +2,7 @@ import { deleteEvent } from "@/firebase/firestore";
 import { Goal } from "@/types/goal";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ColorSchemeName, StatusBar } from "react-native";
+import { ColorSchemeName, StatusBar, View } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import GoalCard from "./GoalCard";
 import SwipeableRow from "./SwipeableRow";
@@ -95,12 +95,14 @@ export default function GoalList({
   );
 
   return (
-    <>
+    <View style={{ flex: 1 }}>
       <FlashList
         data={data}
         renderItem={renderFlashListItem}
-        keyExtractor={(item, index) => `${item.id}-${index}`}
+        keyExtractor={(item) => item.id}
         estimatedItemSize={130}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        style={{ flex: 1 }}
       />
       <DeleteModal
         modalVisible={modalVisible}
@@ -115,6 +117,6 @@ export default function GoalList({
         heading={heading}
         body={body}
       />
-    </>
+    </View>
   );
 }
