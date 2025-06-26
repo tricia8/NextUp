@@ -22,7 +22,7 @@ type editProfileProps = {
 
 export default function EditProfile({ visible, onClose, userData, setUserData, setCategory }: editProfileProps) {
   
-  const [bioText, setBioText] = useState(userData.bio);
+  const [bioText, setBioText] = useState(userData.bio ?? "");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string[]>([]);
   const colorScheme = useColorScheme();
@@ -32,7 +32,7 @@ export default function EditProfile({ visible, onClose, userData, setUserData, s
     try {
         await updateProfile(uid, profileDetails);
         Alert.alert("Saved!");
-        const updatedUser = await getUserProfile(db, uid); // refetch
+        const updatedUser = await getUserProfile(uid); // refetch
         onClose();
         setUserData(updatedUser);
         setCategory(updatedUser?.category?.[0] ?? '--');
