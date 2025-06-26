@@ -78,11 +78,16 @@ export default function EditProfile({
     }
   };
 
+  const handleClose = async () => {
+    onClose();
+    setImage(userData.photoUrl);
+  }
+
   return (
     <Modal
       isVisible={visible}
       backdropOpacity={0.4}
-      onBackdropPress={onClose}
+      onBackdropPress={handleClose}
       animationIn="zoomIn"
       animationOut="zoomOut"
       useNativeDriver
@@ -90,7 +95,7 @@ export default function EditProfile({
       <View style={{ justifyContent: "center" }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <TouchableOpacity onPress={() => handlePickImage()}>
+            <TouchableOpacity onPress={handlePickImage}>
               {image ? (
                 <Image source={{ uri: image }} style={styles.profilePic} />
               ) : (
