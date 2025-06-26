@@ -1,12 +1,10 @@
-import { ThemedText } from "@/components/ThemedText";
-import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
-import { FlashList } from "@shopify/flash-list";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useContext, useState } from "react";
 import {
   ColorSchemeName,
+  Modal,
+  StatusBar,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -16,133 +14,71 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
-import { LinearGradient } from "expo-linear-gradient";
+import { AuthContext } from "@/context/AuthContext";
+import { getAllSubBucketLists } from "@/firebase/firestore";
+import { Sublist } from "@/types/sublist";
+import LoadingScreen from "@/components/Loading";
+import { showMessage } from "react-native-flash-message";
+import SublistItems from "@/components/SublistItems";
+import SublistSearchBar from "@/components/SublistSearchBar";
 
 export default function BucketList() {
+  const { user, loading } = useContext(AuthContext);
+
+  const uid = user?.uid;
+  const [sublists, setSublists] = useState<Sublist[]>([]);
+  const [filteredSublists, setFilteredSublists] = useState<Sublist[]>([]);
   const [search, setSearch] = useState("");
+  const [version, setVersion] = useState(false); // toggle to trigger refetch
+
   const colorScheme = useColorScheme(); // 'light' or 'dark'
 
-  interface Sublist {
-    title: string;
-    completionStatus: number[];
-    isShared: boolean;
-  }
+  useFocusEffect(
+    useCallback(() => {
+      if (!uid) return;
+      const fetchSubBucketLists = async () => {
+        try {
+          const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
+          setSublists(sublists);
+          console.log("Fetched sub-bucket lists:", sublists);
+        } catch (error) {
+          console.error("Error fetching sub-bucket lists:", error);
+          showMessage({
+            message: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch sublists",
+            type: "danger",
+            statusBarHeight: StatusBar.currentHeight,
+            floating: true,
+            icon: "danger",
+            duration: 5000,
+          });
+        }
+      };
 
-  // dummy data
-  const DATA: Sublist[] = [
-    {
-      // icon: ,
-      title: "New Zealand Road Trip",
-      completionStatus: [1, 3],
-      isShared: true,
-    },
-    {
-      // icon: ,
-      title: "Skills to learn",
-      completionStatus: [1, 3],
-      isShared: false,
-    },
-    {
-      title: "Random Stuff",
-      completionStatus: [3, 4],
-      isShared: false,
-    },
-    {
-      title: "Family Goals",
-      completionStatus: [0, 5],
-      isShared: true,
-    },
-    {
-      title: "Hackathons",
-      completionStatus: [1, 4],
-      isShared: false,
-    },
-  ];
+      fetchSubBucketLists();
+    }, [uid, version]) // `version` toggling triggers refetch
+  );
 
   const router = useRouter();
 
-  const renderFlatlistItem = ({ item }: { item: Sublist }) => {
-    return (
-      <LinearGradient
-        colors={
-          colorScheme === "dark"
-            ? ["#0f2027", "#188991"]
-            : ["#dcf4a9", "#b2df75"]
-        }
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.itemContainer}
-      >
-        <TouchableOpacity style={{ flex: 1 }}>
-          {item.isShared ? (
-            <View>
-              <Feather
-                name="users"
-                size={24}
-                color={colorScheme === "dark" ? "white" : "black"}
-              />
-            </View>
-          ) : (
-            <View></View>
-          )}
-          <View style={styles.SubListRow2}>
-            <ThemedText type="subtitle" style={styles.ListName}>
-              {item.title}
-            </ThemedText>
-            <AntDesign
-              name="right"
-              size={20}
-              color="black"
-              style={{ marginTop: 6 }}
-            />
-          </View>
-          <View>
-            <ThemedText style={styles.StatusText}>
-              {item.completionStatus[0]} of {item.completionStatus[1]} complete
-            </ThemedText>
-          </View>
-        </TouchableOpacity>
-      </LinearGradient>
-    );
-  };
-
   const styles = getStyles(colorScheme);
+
+  if (loading || !user?.uid) {
+    return <LoadingScreen />;
+  }
 
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View style={styles.searchFilterBar}>
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Search list..."
-              style={{
-                color: colorScheme === "dark" ? "#e3e3e3" : "black",
-                borderRadius: 10,
-                padding: 15,
-                fontSize: RFValue(13),
-              }}
-              value={search}
-              onChangeText={setSearch}
-              placeholderTextColor={
-                colorScheme === "light" ? "#727573" : "white"
-              }
-              inputMode="search"
-              returnKeyLabel="search"
-              underlineColorAndroid="transparent"
-            />
-            {search.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setSearch("")}
-                style={styles.clearButton}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={24}
-                  color={colorScheme === "dark" ? "#34403e" : "#999"}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
+          <SublistSearchBar
+            setFilteredSublists={setFilteredSublists}
+            filteredSublists={filteredSublists}
+            sublists={sublists}
+          />
 
           <TouchableOpacity style={{ justifyContent: "center" }}>
             <Ionicons
@@ -154,12 +90,12 @@ export default function BucketList() {
         </View>
 
         <View style={{ flex: 0.8 }}>
-          <FlashList
-            data={DATA}
-            renderItem={renderFlatlistItem}
-            estimatedItemSize={20}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            keyExtractor={(item, index) => `${item.title}-${index}`}
+          <SublistItems
+            uid={uid}
+            data={filteredSublists}
+            updateData={setSublists}
+            toggleVersion={() => setVersion(!version)}
+            colorScheme={colorScheme}
           />
         </View>
 
@@ -167,7 +103,7 @@ export default function BucketList() {
           <TouchableOpacity
             onPress={() => router.push("../new-sublist")}
             activeOpacity={0.8}
-            style={styles.AddButton}
+            style={styles.addButton}
           >
             <Ionicons name="add-circle" size={75} color="#39a64b" />
           </TouchableOpacity>
@@ -185,26 +121,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     themedView: {
       flex: 1,
     },
-    itemContainer: {
-      flexDirection: "column",
-      marginVertical: 8,
-      marginHorizontal: 15,
-      padding: 20,
-      justifyContent: "space-between",
-      borderRadius: 5,
-      elevation: 5,
-    },
-    SubListRow2: {
-      flexDirection: "row",
-      padding: 2,
-      justifyContent: "space-between",
-    },
-    ListName: {
-      fontSize: RFValue(16),
-    },
-    StatusText: {
-      fontSize: RFValue(11),
-    },
     searchFilterBar: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -213,7 +129,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       marginVertical: 10,
       marginHorizontal: 10,
     },
-    AddButton: {
+    addButton: {
       position: "absolute",
       bottom: 20,
       right: 20,
