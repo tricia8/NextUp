@@ -6,6 +6,8 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  SafeAreaView,
+  Pressable,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
@@ -21,6 +23,7 @@ type CustomModalProps = {
   currentUid: string;
   data: User[];
   visible: boolean;
+  setModalVisible: (visible: boolean) => void;
   onClose: () => void;
 };
 
@@ -28,6 +31,7 @@ export default function ShareListModal({
   currentUid,
   data,
   visible,
+  setModalVisible,
   onClose,
 }: CustomModalProps) {
   console.log("Modal data:", data);
@@ -67,41 +71,54 @@ export default function ShareListModal({
   };
 
   return (
-    <Modal visible={visible} transparent={true} animationType="fade">
-      <View style={styles.modalContent}>
-        <View style={styles.card}>
-          <Text style={{ fontSize: RFValue(16), fontWeight: "bold" }}>
-            Share This List
-          </Text>
-          <TextInput
-            placeholder="Add people..."
-            value={username}
-            onChangeText={setUsername}
-            enterKeyHint="search"
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
-          />
-          <Text style={styles.withAcessText}>People with access</Text>
-          <FlatList
-            data={data}
-            renderItem={renderFlatlistItem}
-            keyExtractor={(item) => item.username}
-          />
-          <View style={{ alignItems: "flex-end" }}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                onClose();
-                setIsFocused(false);
-              }}
-            >
-              <Text>Close</Text>
-            </TouchableOpacity>
+    <SafeAreaView style={{ flex: 1, zIndex: 300 }}>
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalContent}
+          onPress={() => setModalVisible(false)}
+        >
+          <View style={styles.card}>
+            <Text style={{ fontSize: RFValue(16), fontWeight: "bold" }}>
+              Share This List
+            </Text>
+            <TextInput
+              placeholder="Add people..."
+              value={username}
+              onChangeText={setUsername}
+              enterKeyHint="search"
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              style={[
+                styles.textInput,
+                isFocused && styles.inputWrapperFocused,
+              ]}
+            />
+            <Text style={styles.withAcessText}>People with access</Text>
+            <FlatList
+              data={data}
+              renderItem={renderFlatlistItem}
+              keyExtractor={(item) => item.username}
+            />
+            <View style={{ alignItems: "flex-end" }}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => {
+                  onClose();
+                  setIsFocused(false);
+                }}
+              >
+                <Text>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </View>
-    </Modal>
+        </Pressable>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
