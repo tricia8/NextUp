@@ -12,11 +12,10 @@ import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 
-const router = useRouter();
-
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 

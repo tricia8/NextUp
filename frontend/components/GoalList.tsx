@@ -40,7 +40,7 @@ export default function GoalList({
       console.log("deleting goal");
       console.log("userid", uid);
       console.log("sublist id", sublistId);
-      await deleteEvent(uid, sublistId, goal.id);
+      await deleteEvent(sublistId, goal.id);
       console.log("deleted!");
       updateData((prevGoals) =>
         prevGoals.filter((item) => item.id !== goal.id)

@@ -1,6 +1,7 @@
 import {
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -345,6 +346,14 @@ export default function currentSublist() {
       };
     }, [uid, sublistId])
   );
+
+  useEffect(() => {
+    setTitle(sublist?.title ?? "");
+    setDesc(sublist?.description ?? "");
+    setAccessLevel(sublist?.accessLevel ?? "");
+    setCreatedAt(sublist?.updatedAt ?? "");
+    setCompletionStatus(sublist?.completionStatus ?? [0, 0]);
+  }, [sublist]);
 
   // Share modal
   const [modalVisible, setModalVisible] = useState(false);

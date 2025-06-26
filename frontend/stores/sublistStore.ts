@@ -3,7 +3,9 @@ import { Goal } from "@/types/goal";
 import { Sublist } from "@/types/sublist";
 import { create } from "zustand";
 
-type SublistWithoutId = Omit<Sublist, "id"> & { ownerId: string };
+type SublistWithoutId = Omit<Sublist, "id"> & {
+  ownerId: string;
+};
 
 interface SublistState {
   sublistData: { [sublistId: string]: SublistWithoutId };
@@ -12,16 +14,16 @@ interface SublistState {
   // goalData: { [goalId: string]: Goal };
   setSublist: (
     sublistId: string,
-    data: Omit<SublistWithoutId, "ownerId">,
+    data: Omit<Sublist, "id">,
     ownerId: string
   ) => void;
   setGoalsForSublist: (sublistId: string, goals: Goal[]) => void;
   addGoalToSublist: (sublistId: string, goal: Goal) => void;
   // setGoal: (goalId: string, data: Goal) => void;
-  updateSublistField: <K extends keyof Sublist>(
+  updateSublistField: <K extends keyof SublistWithoutId>(
     sublistId: string,
     key: K,
-    value: Sublist[K]
+    value: SublistWithoutId[K]
   ) => void;
 
   clearStore: () => void;
@@ -33,7 +35,10 @@ export const useSublistStore = create<SublistState>()((set) => ({
 
   setSublist: (sublistId, data, ownerId) =>
     set((state) => ({
-      sublistData: { ...state.sublistData, [sublistId]: { ...data, ownerId } },
+      sublistData: {
+        ...state.sublistData,
+        [sublistId]: { ...data, ownerId },
+      },
     })),
 
   setGoalsForSublist: (sublistId, goals) =>

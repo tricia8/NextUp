@@ -455,7 +455,7 @@ export async function getAllSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList`,
       {
         method: "GET",
@@ -485,7 +485,7 @@ export async function getUnownedSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/sharedSublists`,
       {
         method: "GET",
@@ -515,7 +515,7 @@ export async function getOwnedSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/owned`,
       {
         method: "GET",
@@ -703,7 +703,7 @@ const formatDisplayDate = (fetchedDate) => {
 
 const formatEventData = (data) => {
   // data type: Event object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
   const deadline = data.deadline?.toDate?.();
 
   return {
@@ -712,7 +712,7 @@ const formatEventData = (data) => {
     categories: data.categories ?? [], // default to empty array
     deadline: deadline ? formatDisplayDate(deadline) : "",
     isCompleted: data.isCompleted,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
   };
 };
 

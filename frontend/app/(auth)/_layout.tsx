@@ -3,17 +3,21 @@ import {
   Redirect,
   useRootNavigationState,
   useRouter,
+  useNavigation,
 } from "expo-router";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "@/context/AuthContext";
+import useIsNavigationReady from "@/hooks/useIsNavigationReady";
 
 export default function AuthLayout() {
+  // const rootNavigationState = useRootNavigationState();
+  const navigation = useNavigation();
+  const navigationState = navigation.getState();
   const { user, loading } = useContext(AuthContext);
-  const rootNavigationState = useRootNavigationState();
   const router = useRouter();
 
   useEffect(() => {
-    if (!rootNavigationState?.key || loading) return;
+    if (!navigationState?.key || loading) return;
 
     if (user) {
       if (!user.emailVerified) {
@@ -24,12 +28,12 @@ export default function AuthLayout() {
         router.replace("/(main)/(tabs)");
       }
     }
-  }, [user, loading, rootNavigationState]);
+  }, [user, loading /* rootNavigationState*/]);
 
-  if (!rootNavigationState?.key) {
+  /* if (!rootNavigationState?.key) {
     console.log("Waiting for navigation state...");
     return null; // Wait for navigation to be ready
-  }
+  } */
   if (loading) {
     console.log("Waiting for auth check...");
     return null; // Wait for auth check
