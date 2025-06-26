@@ -270,7 +270,11 @@ export const createSubBucketList = async (
 
 // don’t have to pass all fields every time, doesn't overwrite unchanged values
 // fields: title, description, accessLevel, collaborators, completionStatus
-const updateSubBucketList = async (userId, subBucketListId, updates = {}) => {
+export const updateSubBucketList = async (
+  userId,
+  subBucketListId,
+  updates = {}
+) => {
   try {
     const sublistDocRef = doc(
       db,
