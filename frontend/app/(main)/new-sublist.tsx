@@ -113,6 +113,7 @@ export default function newSubList() {
           data={collaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
+          setModalVisible={setModalVisible}
         />
         <ScrollView>
           <View style={styles.titleShareBar}>
