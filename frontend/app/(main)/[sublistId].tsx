@@ -242,7 +242,18 @@ export default function currentSublist() {
 
       // GET — fetch updated list from Firestore
       const updatedGoals = await getAllEventsFormatted(uid, sublistId);
+      const updatedSublist = await getSubBucketList(uid, sublistId);
       setExistingGoals(updatedGoals); // update state/UI with fresh data
+      setCompletionStatus(updatedSublist.completionStatus); // update completion status
+
+      showMessage({
+        message: "Success",
+        description: "Goal added successfully",
+        type: "success",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "success",
+      });
       onCancel(); // reset goal creation fields
     } catch (error) {
       // Handle error
@@ -254,6 +265,7 @@ export default function currentSublist() {
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
         icon: "danger",
+        duration: 5000,
       });
     }
   };
@@ -313,130 +325,123 @@ export default function currentSublist() {
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
-        {!isEditing && (
-          <View style={{ gap: 10 }}>
-            <View style={styles.titleEditBar}>
-              <ThemedText
-                type="title"
-                style={{
-                  flexShrink: 1, // shrink if needed so no overflowing occurs
-                }}
-              >
-                {title}
+        <View>
+          {!isEditing && (
+            <View style={{ gap: 10 }}>
+              <View style={styles.titleEditBar}>
+                <ThemedText
+                  type="title"
+                  style={{
+                    flexShrink: 1, // shrink if needed so no overflowing occurs
+                  }}
+                >
+                  {title}
+                </ThemedText>
+                <TouchableOpacity onPress={() => setIsEditing(true)}>
+                  <Feather
+                    name="edit-2"
+                    size={24}
+                    color={isDark ? "white" : "black"}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
+                {description}
               </ThemedText>
-              <TouchableOpacity onPress={() => setIsEditing(true)}>
-                <Feather
-                  name="edit-2"
-                  size={24}
-                  color={isDark ? "white" : "black"}
+
+              <View style={{ marginVertical: 10 }}>
+                <AccessDropdownPicker
+                  accessLevel={accessLevel}
+                  onChange={setAccessLevel}
+                  theme={isDark ? "DARK" : "LIGHT"}
+                  isDisabled={true}
                 />
-              </TouchableOpacity>
+              </View>
             </View>
+          )}
 
-            <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
-              {description}
-            </ThemedText>
-
-            <View style={{ marginVertical: 10 }}>
-              <AccessDropdownPicker
-                accessLevel={accessLevel}
-                onChange={setAccessLevel}
-                theme={isDark ? "DARK" : "LIGHT"}
-                isDisabled={true}
+          {isEditing && (
+            <View style={{ gap: 10 }}>
+              <TitleDescFields
+                title={title}
+                description={description}
+                setTitle={setTitle}
+                setDescription={setDesc}
+                lightLabelBg="#a2e6ff"
+                darkLabelBg="#141515"
               />
-            </View>
-          </View>
-        )}
-
-        {isEditing && (
-          <View style={{ gap: 10 }}>
-            <TitleDescFields
-              title={title}
-              description={description}
-              setTitle={setTitle}
-              setDescription={setDesc}
-              lightLabelBg="#a2e6ff"
-              darkLabelBg="#141515"
-            />
-            <View style={{ marginVertical: 10 }}>
-              <AccessDropdownPicker
-                accessLevel={accessLevel}
-                onChange={setAccessLevel}
-                theme={isDark ? "DARK" : "LIGHT"}
-              />
-            </View>
-            <View style={styles.editHandler}>
-              <TouchableOpacity
-                style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
-                onPress={() => {
-                  setTitle(initialTitle);
-                  setDesc(initialDescription);
-                  setIsEditing(false);
-                }}
-              >
-                <Text style={{ color: "#618ce0" }}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.editingButton, { backgroundColor: "#618ce0" }]}
-                onPress={async () => {
-                  try {
+              <View style={{ marginVertical: 10 }}>
+                <AccessDropdownPicker
+                  accessLevel={accessLevel}
+                  onChange={setAccessLevel}
+                  theme={isDark ? "DARK" : "LIGHT"}
+                />
+              </View>
+              <View style={styles.editHandler}>
+                <TouchableOpacity
+                  style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
+                  onPress={() => {
+                    setTitle(initialTitle);
+                    setDesc(initialDescription);
                     setIsEditing(false);
-                    // Save changes to Firestore
-                    await updateSubBucketList(uid, sublistId, {
-                      title,
-                      description,
-                      accessLevel,
-                    });
-                    setIsUpdated(!isUpdated); // trigger re-render
-                  } catch (error) {
-                    showMessage({
-                      message: "Error",
-                      description:
-                        error instanceof Error
-                          ? error.message
-                          : "Failed to update sublist",
-                      type: "danger",
-                      statusBarHeight: StatusBar.currentHeight,
-                      floating: true,
-                      icon: "danger",
-                      duration: 5000,
-                    });
-                  }
-                }}
-              >
-                <Text>Save</Text>
-              </TouchableOpacity>
+                  }}
+                >
+                  <Text style={{ color: "#618ce0" }}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.editingButton, { backgroundColor: "#618ce0" }]}
+                  onPress={async () => {
+                    try {
+                      setIsEditing(false);
+                      // Save changes to Firestore
+                      await updateSubBucketList(uid, sublistId, {
+                        title,
+                        description,
+                        accessLevel,
+                      });
+                      setIsUpdated(!isUpdated); // trigger re-render
+                    } catch (error) {
+                      showMessage({
+                        message: "Error",
+                        description:
+                          error instanceof Error
+                            ? error.message
+                            : "Failed to update sublist",
+                        type: "danger",
+                        statusBarHeight: StatusBar.currentHeight,
+                        floating: true,
+                        icon: "danger",
+                        duration: 5000,
+                      });
+                    }
+                  }}
+                >
+                  <Text>Save</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+          )}
+
+          <View style={{ marginVertical: 10, gap: 8 }}>
+            <ThemedText style={styles.metadata}>Created {createdAt}</ThemedText>
+            <ThemedText style={styles.metadata}>
+              {completionStatus[0]} of {completionStatus[1]} complete
+            </ThemedText>
           </View>
-        )}
 
-        <View style={{ marginVertical: 10, gap: 8 }}>
-          <ThemedText style={styles.metadata}>Created {createdAt}</ThemedText>
-          <ThemedText style={styles.metadata}>
-            {completionStatus[0]} of {completionStatus[1]} complete
-          </ThemedText>
+          <View pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handlePresentModalPress}
+              hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
+            >
+              <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
+              <Ionicons name="add-circle-outline" size={22} color="black" />
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <View pointerEvents="box-none">
-          {/* <Pressable
-            style={({ pressed }) => [
-              styles.addButton,
-              pressed && { opacity: 0.4 },
-            ]}
-            onPress={handlePresentModalPress}
-            hitSlop={10}
-          > */}
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handlePresentModalPress}
-            hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
-          >
-            <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
-            <Ionicons name="add-circle-outline" size={22} color="black" />
-          </TouchableOpacity>
-        </View>
-        {/* </TouchableOpacity> */}
 
         <GoalList
           uid={uid}
