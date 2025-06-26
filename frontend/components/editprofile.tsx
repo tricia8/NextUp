@@ -9,7 +9,6 @@ import Modal from "react-native-modal";
 import { User } from '@/types/user';
 import { getUserProfile, updateProfile } from '@/firebase/firestore';
 import CategoryPicker from './forms/CategoryPicker';
-import { db } from '@/firebase/firebaseConfig';
 
 
 type editProfileProps = {
@@ -32,7 +31,7 @@ export default function EditProfile({ visible, onClose, userData, setUserData, s
     try {
         await updateProfile(uid, profileDetails);
         Alert.alert("Saved!");
-        const updatedUser = await getUserProfile(db, uid); // refetch
+        const updatedUser = await getUserProfile(uid); // refetch
         onClose();
         setUserData(updatedUser);
         setCategory(updatedUser?.category?.[0] ?? '--');
