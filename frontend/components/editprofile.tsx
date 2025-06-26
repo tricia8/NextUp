@@ -88,7 +88,7 @@ export default function EditProfile({
       <View style={{ justifyContent: "center" }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <TouchableOpacity onPress={handlePickImage}>
+            <TouchableOpacity onPress={() => handlePickImage()}>
               {image ? (
                 <Image source={{ uri: image }} style={styles.profilePic} />
               ) : (
