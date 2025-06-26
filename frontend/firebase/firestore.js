@@ -197,7 +197,7 @@ export const getOwnerProfile = async (uid) => {
 export const getUserStats = async (uid) => {
   try {
     const statsRef = doc(db, "users", uid, "bucketList", "stats");
-    const docSnapshot = getDoc(statsRef);
+    const docSnapshot = await getDoc(statsRef);
 
     if (docSnapshot.exists()) {
       const data = docSnapshot.data();
