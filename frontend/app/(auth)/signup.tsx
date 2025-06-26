@@ -90,6 +90,7 @@ export default function Signup() {
           icon: "warning",
         });
       }
+      console.log(error);
     } finally {
       setLoading(false);
     }

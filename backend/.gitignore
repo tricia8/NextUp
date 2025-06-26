@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# macOS
+.DS_Store
+*.pem
+
+# env files
+.env
+.env.*
+
+# ignore Firebase service account key
+service-account-file.json
