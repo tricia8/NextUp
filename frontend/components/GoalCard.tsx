@@ -60,6 +60,9 @@ export default function GoalCard({
           <ThemedText style={styles.status}>
             Status: {isCompleted ? "Done!" : "Pending "}
           </ThemedText>
+          {deadline && (
+            <ThemedText style={styles.status}>Due: {deadline}</ThemedText>
+          )}
         </View>
       </TouchableOpacity>
     </LinearGradient>
