@@ -1,14 +1,12 @@
 import {
-  Modal,
   View,
   StyleSheet,
   Text,
   FlatList,
   TouchableOpacity,
   TextInput,
-  SafeAreaView,
-  Pressable,
 } from "react-native";
+import Modal from "react-native-modal";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useState } from "react";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -71,54 +69,48 @@ export default function ShareListModal({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, zIndex: 300 }}>
-      <Modal
-        visible={visible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <Pressable
-          style={styles.modalContent}
-          onPress={() => setModalVisible(false)}
-        >
-          <View style={styles.card}>
-            <Text style={{ fontSize: RFValue(16), fontWeight: "bold" }}>
-              Share This List
-            </Text>
-            <TextInput
-              placeholder="Add people..."
-              value={username}
-              onChangeText={setUsername}
-              enterKeyHint="search"
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              style={[
-                styles.textInput,
-                isFocused && styles.inputWrapperFocused,
-              ]}
-            />
-            <Text style={styles.withAcessText}>People with access</Text>
-            <FlatList
-              data={data}
-              renderItem={renderFlatlistItem}
-              keyExtractor={(item) => item.username}
-            />
-            <View style={{ alignItems: "flex-end" }}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  onClose();
-                  setIsFocused(false);
-                }}
-              >
-                <Text>Close</Text>
-              </TouchableOpacity>
-            </View>
+    <Modal
+      isVisible={visible}
+      animationIn={"fadeIn"}
+      animationOut={"fadeOut"}
+      avoidKeyboard
+      onBackButtonPress={() => setModalVisible(false)}
+      onBackdropPress={() => setModalVisible(false)}
+    >
+      <View style={styles.modalContent}>
+        <View style={styles.card}>
+          <Text style={styles.listShareText}>Share This List</Text>
+          <TextInput
+            placeholder="Add people..."
+            value={username}
+            onChangeText={setUsername}
+            enterKeyHint="search"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
+          />
+          <Text style={styles.withAcessText}>People with access</Text>
+          <FlatList
+            data={data}
+            renderItem={renderFlatlistItem}
+            keyExtractor={(item) => item.username}
+            style={{ flexGrow: 1, width: "100%" }}
+            contentContainerStyle={{ paddingBottom: 10 }}
+          />
+          <View style={{ alignItems: "flex-end" }}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                onClose();
+                setIsFocused(false);
+              }}
+            >
+              <Text>Close</Text>
+            </TouchableOpacity>
           </View>
-        </Pressable>
-      </Modal>
-    </SafeAreaView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -127,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    // backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   card: {
     width: "90%",
@@ -136,6 +128,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     elevation: 3,
     gap: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
   button: {
     alignItems: "center",
@@ -144,9 +138,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#c6e1dc",
     padding: 8,
   },
+  listShareText: {
+    fontSize: RFValue(16),
+    fontWeight: "bold",
+    alignSelf: "flex-start",
+  },
   withAcessText: {
     fontWeight: "bold",
     fontSize: RFValue(13),
+    alignSelf: "flex-start",
   },
   textInput: {
     borderWidth: 1,
@@ -155,6 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9f9f9",
     paddingHorizontal: 15,
     marginBottom: 12,
+    alignSelf: "stretch",
   },
   inputWrapperFocused: {
     borderColor: "#03acc1", // Highlight color when focused
