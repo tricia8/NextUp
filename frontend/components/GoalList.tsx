@@ -101,8 +101,7 @@ export default function GoalList({
         renderItem={renderFlashListItem}
         keyExtractor={(item) => item.id}
         estimatedItemSize={130}
-        contentContainerStyle={{ paddingBottom: 50 }}
-        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 80 }}
       />
       <DeleteModal
         modalVisible={modalVisible}
