@@ -26,6 +26,7 @@ import {
   getOverdueEvents,
   getUserProfile,
 } from "@/firebase/firestore";
+import ProfilePic from "@/components/ProfilePic";
 
 const PROFILEPICSIZE = ms(50);
 
@@ -110,22 +111,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={toggleOpen}>
-                  {photoUrl ? (
-                    <Image
-                      source={{ uri: photoUrl }}
-                      style={{
-                        width: PROFILEPICSIZE,
-                        height: PROFILEPICSIZE,
-                        borderRadius: PROFILEPICSIZE / 2,
-                      }}
-                    />
-                  ) : (
-                    <FontAwesome
-                      name="user-circle"
-                      size={PROFILEPICSIZE}
-                      color="#6a5acd"
-                    />
-                  )}
+                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE}/>
                 </TouchableOpacity>
               </View>
             </View>
