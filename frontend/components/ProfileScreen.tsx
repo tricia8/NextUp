@@ -23,6 +23,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import LoadingScreen from "@/components/Loading";
 import { getUserProfile, getUserStats } from "@/firebase/firestore";
+import ProfilePic from "./ProfilePic";
 
 const PROFILEPICSIZE = ms(80);
 
@@ -86,18 +87,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            {userData?.photoUrl ? (
-              <Image
-                source={{ uri: userData.photoUrl }}
-                style={styles.profilePic}
-              />
-            ) : (
-              <FontAwesome
-                name="user-circle-o"
-                size={PROFILEPICSIZE}
-                color="#7b68ee"
-              />
-            )}
+            <ProfilePic imageUrl={userData?.photoUrl} size={PROFILEPICSIZE}/>
 
             <View style={styles.profileDetails}>
               <View style={styles.username}>
