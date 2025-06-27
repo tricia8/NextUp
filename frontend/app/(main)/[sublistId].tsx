@@ -52,7 +52,6 @@ import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { User } from "@/types/user";
 import { Goal } from "@/types/goal";
-import { FlashList } from "@shopify/flash-list";
 import GoalCard from "@/components/GoalCard";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
@@ -64,6 +63,7 @@ export default function currentSublist() {
   const uid = user?.uid;
   const { sublistId } = useLocalSearchParams();
   console.log("sublistId param:", sublistId);
+  const [isFetching, setIsFetching] = useState(true);
 
   if (loading || !uid || !sublistId) {
     return <LoadingScreen />;
@@ -92,19 +92,6 @@ export default function currentSublist() {
 
   // Fetched goals
   const [existingGoals, setExistingGoals] = useState<Goal[]>([]);
-  const renderFlashlistGoal = ({ item }: { item: Goal }) => {
-    console.log("Rendering goal:", item);
-    return (
-      <GoalCard
-        title={item.title}
-        isCompleted={item.isCompleted}
-        categories={item.categories}
-        deadline={item.deadline}
-        onPress={() => {}} // dynamic routing to [goalId].tsx
-        colorScheme={colorScheme}
-      />
-    );
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -137,6 +124,7 @@ export default function currentSublist() {
               setInitialTitle(sublistData.title);
               setInitialDescription(sublistData.description);
 
+              setIsFetching(false);
               // Fetch owner + collaborators
               const owner = await getOwnerProfile(user.uid);
               const otherProfiles = await Promise.all(
@@ -227,7 +215,108 @@ export default function currentSublist() {
     }
   };
 
+  // Validate required sublist fields
+  const [sublistErrors, setSublistErrors] = useState<{
+    title?: string;
+    accessLevel?: string; // optional
+  }>({});
+
+  const validateForm = () => {
+    // returns boolean
+    const formErrors: typeof sublistErrors = {};
+    if (!title) formErrors.title = "Please enter a title";
+    if (!accessLevel) formErrors.accessLevel = "Please select an access level"; // extra check (optional)
+    setSublistErrors(formErrors);
+    return Object.keys(formErrors).length == 0; // check if all required fields are filled
+  };
+
+  const handleListTitleChange = (title: string) => {
+    setTitle(title);
+    if (sublistErrors.title) {
+      setSublistErrors((prev) => ({ ...prev, title: "" })); // remove error message when user types something
+    }
+  };
+
+  const handleAccessChange = (access: string) => {
+    setAccessLevel(access);
+    if (access && sublistErrors.accessLevel) {
+      setSublistErrors((prev) => ({ ...prev, accessLevel: "" })); // remove error message when user selects an access level
+    }
+  };
+
+  // Sublist update
+  const handleSubmission = () => {
+    Keyboard.dismiss();
+
+    if (validateForm()) {
+      // check if all required fields are filled
+      updateSublist();
+    } else {
+      showMessage({
+        message: "Validation Error",
+        description: "Please fill in all required fields.",
+        type: "warning",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "warning",
+        duration: 3000,
+      });
+    }
+  };
+
+  const updateSublist = async () => {
+    try {
+      setIsEditing(false);
+      // Save changes to Firestore
+      await updateSubBucketList(uid, sublistId, {
+        title,
+        description,
+        accessLevel,
+      });
+      setIsUpdated(!isUpdated); // trigger re-render
+    } catch (error) {
+      showMessage({
+        message: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to update sublist",
+        type: "danger",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "danger",
+        duration: 5000,
+      });
+    }
+  };
+
+  // Validate goal form
+  const [goalTitleError, setGoalTitleError] = useState("");
+
+  const validateGoalTitle = () => {
+    // returns boolean
+    if (!goalTitle) {
+      setGoalTitleError("Please enter a title");
+      return false;
+    }
+    return true;
+  };
+
+  const handleGoalTitleChange = (title: string) => {
+    setGoalTitle(title);
+    if (goalTitleError) {
+      setGoalTitleError("");
+    }
+  };
   // Goal submission
+  const handleGoalSubmission = () => {
+    Keyboard.dismiss();
+
+    if (validateGoalTitle()) {
+      // check if all required fields are filled
+      onSave();
+    }
+  };
+
+  // Add goal to db
   const onSave = async () => {
     try {
       await addEvent(uid, sublistId, {
@@ -235,7 +324,7 @@ export default function currentSublist() {
         title: goalTitle,
         description: goalDesc,
         categories: selectedTags,
-        deadline: deadlineDate,
+        deadline: deadlineString ? deadlineDate : null, // if deadlineString is empty, set to null
         collaborators: sharedUids,
       });
       console.log("goal added!");
@@ -337,7 +426,10 @@ export default function currentSublist() {
                 >
                   {title}
                 </ThemedText>
-                <TouchableOpacity onPress={() => setIsEditing(true)}>
+                <TouchableOpacity
+                  onPress={() => setIsEditing(true)}
+                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                >
                   <Feather
                     name="edit-2"
                     size={24}
@@ -356,6 +448,9 @@ export default function currentSublist() {
                   onChange={setAccessLevel}
                   theme={isDark ? "DARK" : "LIGHT"}
                   isDisabled={true}
+                  onChangeValue={(value) => {
+                    if (typeof value === "string") handleAccessChange(value);
+                  }}
                 />
               </View>
             </View>
@@ -366,7 +461,7 @@ export default function currentSublist() {
               <TitleDescFields
                 title={title}
                 description={description}
-                setTitle={setTitle}
+                setTitle={handleListTitleChange}
                 setDescription={setDesc}
                 lightLabelBg="#a2e6ff"
                 darkLabelBg="#141515"
@@ -392,31 +487,7 @@ export default function currentSublist() {
 
                 <TouchableOpacity
                   style={[styles.editingButton, { backgroundColor: "#618ce0" }]}
-                  onPress={async () => {
-                    try {
-                      setIsEditing(false);
-                      // Save changes to Firestore
-                      await updateSubBucketList(uid, sublistId, {
-                        title,
-                        description,
-                        accessLevel,
-                      });
-                      setIsUpdated(!isUpdated); // trigger re-render
-                    } catch (error) {
-                      showMessage({
-                        message: "Error",
-                        description:
-                          error instanceof Error
-                            ? error.message
-                            : "Failed to update sublist",
-                        type: "danger",
-                        statusBarHeight: StatusBar.currentHeight,
-                        floating: true,
-                        icon: "danger",
-                        duration: 5000,
-                      });
-                    }
-                  }}
+                  onPress={handleSubmission}
                 >
                   <Text>Save</Text>
                 </TouchableOpacity>
@@ -431,25 +502,27 @@ export default function currentSublist() {
             </ThemedText>
           </View>
 
-          <View pointerEvents="box-none">
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={handlePresentModalPress}
-              hitSlop={{ top: 13, bottom: 13, left: 13, right: 13 }}
-            >
-              <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
-              <Ionicons name="add-circle-outline" size={22} color="black" />
-            </TouchableOpacity>
-          </View>
+          {/* } <View pointerEvents="box-none"> */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handlePresentModalPress}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          >
+            <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
+            <Ionicons name="add-circle-outline" size={22} color="black" />
+          </TouchableOpacity>
+          {/* </View> */}
         </View>
 
-        <GoalList
-          uid={uid}
-          sublistId={sublistId as string}
-          data={existingGoals}
-          updateData={setExistingGoals}
-          colorScheme={colorScheme}
-        />
+        <View style={{ flex: 1, zIndex: 400 }}>
+          <GoalList
+            uid={uid}
+            sublistId={sublistId as string}
+            data={existingGoals}
+            updateData={setExistingGoals}
+            colorScheme={colorScheme}
+          />
+        </View>
 
         <ShareListModal
           currentUid={user?.uid}
@@ -459,121 +532,135 @@ export default function currentSublist() {
           onClose={() => setModalVisible(false)}
         />
 
-        <BottomSheetModal
-          ref={bottomSheetModalRef}
-          index={2}
-          snapPoints={snapPoints}
-          onChange={handleSheetChanges}
-          backdropComponent={renderBackdrop}
-          keyboardBehavior={"extend"}
-          enablePanDownToClose
-          backgroundStyle={styles.modalBg}
-          enableContentPanningGesture={false}
-        >
-          <BottomSheetScrollView style={styles.contentContainer}>
-            <SafeAreaView style={styles.modalViewContainer}>
-              <View style={{ paddingHorizontal: 10 }}>
-                <BottomSheetTextInput
-                  style={styles.input}
-                  placeholder="Title"
-                  value={goalTitle}
-                  onChangeText={setGoalTitle}
-                />
-              </View>
-
-              <View>
-                <CategoryPicker
-                  open={categoryOpen}
-                  setOpen={setCategoryOpen}
-                  onOpen={onCategoryOpen}
-                  selectedTags={selectedTags}
-                  setSelectedTags={setSelectedTags}
-                  max={3}
-                  noun="categories"
-                />
-              </View>
-
-              <View>
-                {dateTimeOpen && (
-                  <DateTimePicker
-                    mode="date"
-                    display="spinner"
-                    value={deadlineDate}
-                    onChange={onChange}
-                    minimumDate={new Date()}
-                    themeVariant={isDark ? "dark" : "light"}
+        <View style={{ flex: 1, zIndex: 100 }}>
+          <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={2}
+            snapPoints={snapPoints}
+            onChange={handleSheetChanges}
+            backdropComponent={renderBackdrop}
+            keyboardBehavior={"extend"}
+            enablePanDownToClose
+            backgroundStyle={styles.modalBg}
+            enableContentPanningGesture={false}
+          >
+            <BottomSheetScrollView style={styles.contentContainer}>
+              <SafeAreaView style={styles.modalViewContainer}>
+                <View style={{ paddingHorizontal: 10, gap: 10 }}>
+                  <BottomSheetTextInput
+                    style={styles.input}
+                    placeholder="Title"
+                    value={goalTitle}
+                    onChangeText={handleGoalTitleChange}
                   />
-                )}
+                  {goalTitleError && (
+                    <ThemedText
+                      style={styles.errorText}
+                      lightColor="#c40028"
+                      darkColor="#ffb1c1"
+                    >
+                      {goalTitleError}
+                    </ThemedText>
+                  )}
+                </View>
 
-                {!dateTimeOpen && (
-                  <Pressable
-                    onPress={toggleDatePicker}
-                    style={{ paddingHorizontal: 10 }}
-                  >
-                    <View pointerEvents="none">
-                      <BottomSheetTextInput
-                        placeholder={"End Date (Optional)"}
-                        value={deadlineString}
-                        style={styles.input}
-                        onEndEditing={() => Keyboard.dismiss()}
-                      />
-                    </View>
-                  </Pressable>
-                )}
-              </View>
+                <View>
+                  <CategoryPicker
+                    open={categoryOpen}
+                    setOpen={setCategoryOpen}
+                    onOpen={onCategoryOpen}
+                    selectedTags={selectedTags}
+                    setSelectedTags={setSelectedTags}
+                    max={3}
+                    noun="categories"
+                  />
+                </View>
 
-              <View
-                style={{
-                  paddingHorizontal: 10,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <BottomSheetTextInput
-                  style={[styles.input, { flex: 1, padding: 14 }]}
-                  placeholder="Add details, timelines, or motivations... (Optional)"
-                  value={goalDesc}
-                  multiline={true}
-                  onChangeText={setGoalDesc}
-                />
-                {goalDesc && keyboardVisible && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      Keyboard.dismiss();
-                    }}
-                  >
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={28}
-                      color="#1db363"
+                <View>
+                  {dateTimeOpen && (
+                    <DateTimePicker
+                      mode="date"
+                      display="spinner"
+                      value={deadlineDate}
+                      onChange={onChange}
+                      minimumDate={new Date()}
+                      themeVariant={isDark ? "dark" : "light"}
                     />
+                  )}
+
+                  {!dateTimeOpen && (
+                    <Pressable
+                      onPress={toggleDatePicker}
+                      style={{ paddingHorizontal: 10 }}
+                    >
+                      <View pointerEvents="none">
+                        <BottomSheetTextInput
+                          placeholder={"End Date (Optional)"}
+                          value={deadlineString}
+                          style={styles.input}
+                          onEndEditing={() => Keyboard.dismiss()}
+                        />
+                      </View>
+                    </Pressable>
+                  )}
+                </View>
+
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <BottomSheetTextInput
+                    style={[styles.input, { flex: 1, padding: 14 }]}
+                    placeholder="Add details, timelines, or motivations... (Optional)"
+                    value={goalDesc}
+                    multiline={true}
+                    onChangeText={setGoalDesc}
+                  />
+                  {goalDesc && keyboardVisible && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        Keyboard.dismiss();
+                      }}
+                    >
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={30}
+                        color="#1db363"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <View style={styles.editHandler}>
+                  <TouchableOpacity
+                    style={[
+                      styles.editingButton,
+                      { backgroundColor: "#dedede" },
+                    ]}
+                    onPress={onCancel}
+                  >
+                    <ThemedText style={{ color: "#618ce0" }}>Cancel</ThemedText>
                   </TouchableOpacity>
-                )}
-              </View>
 
-              <View style={styles.editHandler}>
-                <TouchableOpacity
-                  style={[styles.editingButton, { backgroundColor: "#dedede" }]}
-                  onPress={onCancel}
-                >
-                  <ThemedText style={{ color: "#618ce0" }}>Cancel</ThemedText>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.editingButton,
-                    { backgroundColor: "#618ce0", alignItems: "center" },
-                  ]}
-                  onPress={onSave}
-                >
-                  <ThemedText>Save</ThemedText>
-                </TouchableOpacity>
-              </View>
-            </SafeAreaView>
-          </BottomSheetScrollView>
-        </BottomSheetModal>
+                  <TouchableOpacity
+                    style={[
+                      styles.editingButton,
+                      { backgroundColor: "#618ce0", alignItems: "center" },
+                    ]}
+                    onPress={handleGoalSubmission}
+                  >
+                    <ThemedText>Save</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </SafeAreaView>
+            </BottomSheetScrollView>
+          </BottomSheetModal>
+        </View>
       </ThemedView>
     </SafeAreaView>
   );
@@ -598,11 +685,16 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       color: "#fff",
       flexDirection: "row",
       gap: 8,
+      elevation: 2,
     },
     titleEditBar: {
       flexDirection: "row",
       justifyContent: "space-between",
       gap: 8,
+    },
+    pencilEdit: {
+      padding: 12,
+      borderRadius: 50,
     },
     editingButton: {
       paddingHorizontal: 20,
@@ -637,5 +729,8 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     metadata: {
       fontStyle: "italic",
       fontSize: RFValue(11),
+    },
+    errorText: {
+      fontSize: RFValue(12),
     },
   });
