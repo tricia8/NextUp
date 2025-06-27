@@ -30,7 +30,6 @@ import TitleDescFields from "@/components/forms/TitleDescFields";
 import {
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
-  BottomSheetBackgroundProps,
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetTextInput,
@@ -52,7 +51,6 @@ import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { User } from "@/types/user";
 import { Goal } from "@/types/goal";
-import GoalCard from "@/components/GoalCard";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
 import GoalList from "@/components/GoalList";
@@ -108,8 +106,9 @@ export default function currentSublist() {
             const goalData = await getAllEventsFormatted(user.uid, sublistId);
             // returns array of events
             // event object: { id, title, description, categories, isCompleted, createdAt, deadline }
+
+            console.log("fetched goals: ", goalData);
             setExistingGoals(goalData);
-            console.log("existing goals: " + existingGoals);
 
             if (isActive) {
               setTitle(sublistData.title);
@@ -399,7 +398,7 @@ export default function currentSublist() {
   }, []); // logs to console when snapPoint changes
 
   const renderBackdrop: React.FC<BottomSheetBackdropProps> = (
-    props: BottomSheetBackgroundProps
+    props: BottomSheetBackdropProps
   ) => (
     <BottomSheetBackdrop
       {...props}
@@ -514,154 +513,149 @@ export default function currentSublist() {
           {/* </View> */}
         </View>
 
-        <View style={{ flex: 1, zIndex: 400 }}>
-          <GoalList
-            uid={uid}
-            sublistId={sublistId as string}
-            data={existingGoals}
-            updateData={setExistingGoals}
-            colorScheme={colorScheme}
+        {/* <View style={{ flex: 1, zIndex: 400 }}> */}
+        <GoalList
+          uid={uid}
+          sublistId={sublistId as string}
+          data={existingGoals}
+          updateData={setExistingGoals}
+          colorScheme={colorScheme}
+        />
+        {/* </View> */}
+      </ThemedView>
+
+      {modalVisible && (
+        <View style={{ flex: 1 }}>
+          <ShareListModal
+            currentUid={user?.uid}
+            data={collaborators}
+            visible={modalVisible}
+            setModalVisible={setModalVisible}
+            onClose={() => setModalVisible(false)}
           />
         </View>
+      )}
 
-        <ShareListModal
-          currentUid={user?.uid}
-          data={collaborators}
-          visible={modalVisible}
-          setModalVisible={setModalVisible}
-          onClose={() => setModalVisible(false)}
-        />
+      {/* <ThemedView style={{ flex: 1, zIndex: 100 }}> */}
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        index={2}
+        snapPoints={snapPoints}
+        onChange={handleSheetChanges}
+        backdropComponent={renderBackdrop}
+        keyboardBehavior={"extend"}
+        enablePanDownToClose
+        backgroundStyle={styles.modalBg}
+        enableContentPanningGesture={false}
+      >
+        <BottomSheetScrollView style={styles.contentContainer}>
+          <View style={{ paddingHorizontal: 10, gap: 10 }}>
+            <BottomSheetTextInput
+              style={styles.input}
+              placeholder="Title"
+              value={goalTitle}
+              onChangeText={handleGoalTitleChange}
+            />
+            {goalTitleError && (
+              <ThemedText
+                style={styles.errorText}
+                lightColor="#c40028"
+                darkColor="#ffb1c1"
+              >
+                {goalTitleError}
+              </ThemedText>
+            )}
+          </View>
 
-        <View style={{ flex: 1, zIndex: 100 }}>
-          <BottomSheetModal
-            ref={bottomSheetModalRef}
-            index={2}
-            snapPoints={snapPoints}
-            onChange={handleSheetChanges}
-            backdropComponent={renderBackdrop}
-            keyboardBehavior={"extend"}
-            enablePanDownToClose
-            backgroundStyle={styles.modalBg}
-            enableContentPanningGesture={false}
-          >
-            <BottomSheetScrollView style={styles.contentContainer}>
-              <SafeAreaView style={styles.modalViewContainer}>
-                <View style={{ paddingHorizontal: 10, gap: 10 }}>
+          <View>
+            <CategoryPicker
+              open={categoryOpen}
+              setOpen={setCategoryOpen}
+              onOpen={onCategoryOpen}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+              max={3}
+              noun="categories"
+            />
+          </View>
+
+          <View>
+            {dateTimeOpen && (
+              <DateTimePicker
+                mode="date"
+                display="spinner"
+                value={deadlineDate}
+                onChange={onChange}
+                minimumDate={new Date()}
+                themeVariant={isDark ? "dark" : "light"}
+              />
+            )}
+
+            {!dateTimeOpen && (
+              <Pressable
+                onPress={toggleDatePicker}
+                style={{ paddingHorizontal: 10 }}
+              >
+                <View pointerEvents="none">
                   <BottomSheetTextInput
+                    placeholder={"End Date (Optional)"}
+                    value={deadlineString}
                     style={styles.input}
-                    placeholder="Title"
-                    value={goalTitle}
-                    onChangeText={handleGoalTitleChange}
-                  />
-                  {goalTitleError && (
-                    <ThemedText
-                      style={styles.errorText}
-                      lightColor="#c40028"
-                      darkColor="#ffb1c1"
-                    >
-                      {goalTitleError}
-                    </ThemedText>
-                  )}
-                </View>
-
-                <View>
-                  <CategoryPicker
-                    open={categoryOpen}
-                    setOpen={setCategoryOpen}
-                    onOpen={onCategoryOpen}
-                    selectedTags={selectedTags}
-                    setSelectedTags={setSelectedTags}
-                    max={3}
-                    noun="categories"
+                    onEndEditing={() => Keyboard.dismiss()}
                   />
                 </View>
+              </Pressable>
+            )}
+          </View>
 
-                <View>
-                  {dateTimeOpen && (
-                    <DateTimePicker
-                      mode="date"
-                      display="spinner"
-                      value={deadlineDate}
-                      onChange={onChange}
-                      minimumDate={new Date()}
-                      themeVariant={isDark ? "dark" : "light"}
-                    />
-                  )}
+          <View
+            style={{
+              paddingHorizontal: 10,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <BottomSheetTextInput
+              style={[styles.input, { flex: 1, padding: 14 }]}
+              placeholder="Add details, timelines, or motivations... (Optional)"
+              value={goalDesc}
+              multiline={true}
+              onChangeText={setGoalDesc}
+            />
+            {goalDesc && keyboardVisible && (
+              <TouchableOpacity
+                onPress={() => {
+                  Keyboard.dismiss();
+                }}
+              >
+                <Ionicons name="checkmark-circle" size={30} color="#1db363" />
+              </TouchableOpacity>
+            )}
+          </View>
 
-                  {!dateTimeOpen && (
-                    <Pressable
-                      onPress={toggleDatePicker}
-                      style={{ paddingHorizontal: 10 }}
-                    >
-                      <View pointerEvents="none">
-                        <BottomSheetTextInput
-                          placeholder={"End Date (Optional)"}
-                          value={deadlineString}
-                          style={styles.input}
-                          onEndEditing={() => Keyboard.dismiss()}
-                        />
-                      </View>
-                    </Pressable>
-                  )}
-                </View>
+          <View style={[styles.editHandler, { marginTop: 10 }]}>
+            <TouchableOpacity
+              style={[styles.editingButton, { backgroundColor: "#dedede" }]}
+              onPress={onCancel}
+            >
+              <ThemedText style={{ color: "#618ce0" }}>Cancel</ThemedText>
+            </TouchableOpacity>
 
-                <View
-                  style={{
-                    paddingHorizontal: 10,
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <BottomSheetTextInput
-                    style={[styles.input, { flex: 1, padding: 14 }]}
-                    placeholder="Add details, timelines, or motivations... (Optional)"
-                    value={goalDesc}
-                    multiline={true}
-                    onChangeText={setGoalDesc}
-                  />
-                  {goalDesc && keyboardVisible && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        Keyboard.dismiss();
-                      }}
-                    >
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={30}
-                        color="#1db363"
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <View style={styles.editHandler}>
-                  <TouchableOpacity
-                    style={[
-                      styles.editingButton,
-                      { backgroundColor: "#dedede" },
-                    ]}
-                    onPress={onCancel}
-                  >
-                    <ThemedText style={{ color: "#618ce0" }}>Cancel</ThemedText>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.editingButton,
-                      { backgroundColor: "#618ce0", alignItems: "center" },
-                    ]}
-                    onPress={handleGoalSubmission}
-                  >
-                    <ThemedText>Save</ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </SafeAreaView>
-            </BottomSheetScrollView>
-          </BottomSheetModal>
-        </View>
-      </ThemedView>
+            <TouchableOpacity
+              style={[
+                styles.editingButton,
+                { backgroundColor: "#618ce0", alignItems: "center" },
+              ]}
+              onPress={handleGoalSubmission}
+            >
+              <ThemedText>Save</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetScrollView>
+      </BottomSheetModal>
+      {/* </ThemedView> */}
     </SafeAreaView>
   );
 }
@@ -707,7 +701,8 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     contentContainer: {
       backgroundColor: colorScheme == "dark" ? "#1e1e2f" : "#eee",
-      padding: 12,
+      padding: 15,
+      gap: 15,
     },
     modalViewContainer: {
       gap: 15,
