@@ -108,10 +108,10 @@ export default function BucketList() {
         <View style={{ flex: 0.2 }}>
           <TouchableOpacity
             onPress={() => router.push("../new-sublist")}
-            activeOpacity={0.8}
+            activeOpacity={0.5}
             style={styles.addButton}
           >
-            <Ionicons name="add-circle" size={75} color="#39a64b" />
+            <Ionicons name="add-circle" size={80} color="#39a64b" />
           </TouchableOpacity>
         </View>
       </ThemedView>
