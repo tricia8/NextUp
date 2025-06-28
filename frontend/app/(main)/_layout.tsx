@@ -105,7 +105,6 @@ export default function MainLayout() {
           }}
         />
       </Stack>
-      <StatusBar style="auto" />
     </ThemeProvider>
   );
 }
