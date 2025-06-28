@@ -6,15 +6,18 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import FlashMessage from "react-native-flash-message";
 import { Slot } from "expo-router";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 export default function RootLayout() {
   return (
     <AuthProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <Slot />
-        </SafeAreaProvider>
-        <FlashMessage position="top" />
+        <BottomSheetModalProvider>
+          <SafeAreaProvider>
+            <Slot />
+            <FlashMessage position="top" />
+          </SafeAreaProvider>
+        </BottomSheetModalProvider>
       </GestureHandlerRootView>
     </AuthProvider>
   );
