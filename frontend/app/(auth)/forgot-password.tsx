@@ -69,7 +69,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={"height"}
