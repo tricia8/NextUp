@@ -18,7 +18,7 @@ export default function AccessDropdownPicker({
   onChange,
   onChangeValue = () => {},
   theme = "DEFAULT", // default option is LIGHT
-  zindex,
+  zindex = 990,
   isDisabled = false,
 }: AccessDropdownPickerProps) {
   const colorScheme = useColorScheme();

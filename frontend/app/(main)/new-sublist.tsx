@@ -142,7 +142,7 @@ export default function newSubList() {
             />
           </View>
 
-          <View style={{ marginVertical: 10 }}>
+          <View style={{ zIndex: 990, marginVertical: 10 }}>
             <AccessDropdownPicker
               accessLevel={accessLevel}
               onChange={setAccessLevel}
