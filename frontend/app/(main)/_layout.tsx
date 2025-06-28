@@ -58,30 +58,35 @@ export default function MainLayout() {
           }}
         />
         <Stack.Screen
-          name="[sublistId]"
+          name="friends"
+          options={{
+            title: "Friends",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(22),
+            },
+          }}
+        />
+        <Stack.Screen
+          name="addfriends"
+          options={{
+            title: "Add friends",
+            headerTitleStyle: {
+              fontWeight: "bold",
+              fontSize: RFValue(22),
+            },
+          }}
+        />
+        <Stack.Screen name="profile/[uid]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="[sublistId]/index"
           options={{
             headerTitle: "",
-            headerLeft: () => (
-              <TouchableOpacity
-                onPress={() => router.push("/(main)/(tabs)/bucketlist")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              >
-                <MaterialIcons
-                  name="arrow-back"
-                  size={24}
-                  color={colorScheme == "dark" ? "white" : "black"}
-                />
-
-                <View>
-                  <ThemedText>Back to Bucket List</ThemedText>
-                </View>
-              </TouchableOpacity>
-            ),
           }}
+        />
+        <Stack.Screen
+          name="[sublistId]/[goalId]"
+          options={{ headerTitle: "" }}
         />
       </Stack>
     </ThemeProvider>
