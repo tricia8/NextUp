@@ -55,7 +55,7 @@ export default function ShareListModal({
         <TouchableOpacity
           onPress={() =>
             router.push({
-              pathname: "/(main)/(tabs)/profile/[uid]",
+              pathname: "/(main)/profile/[uid]",
               params: { uid: item.uid },
             })
           }
