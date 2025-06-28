@@ -1,22 +1,38 @@
-import { Stack, Redirect, useRootNavigationState } from "expo-router";
-import { useContext } from "react";
+import {
+  Stack,
+  Redirect,
+  useRootNavigationState,
+  useRouter,
+} from "expo-router";
+import { useContext, useEffect } from "react";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function AuthLayout() {
   const { user, loading } = useContext(AuthContext);
   const rootNavigationState = useRootNavigationState();
+  const router = useRouter();
 
-  if (!rootNavigationState?.key) return null; // Wait for navigation to be ready
-  if (loading) return null; // Wait for auth check
+  useEffect(() => {
+    if (!rootNavigationState?.key || loading) return;
 
-  // Prevent unverified users from accessing (main) pages
-  if (user) {
-    // Check if email is verified
-    if (!user.emailVerified) {
-      // redirect to a "verify your email" screen
-      return <Redirect href="/(auth)/login" />;
+    if (user) {
+      if (!user.emailVerified) {
+        console.log("User not verified, redirecting to login");
+        router.replace("/(auth)/login");
+      } else {
+        console.log("User verified, redirecting to main");
+        router.replace("/(main)/(tabs)");
+      }
     }
-    return <Redirect href="/(main)/(tabs)" />;
+  }, [user, loading, rootNavigationState]);
+
+  if (!rootNavigationState?.key) {
+    console.log("Waiting for navigation state...");
+    return null; // Wait for navigation to be ready
+  }
+  if (loading) {
+    console.log("Waiting for auth check...");
+    return null; // Wait for auth check
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;
