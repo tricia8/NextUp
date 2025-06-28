@@ -626,6 +626,11 @@ export default function currentSublist() {
                 onPress={() => {
                   Keyboard.dismiss();
                 }}
+                activeOpacity={0.6}
+                style={{
+                  borderRadius: 24,
+                  padding: 5,
+                }}
               >
                 <Ionicons name="checkmark-circle" size={30} color="#1db363" />
               </TouchableOpacity>
