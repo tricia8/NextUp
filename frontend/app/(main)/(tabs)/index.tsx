@@ -111,7 +111,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={toggleOpen}>
-                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE}/>
+                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -167,8 +167,11 @@ export default function HomeScreen() {
                   ) : (
                     upcomingEvents.map((event) => (
                       <View key={event.id}>
-                        <Text style={styles.smallText}>
-                          {event.title} — {event.deadline}
+                        <Text style={[styles.smallText, { fontWeight: "700" }]}>
+                          {event.title}
+                        </Text>
+                        <Text style={styles.deadlineText}>
+                          Due {event.deadline}
                         </Text>
                       </View>
                     ))
@@ -255,5 +258,9 @@ const styles = StyleSheet.create({
   smallText: {
     fontSize: RFValue(13),
     color: "white",
+  },
+  deadlineText: {
+    fontSize: RFValue(12),
+    color: "#caffd3",
   },
 });
