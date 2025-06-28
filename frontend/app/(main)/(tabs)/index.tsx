@@ -146,7 +146,7 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={[{ height: vs(200) }]}>
+            <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
               <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 {overdueCount && (
                   <View style={styles.overdueContainer}>
@@ -156,18 +156,23 @@ export default function HomeScreen() {
                   </View>
                 )}
 
-                <View style={[styles.subContainer, { flex: 1 }]}>
+                <View style={styles.upcomingContainer}>
                   <Text style={styles.header}>Upcoming</Text>
                   {upcomingEvents.length === 0 ? (
                     <View>
-                      <Text style={styles.smallText}>
+                      <Text style={[styles.smallText, { textAlign: "center" }]}>
                         You have no scheduled goals. Set one now!
                       </Text>
                     </View>
                   ) : (
                     upcomingEvents.map((event) => (
-                      <View key={event.id}>
-                        <Text style={[styles.smallText, { fontWeight: "700" }]}>
+                      <View key={event.id} style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.smallText,
+                            { fontWeight: "700", textAlign: "left" },
+                          ]}
+                        >
                           {event.title}
                         </Text>
                         <Text style={styles.deadlineText}>
@@ -219,6 +224,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#6a5acd",
     gap: vs(10),
   },
+  upcomingContainer: {
+    alignItems: "flex-start",
+    paddingVertical: vs(15),
+    paddingHorizontal: s(11),
+    backgroundColor: "#6a5acd",
+    gap: vs(10),
+    flex: 1,
+  },
   progressStats: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -253,7 +266,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: RFValue(20),
     fontWeight: "600",
-    textAlign: "center",
+    alignSelf: "center",
   },
   smallText: {
     fontSize: RFValue(13),
@@ -262,5 +275,6 @@ const styles = StyleSheet.create({
   deadlineText: {
     fontSize: RFValue(12),
     color: "#caffd3",
+    textAlign: "left",
   },
 });
