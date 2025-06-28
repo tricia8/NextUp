@@ -161,7 +161,7 @@ export default function Login() {
             </View>
 
             {loading ? (
-              <LoadingScreen color="#a4ffe9" />
+              <ActivityIndicator size="large" color="#a4ffe9" />
             ) : (
               <>
                 <TouchableOpacity
