@@ -1,5 +1,7 @@
 import { View } from "react-native";
 import SublistField from "./SublistField";
+import { ThemedText } from "../ThemedText";
+import { RFValue } from "react-native-responsive-fontsize";
 
 interface TitleDescProps {
   title: string;
@@ -8,6 +10,16 @@ interface TitleDescProps {
   setDescription: (desc: string) => void;
   lightLabelBg?: string;
   darkLabelBg?: string;
+  errors?: {
+    title?: string;
+    accessLevel?: string;
+  };
+  setErrors?: React.Dispatch<
+    React.SetStateAction<{
+      title?: string;
+      accessLevel?: string;
+    }>
+  >;
 }
 
 export default function TitleDescFields({
@@ -17,6 +29,8 @@ export default function TitleDescFields({
   setDescription,
   lightLabelBg = "#a2e6ff",
   darkLabelBg = "#141515",
+  errors = {},
+  setErrors = () => {},
 }: TitleDescProps) {
   return (
     <View style={{ gap: 10 }}>
@@ -27,6 +41,16 @@ export default function TitleDescFields({
         lightLabelBg={lightLabelBg}
         darkLabelBg={darkLabelBg}
       />
+      {errors.title && (
+        <ThemedText
+          style={{ fontSize: RFValue(12) }}
+          lightColor="#c40028"
+          darkColor="#ffb1c1"
+        >
+          {errors.title}
+        </ThemedText>
+      )}
+
       <SublistField
         label="Description"
         onChangeText={(value) => setDescription(value)}

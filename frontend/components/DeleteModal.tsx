@@ -10,13 +10,13 @@ import { ThemedText } from "./ThemedText";
 import { RFValue } from "react-native-responsive-fontsize";
 import { Sublist } from "@/types/sublist";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { use } from "react";
+import { Goal } from "@/types/goal";
 
 type DeleteModalProps = {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
-  item: Sublist | null;
-  handleItemDelete: (sublist: Sublist) => void;
+  item: Sublist | Goal | null;
+  handleItemDelete: (item: Sublist | Goal) => void;
   heading: string;
   body: string;
 };
