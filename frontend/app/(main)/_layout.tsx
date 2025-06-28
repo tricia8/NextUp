@@ -79,10 +79,10 @@ export default function MainLayout() {
         />
         <Stack.Screen name="profile/[uid]" options={{ headerShown: false }} />
         <Stack.Screen
-          name="[sublistId]"
+          name="[sublistId]/index"
           options={{
             headerTitle: "",
-            headerLeft: () => (
+            /* headerLeft: () => (
               <TouchableOpacity
                 onPress={() => router.push("/(main)/(tabs)/bucketlist")}
                 style={{
@@ -90,6 +90,7 @@ export default function MainLayout() {
                   alignItems: "center",
                   gap: 8,
                 }}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
               >
                 <MaterialIcons
                   name="arrow-back"
@@ -97,12 +98,14 @@ export default function MainLayout() {
                   color={colorScheme == "dark" ? "white" : "black"}
                 />
 
-                <View>
-                  <ThemedText>Back to Bucket List</ThemedText>
-                </View>
+                <ThemedText>Back to Bucket List</ThemedText>
               </TouchableOpacity>
-            ),
+            ), */
           }}
+        />
+        <Stack.Screen
+          name="[sublistId]/[goalId]"
+          options={{ headerTitle: "" }}
         />
       </Stack>
     </ThemeProvider>
