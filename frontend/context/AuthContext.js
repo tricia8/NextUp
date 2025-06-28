@@ -50,6 +50,7 @@ export function AuthProvider({ children }) {
           statusBarHeight: StatusBar.currentHeight, //Android only
           floating: true,
           color: "#4a2516",
+          autoHide: false,
         });
 
         return;
