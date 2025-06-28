@@ -334,10 +334,10 @@ export const getSubBucketList = async (userId, subBucketListId) => {
 export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   try {
     const q = query(
-    collectionGroup(db, 'bucketList'),
-    where("collaborators", "array-contains", uid),
-    where("accessLevel", "in", accessLevels),
-  );
+      collectionGroup(db, "bucketList"),
+      where("collaborators", "array-contains", uid),
+      where("accessLevel", "in", accessLevels)
+    );
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map((doc) => {
@@ -782,7 +782,7 @@ export async function getUpcomingEvents(uid, now, onData) {
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      ...formatEventData(doc.data()),
     }));
 
     onData(events);
@@ -804,7 +804,7 @@ export async function getOverdueEvents(uid, now, onData) {
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      ...formatEventData(doc.data()),
     }));
 
     onData(events);
