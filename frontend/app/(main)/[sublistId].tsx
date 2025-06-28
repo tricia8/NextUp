@@ -389,13 +389,13 @@ export default function currentSublist() {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["50%", "90%"], []);
 
-  const handlePresentModalPress = useCallback(() => {
+  const handlePresentModalPress = () => {
     bottomSheetModalRef.current?.present();
-  }, []);
+  };
 
-  const handleSheetChanges = useCallback((index: number) => {
+  const handleSheetChanges = (index: number) => {
     console.log("handleSheetChanges", index);
-  }, []); // logs to console when snapPoint changes
+  }; // logs to console when snapPoint changes
 
   const renderBackdrop: React.FC<BottomSheetBackdropProps> = (
     props: BottomSheetBackdropProps
