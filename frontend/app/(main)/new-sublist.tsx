@@ -126,6 +126,14 @@ export default function newSubList() {
         floating: true,
         icon: "success",
       });
+
+      // Reset fields
+      setTitle("");
+      setDesc("");
+      setAccessLevel("");
+      setSharedUids([]);
+      setCollaborators([]);
+      setErrors({});
     } catch (error) {
       showMessage({
         message: "Error",
