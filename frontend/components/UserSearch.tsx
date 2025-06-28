@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
+  Image,
 } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
@@ -13,6 +14,7 @@ import { LegendList } from "@legendapp/list";
 import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { User } from "@/types/user";
 import { router } from "expo-router";
+import ProfilePic from '@/components/ProfilePic';
 
 type Props = {
   users: User[];
@@ -66,7 +68,8 @@ export default function UserSearch({
       >
         <View style={styles.userRowContainer}>
           <View style={styles.userDisplay}>
-            <FontAwesome name="user-circle-o" size={ms(40)} color="#7b68ee" />
+            <ProfilePic imageUrl={item.photoUrl} size={40}/>
+
             <ThemedText style={{ fontSize: RFValue(14) }}>
               {item.username}
             </ThemedText>
