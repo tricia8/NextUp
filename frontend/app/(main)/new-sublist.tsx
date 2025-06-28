@@ -222,13 +222,15 @@ export default function newSubList() {
             <ThemedText>Create Sublist</ThemedText>
           </TouchableOpacity>
         </ScrollView>
-        <ShareListModal
-          currentUid={user?.uid}
-          data={collaborators} // User[]
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          setModalVisible={setModalVisible}
-        />
+        <View style={{ flex: 1 }}>
+          <ShareListModal
+            currentUid={user?.uid}
+            data={collaborators} // User[]
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            setModalVisible={setModalVisible}
+          />
+        </View>
       </ThemedView>
     </SafeAreaView>
   );
