@@ -21,6 +21,7 @@ import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
 import SublistItems from "@/components/SublistItems";
 import SublistSearchBar from "@/components/SublistSearchBar";
+import { ThemedText } from "@/components/ThemedText";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -93,6 +94,12 @@ export default function BucketList() {
 
         {isLoading ? (
           <LoadingScreen />
+        ) : sublists.length === 0 ? (
+          <View style={styles.emptyListView}>
+            <ThemedText style={styles.emptyListText}>
+              “Looks empty here...{"\n"}Add a sublist to get things rolling!
+            </ThemedText>
+          </View>
         ) : (
           <View style={{ flex: 0.8 }}>
             <SublistItems
@@ -140,7 +147,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       bottom: 20,
       right: 20,
       borderRadius: 50,
-      // borderWidth: 1,
       borderColor: "coral",
       padding: 2,
     },
@@ -153,7 +159,10 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       backgroundColor: colorScheme === "dark" ? "#4b8e83" : "#d7e6de",
       flex: 1,
     },
-    clearButton: {
-      paddingLeft: 3,
+    emptyListView: { flex: 1, justifyContent: "center", alignItems: "center" },
+    emptyListText: {
+      fontSize: RFValue(15),
+      flexShrink: 1,
+      lineHeight: RFValue(30),
     },
   });
