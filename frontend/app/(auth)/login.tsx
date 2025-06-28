@@ -24,6 +24,7 @@ import { AuthContext } from "@/context/AuthContext";
 import { FirebaseError } from "firebase/app";
 import { showMessage } from "react-native-flash-message";
 import { getFriendlyAuthErrorMessage } from "@/utils/firebaseErrorMapper";
+import LoadingScreen from "@/components/Loading";
 
 export default function Login() {
   const { login } = useContext(AuthContext);
@@ -160,7 +161,7 @@ export default function Login() {
             </View>
 
             {loading ? (
-              <ActivityIndicator size="large" />
+              <LoadingScreen color="#a4ffe9" />
             ) : (
               <>
                 <TouchableOpacity
