@@ -10,7 +10,6 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
-  "type": "module",
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@legendapp/list": "^1.0.14",
