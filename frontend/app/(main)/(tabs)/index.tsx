@@ -256,4 +256,9 @@ const styles = StyleSheet.create({
     fontSize: RFValue(13),
     color: "white",
   },
+  deadlineText: {
+    fontSize: RFValue(12),
+    color: "#caffd3",
+    textAlign: "left",
+  },
 });
