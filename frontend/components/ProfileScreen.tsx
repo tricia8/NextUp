@@ -16,7 +16,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { auth } from "@/firebase/firebaseConfig";
-import JourneyScreen from "@/app/(main)/(tabs)/journey";
+import JourneyScreen from "@/components/JourneyScreen";
 import EditProfile from "@/components/editprofile";
 import { User } from "@/types/user";
 import { useFocusEffect } from "expo-router";
@@ -212,8 +212,8 @@ function Preview({ route, title, color, component, uid }: Props) {
     <TouchableOpacity
       onPress={() =>
         router.push({
-          pathname: '/journey',
-          params: { uid },
+          pathname: "/journey/[uid]",
+          params: { uid: uid },
         })
       }
     >
