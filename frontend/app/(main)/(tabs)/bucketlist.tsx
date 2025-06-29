@@ -97,7 +97,7 @@ export default function BucketList() {
         ) : sublists.length === 0 ? (
           <View style={styles.emptyListView}>
             <ThemedText style={styles.emptyListText}>
-              “Looks empty here...{"\n"}Add a sublist to get things rolling!
+              Looks empty here...{"\n"}Add a sublist to get things rolling!
             </ThemedText>
           </View>
         ) : (
