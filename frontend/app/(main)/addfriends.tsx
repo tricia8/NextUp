@@ -9,7 +9,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import LoadingScreen from "@/components/Loading";
-import { addFriend, getAllUsers, getFriends } from "@/firebase/firestore";
+import { createRequest, getRequestInfo, getAllUsers, getFriends } from "@/firebase/firestore";
 
 export default function UsersList() {
   const [users, setUsers] = useState<User[]>([]);
@@ -41,18 +41,19 @@ export default function UsersList() {
         return;
       }
 
-        fetchData();
+      fetchData();
     }, [currentUserId])
   );
 
   const handleAddFriend = async (friendId: string) => {
       try {
-        await addFriend(currentUserId, friendId);
-        Alert.alert("Success", "Friend added!");
-        fetchData();
+        const requestId = await createRequest(currentUserId, friendId);
+        const requestInfo = await getRequestInfo(requestId);
+        const friendName = requestInfo.receiverName;
+        Alert.alert("Friend request sent", `Sent friend request to ${friendName}!`);
       } catch (error) {
-        console.log("Error adding friend");
-        Alert.alert("Error", "Error adding friend.");
+        console.log("Error sending friend request.");
+        Alert.alert("Error", "Error sending friend request.");
       }
     };
 
