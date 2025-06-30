@@ -98,6 +98,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     status: {
       fontSize: 13,
-      color: "#bfbfbf",
+      color: colorScheme === "dark" ? "#bfbfbf" : "#228669",
     },
   });
