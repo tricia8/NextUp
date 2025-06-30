@@ -812,6 +812,32 @@ export async function getOverdueEvents(uid, now, onData) {
 }
 
 //friends
+export const createRequest = async (userId, friendId) => {
+  try {
+    const friendSnapshot = await getDoc(doc(db, "users", friendId));
+    const friendData = friendSnapshot.data();
+    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
+    const currentUserData = currentUserSnapshot.data();
+
+    const requestRef = await addDoc(
+      collection(db, "friendRequests"),
+      {
+        senderId: userId,
+        receiverId: friendId,
+        senderName: currentUserData?.username,
+        receiverName: friendData?.username,
+        sentAt: serverTimestamp(),
+        status: "pending",
+      }
+    );
+
+    return requestRef.id;
+  } catch (error) {
+    console.log("Error sending friend request:", error);
+    throw error;
+  }
+}
+
 export const addFriend = async (userId, friendId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
