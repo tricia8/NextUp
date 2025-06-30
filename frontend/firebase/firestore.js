@@ -838,6 +838,25 @@ export const createRequest = async (userId, friendId) => {
   }
 }
 
+export const getRequestInfo = async (requestId) => {
+  try {
+    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+    const requestData = requestSnapshot.data();
+
+    return {
+      senderId: requestData.senderId,
+      receiverId: requestData.friendId,
+      senderName: requestData.senderName,
+      receiverName: requestData.receiverName,
+      sentAt: requestData.sentAt,
+      status: requestData.status,
+    }
+  } catch (error) {
+    console.log("Error getting request info:", error);
+    throw error;
+  }
+}
+
 export const addFriend = async (userId, friendId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
