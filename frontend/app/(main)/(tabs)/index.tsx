@@ -151,7 +151,7 @@ export default function HomeScreen() {
                 {overdueCount && (
                   <View style={styles.overdueContainer}>
                     <Text style={[styles.smallText, { fontWeight: "bold" }]}>
-                      You have {overdueCount} overdue goals.
+                      You have {overdueCount} overdue goal(s).
                     </Text>
                   </View>
                 )}
