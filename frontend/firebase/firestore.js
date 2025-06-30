@@ -689,7 +689,7 @@ export async function getUpcomingEvents(uid, now, onData) {
 export async function getOverdueEvents(uid, now, onData) {
   try {
     const q = query(
-      collectionGroup(db, "bucketList"),
+      collectionGroup(db, "events"),
       where("collaborators", "array-contains", uid),
       where("deadline", "<", Timestamp.fromDate(now)),
       where("isCompleted", "==", false)
