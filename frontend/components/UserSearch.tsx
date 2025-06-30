@@ -78,8 +78,8 @@ export default function UserSearch({
             <TouchableOpacity onPress={() => handleAddFriend?.(item.uid)}>
               <MaterialIcons
                 name="person-add-alt-1"
-                color="white"
-                size={ms(22)}
+                color="#66cdaa"
+                size={ms(25)}
               />
             </TouchableOpacity>
           )}
