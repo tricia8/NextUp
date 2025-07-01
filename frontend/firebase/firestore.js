@@ -859,6 +859,30 @@ export const getRequestInfo = async (requestId) => {
   }
 }
 
+export const getFriendRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "events"),
+      where("receiver", "==", userId),
+      where("status", "==", "pending"),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null; 
+    }
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.log("Error fetching friend requests:", error);
+    throw error;
+  }
+}
+
 export const addFriend = async (userId, friendId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
