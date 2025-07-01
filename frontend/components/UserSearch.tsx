@@ -15,6 +15,7 @@ import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { User } from "@/types/user";
 import { router } from "expo-router";
 import { addFriend } from "@/firebase/firestore";
+import { debouncePress } from "@/utils/debouncePress";
 
 type Props = {
   users: User[];
@@ -67,9 +68,11 @@ export default function UserSearch({
     return (
       <TouchableOpacity
         onPress={() =>
-          router.push({
-            pathname: "/profile/[uid]",
-            params: { uid: item.uid },
+          debouncePress(() => {
+            router.push({
+              pathname: "/profile/[uid]",
+              params: { uid: item.uid },
+            });
           })
         }
       >
@@ -81,7 +84,9 @@ export default function UserSearch({
             </ThemedText>
           </View>
           {showAddButton && !isFriend(item.uid) && userId != item.uid && (
-            <TouchableOpacity onPress={() => handleAddFriend(item.uid)}>
+            <TouchableOpacity
+              onPress={() => debouncePress(() => handleAddFriend(item.uid))}
+            >
               <MaterialIcons
                 name="person-add-alt-1"
                 color="white"

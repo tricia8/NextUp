@@ -20,6 +20,7 @@ import { getUserProfile, updateProfile } from "@/firebase/firestore";
 import CategoryPicker from "./forms/CategoryPicker";
 import { pickImage } from "@/cloudinary/pickimage";
 import { uploadToCloudinary } from "@/cloudinary/upload";
+import { debouncePress } from "@/utils/debouncePress";
 
 const PROFILEPICSIZE = ms(100);
 
@@ -56,7 +57,7 @@ export default function EditProfile({
     try {
       if (base64) {
         const imageUrl = await uploadToCloudinary(base64, uid, "profile_pic");
-        console.log(imageUrl)
+        console.log(imageUrl);
         profileDetails.photoUrl = imageUrl; // attach before saving
       }
       await updateProfile(uid, profileDetails);
@@ -66,7 +67,7 @@ export default function EditProfile({
       setUserData(updatedUser);
       setCategory(updatedUser?.category?.[0] ?? "--");
     } catch (error) {
-      console.log(error)
+      console.log(error);
       Alert.alert("Error saving");
     }
   };
@@ -81,7 +82,7 @@ export default function EditProfile({
   const handleClose = async () => {
     onClose();
     setImage(userData.photoUrl);
-  }
+  };
 
   return (
     <Modal
@@ -95,7 +96,7 @@ export default function EditProfile({
       <View style={{ justifyContent: "center" }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <TouchableOpacity onPress={handlePickImage}>
+            <TouchableOpacity onPress={() => debouncePress(handlePickImage)}>
               {image ? (
                 <Image source={{ uri: image }} style={styles.profilePic} />
               ) : (
@@ -134,10 +135,12 @@ export default function EditProfile({
             <TouchableOpacity
               style={styles.button}
               onPress={() =>
-                handleSave(userData.uid, {
-                  bio: bioText,
-                  category: selectedTag,
-                })
+                debouncePress(() =>
+                  handleSave(userData.uid, {
+                    bio: bioText,
+                    category: selectedTag,
+                  })
+                )
               }
             >
               <Text style={styles.buttonText}>SAVE</Text>

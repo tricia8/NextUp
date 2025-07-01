@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
-import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,6 +24,7 @@ import { useCallback } from "react";
 import LoadingScreen from "@/components/Loading";
 import { getUserProfile, getUserStats } from "@/firebase/firestore";
 import ProfilePic from "./ProfilePic";
+import { debouncePress } from "@/utils/debouncePress";
 
 const PROFILEPICSIZE = ms(80);
 
@@ -87,7 +88,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <ProfilePic imageUrl={userData?.photoUrl} size={PROFILEPICSIZE}/>
+            <ProfilePic imageUrl={userData?.photoUrl} size={PROFILEPICSIZE} />
 
             <View style={styles.profileDetails}>
               <View style={styles.username}>
@@ -103,7 +104,11 @@ export default function ProfileScreen({ uid }: ProfileProps) {
                 {finalUid === auth.currentUser?.uid && (
                   <TouchableOpacity
                     style={styles.button}
-                    onPress={() => setModalVisible(true)}
+                    onPress={() =>
+                      debouncePress(() => {
+                        setModalVisible(true);
+                      })
+                    }
                   >
                     <Text style={styles.buttonText}>Edit Profile</Text>
                   </TouchableOpacity>
@@ -152,9 +157,11 @@ export default function ProfileScreen({ uid }: ProfileProps) {
             <TouchableOpacity
               style={styles.button}
               onPress={() =>
-                router.push({
-                  pathname: "../friends",
-                  params: { viewedUid: finalUid },
+                debouncePress(() => {
+                  router.push({
+                    pathname: "../friends",
+                    params: { viewedUid: finalUid },
+                  });
                 })
               }
             >
@@ -165,7 +172,11 @@ export default function ProfileScreen({ uid }: ProfileProps) {
             {finalUid === auth.currentUser?.uid && (
               <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push("../addfriends")}
+                onPress={() =>
+                  debouncePress(() => {
+                    router.push("../addfriends");
+                  })
+                }
               >
                 <MaterialIcons name="group-add" color="white" size={ms(18)} />
               </TouchableOpacity>
@@ -211,9 +222,11 @@ function Preview({ route, title, color, component, uid }: Props) {
   return (
     <TouchableOpacity
       onPress={() =>
-        router.push({
-          pathname: '/journey',
-          params: { uid },
+        debouncePress(() => {
+          router.push({
+            pathname: "/journey",
+            params: { uid },
+          });
         })
       }
     >
