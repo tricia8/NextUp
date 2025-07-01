@@ -32,6 +32,7 @@ import { Timestamp } from "firebase/firestore";
 
 
 type Request = {
+  id: string,
   senderId: string, 
   receiverId: string,
   senderName: string,
