@@ -705,6 +705,75 @@ export async function getOverdueEvents(uid, now, onData) {
 }
 
 //friends
+export const createRequest = async (userId, friendId) => {
+  try {
+    const friendSnapshot = await getDoc(doc(db, "users", friendId));
+    const friendData = friendSnapshot.data();
+    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
+    const currentUserData = currentUserSnapshot.data();
+
+    const requestRef = await addDoc(
+      collection(db, "friendRequests"),
+      {
+        senderId: userId,
+        receiverId: friendId,
+        senderName: currentUserData?.username,
+        receiverName: friendData?.username,
+        sentAt: serverTimestamp(),
+        status: "pending",
+      }
+    );
+
+    return requestRef.id;
+  } catch (error) {
+    console.log("Error sending friend request:", error);
+    throw error;
+  }
+}
+
+export const getRequestInfo = async (requestId) => {
+  try {
+    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+    const requestData = requestSnapshot.data();
+
+    return {
+      senderId: requestData.senderId,
+      receiverId: requestData.friendId,
+      senderName: requestData.senderName,
+      receiverName: requestData.receiverName,
+      sentAt: requestData.sentAt,
+      status: requestData.status,
+    }
+  } catch (error) {
+    console.log("Error getting request info:", error);
+    throw error;
+  }
+}
+
+export const getFriendRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "events"),
+      where("receiver", "==", userId),
+      where("status", "==", "pending"),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null; 
+    }
+
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.log("Error fetching friend requests:", error);
+    throw error;
+  }
+}
+
 export const addFriend = async (userId, friendId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
