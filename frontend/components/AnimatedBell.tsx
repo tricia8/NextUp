@@ -2,10 +2,12 @@ import React, { useRef, useEffect } from "react";
 import { Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function RingingBell() {
+export default function RingingBell({ isRinging }: { isRinging: boolean }) {
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (!isRinging) return;
+
     const interval = setInterval(() => {
       Animated.sequence([
         Animated.timing(shakeAnim, {
@@ -32,7 +34,7 @@ export default function RingingBell() {
     }, 4000); 
 
     return () => clearInterval(interval); 
-  }, [shakeAnim]);
+  }, [isRinging]);
 
   const rotation = shakeAnim.interpolate({
     inputRange: [-1, 1],
