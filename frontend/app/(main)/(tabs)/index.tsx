@@ -71,13 +71,21 @@ export default function HomeScreen() {
     useCallback(() => {
       if (!uid) return;
 
-      const now = new Date();
+      const fetchData = async () => {
+        const now = new Date();
 
-      getUpcomingEvents(uid, now, setUpcomingEvents);
+        try {
+          await getUpcomingEvents(uid, now, setUpcomingEvents);
 
-      getOverdueEvents(uid, now, (overdue: Event[]) => {
-        setOverdueCount(overdue.length);
-      });
+          await getOverdueEvents(uid, now, (overdue: Event[]) => {
+            setOverdueCount(overdue.length);
+          });
+        } catch (error) {
+          console.log("Error fetching upcoming and overdue events:", error);
+        }
+      }
+
+      fetchData();      
     }, [uid])
   );
 
