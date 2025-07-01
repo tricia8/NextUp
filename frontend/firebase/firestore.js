@@ -677,6 +677,7 @@ export async function getUpcomingEvents(uid, now, onData) {
     onData(events);
   } catch (err) {
     console.error("Error fetching upcoming:", err);
+    throw err;
   }
 }
 
@@ -699,6 +700,7 @@ export async function getOverdueEvents(uid, now, onData) {
     onData(events);
   } catch (err) {
     console.error("Error fetching overdue:", err);
+    throw err;
   }
 }
 
