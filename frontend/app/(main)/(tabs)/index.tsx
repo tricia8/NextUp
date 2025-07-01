@@ -28,6 +28,7 @@ import {
 } from "@/firebase/firestore";
 import ProfilePic from "@/components/ProfilePic";
 import { Timestamp } from "firebase/firestore";
+import { debouncePress } from "@/utils/debouncePress";
 
 type Request = {
   id: string;
@@ -134,7 +135,7 @@ export default function HomeScreen() {
                   />
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={toggleOpen}>
+                <TouchableOpacity onPress={() => debouncePress(toggleOpen)}>
                   <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
                 </TouchableOpacity>
               </View>
