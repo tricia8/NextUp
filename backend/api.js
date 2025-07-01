@@ -84,4 +84,27 @@ router.get(
   }
 );
 
+router.patch(
+  "/users/:userId/bucketList/subBucketLists/:sublistId",
+  async (req, res) => {
+    const { userId, sublistId } = req.params;
+    try {
+      const sublistDocRef = db
+        .collection("users")
+        .doc(userId)
+        .collection("bucketList")
+        .doc(sublistId);
+      const docSnap = await sublistDocRef.get();
+
+      if (docSnap.exists) {
+        // User is the owner
+        await sublistDocRef.update(req.body);
+        res.json({ success: true, message: "Sublist updated successfully" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
 export default router;
