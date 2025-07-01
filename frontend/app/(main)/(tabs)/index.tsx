@@ -8,7 +8,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
-import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import DonutChart from "@/components/AnimatedDonutChart";
@@ -29,6 +28,7 @@ import {
 import ProfilePic from "@/components/ProfilePic";
 import { Timestamp } from "firebase/firestore";
 import { debouncePress } from "@/utils/debouncePress";
+import RingingBell from "@/components/AnimatedBell";
 
 type Request = {
   id: string;
@@ -128,11 +128,11 @@ export default function HomeScreen() {
 
               <View style={styles.iconContainer}>
                 <TouchableOpacity>
-                  <Ionicons
-                    name="notifications"
-                    size={ms(28)}
-                    color="#66cdaa"
-                  />
+                  {friendRequests.length != 0 ? (
+                    <RingingBell isRinging={true}/>
+                  ) : (
+                    <RingingBell isRinging={false}/>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={() => debouncePress(toggleOpen)}>
