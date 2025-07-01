@@ -32,54 +32,62 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+const getSublistDocOrThrow = async (userId, sublistId) => {
+  // Check if userId matches the sublist owner or is a collaborator
+  const sublistDocRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("bucketList")
+    .doc(sublistId);
+  const docSnap = await sublistDocRef.get();
+
+  if (docSnap.exists) {
+    // User is the owner
+    return { docSnap, ownerId: userId };
+  }
+
+  // If not the owner, check if user is a collaborator
+  const sharedSublistDocRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("sharedSublists")
+    .doc(sublistId);
+  const sharedDocSnap = await sharedSublistDocRef.get();
+
+  if (!sharedDocSnap.exists) {
+    const err = new Error("Access denied");
+    err.status = 403;
+    throw err;
+  }
+
+  // Fetch actual sublist data from owner's bucketList
+  const { ownerId } = sharedDocSnap.data();
+  const ownerSublistSnap = await db
+    .collection("users")
+    .doc(ownerId)
+    .collection("bucketList")
+    .doc(sublistId)
+    .get();
+
+  if (!ownerSublistSnap.exists) {
+    const err = new Error("Sublist not found under owner");
+    err.status = 404;
+    throw err;
+  }
+  return { docSnap: ownerSublistSnap, ownerId };
+};
+
 // Get a sublist (owners and collaborators only)
 router.get(
   "/users/:userId/bucketList/subBucketLists/:sublistId",
   async (req, res) => {
     const { userId, sublistId } = req.params;
     try {
-      // Check if userId matches the sublist owner or is a collaborator
-      const sublistDocRef = db
-        .collection("users")
-        .doc(userId)
-        .collection("bucketList")
-        .doc(sublistId);
-      const docSnap = await sublistDocRef.get();
-
-      if (docSnap.exists) {
-        // User is the owner
-        const formatted = formatSublistData(docSnap.data());
-        return res.json(formatted);
-      }
-
-      // If not the owner, check if user is a collaborator
-      const sharedSublistDocRef = db
-        .collection("users")
-        .doc(userId)
-        .collection("sharedSublists")
-        .doc(sublistId);
-      const sharedDocSnap = await sharedSublistDocRef.get();
-
-      if (!sharedDocSnap.exists) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
-      // Fetch actual sublist data from owner's bucketList
-      const { ownerId } = sharedDocSnap.data();
-      const ownerSublistSnap = await db
-        .collection("users")
-        .doc(ownerId)
-        .collection("bucketList")
-        .doc(sublistId)
-        .get();
-
-      if (!ownerSublistSnap.exists) {
-        return res.status(404).json({ error: "Sublist not found under owner" });
-      }
-      const formatted = formatSublistData(ownerSublistSnap.data());
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+      const formatted = formatSublistData(docSnap.data());
       return res.json(formatted);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
@@ -89,20 +97,11 @@ router.patch(
   async (req, res) => {
     const { userId, sublistId } = req.params;
     try {
-      const sublistDocRef = db
-        .collection("users")
-        .doc(userId)
-        .collection("bucketList")
-        .doc(sublistId);
-      const docSnap = await sublistDocRef.get();
-
-      if (docSnap.exists) {
-        // User is the owner
-        await sublistDocRef.update(req.body);
-        res.json({ success: true, message: "Sublist updated successfully" });
-      }
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+      await docSnap.ref.update(req.body);
+      res.json({ success: true, message: "Sublist updated successfully" });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
