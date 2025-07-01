@@ -77,6 +77,45 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
   return { docSnap: ownerSublistSnap, ownerId };
 };
 
+const updateOverallStats = async (userId) => {
+  try {
+    // Query across all bucketList subcollections
+    const q = db
+      .collectionGroup("bucketList")
+      .where("collaborators", "array-contains", userId);
+
+    const snapshot = await q.get();
+
+    let totalEvents = 0;
+    let completedEvents = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      totalEvents += data.completionStatus[1] ?? 0;
+      completedEvents += data.completionStatus[0] ?? 0;
+    });
+
+    // Save stats (use a clear location)
+    const statsRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc("stats");
+
+    // db.collection("users").doc(userId).collection("meta").doc("stats"); optional alternative location for stats
+
+    await statsRef.set({
+      totalEvents,
+      completedEvents,
+    });
+
+    console.log(`Updated stats for user ${userId}`);
+  } catch (error) {
+    console.error("Error updating overall stats:", error);
+    throw error;
+  }
+};
+
 // Get a sublist (owners and collaborators only)
 router.get(
   "/users/:userId/bucketList/subBucketLists/:sublistId",
@@ -100,6 +139,43 @@ router.patch(
       const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
       await docSnap.ref.update(req.body);
       res.json({ success: true, message: "Sublist updated successfully" });
+    } catch (error) {
+      res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+router.delete(
+  "/users/:userId/bucketList/subBucketLists/:sublistId",
+  async (req, res) => {
+    const { userId, sublistId } = req.params;
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+
+      if (ownerId !== userId) {
+        const err = new Error("Only the owner can delete this sublist");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      // Delete all goals under this sublist
+      const eventsSnap = await docSnap.ref.collection("events").get();
+
+      // Delete all documents in the events collection
+      const deletePromises = eventsSnap.docs.map((docSnap) =>
+        docSnap.ref.delete()
+      );
+
+      // Wait for all deletions to complete since delete is async
+      await Promise.all(deletePromises);
+
+      // Delete sublist document
+      await docSnap.ref.delete();
+
+      await updateOverallStats(userId);
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
     }
