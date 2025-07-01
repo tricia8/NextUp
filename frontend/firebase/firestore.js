@@ -870,7 +870,7 @@ export const getFriendRequests = async (userId) => {
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return null; 
+      return []; 
     }
 
     return snapshot.docs.map(doc => {
