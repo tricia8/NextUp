@@ -12,22 +12,22 @@ export default function RingingBell({ isRinging }: { isRinging: boolean }) {
       Animated.sequence([
         Animated.timing(shakeAnim, {
           toValue: 1,
-          duration: 50,
+          duration: 60,
           useNativeDriver: true,
         }),
         Animated.timing(shakeAnim, {
           toValue: -1,
-          duration: 50,
+          duration: 80,
           useNativeDriver: true,
         }),
         Animated.timing(shakeAnim, {
           toValue: 1,
-          duration: 50,
+          duration: 100,
           useNativeDriver: true,
         }),
         Animated.timing(shakeAnim, {
           toValue: 0,
-          duration: 50,
+          duration: 120,
           useNativeDriver: true,
         }),
       ]).start();
@@ -38,12 +38,12 @@ export default function RingingBell({ isRinging }: { isRinging: boolean }) {
 
   const rotation = shakeAnim.interpolate({
     inputRange: [-1, 1],
-    outputRange: ["-10deg", "10deg"],
+    outputRange: ["-15deg", "15deg"],
   });
 
   return (
     <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-      <Ionicons name="notifications" size={28} color="#66cdaa" />
+      <Ionicons name="notifications" size={30} color="#66cdaa" />
     </Animated.View>
   );
 }
