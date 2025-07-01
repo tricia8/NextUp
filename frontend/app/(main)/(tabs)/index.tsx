@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -30,15 +29,14 @@ import {
 import ProfilePic from "@/components/ProfilePic";
 import { Timestamp } from "firebase/firestore";
 
-
 type Request = {
-  id: string,
-  senderId: string, 
-  receiverId: string,
-  senderName: string,
-  receiverName: string,
-  sentAt: Timestamp,
-  status: string,
+  id: string;
+  senderId: string;
+  receiverId: string;
+  senderName: string;
+  receiverName: string;
+  sentAt: Timestamp;
+  status: string;
 };
 
 const PROFILEPICSIZE = ms(50);
@@ -100,9 +98,9 @@ export default function HomeScreen() {
         } catch (error) {
           console.log("Error fetching upcoming and overdue events:", error);
         }
-      }
+      };
 
-      fetchData();      
+      fetchData();
     }, [uid])
   );
 
@@ -111,7 +109,8 @@ export default function HomeScreen() {
     totalEvents === null ||
     completedEvents === null ||
     upcomingEvents === null ||
-    overdueCount === null
+    overdueCount === null ||
+    friendRequests === null
   ) {
     return <LoadingScreen />;
   }
@@ -136,7 +135,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={toggleOpen}>
-                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE}/>
+                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
                 </TouchableOpacity>
               </View>
             </View>
