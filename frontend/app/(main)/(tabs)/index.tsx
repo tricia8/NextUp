@@ -25,8 +25,20 @@ import {
   getUpcomingEvents,
   getOverdueEvents,
   getUserProfile,
+  getFriendRequests,
 } from "@/firebase/firestore";
 import ProfilePic from "@/components/ProfilePic";
+import { Timestamp } from "firebase/firestore";
+
+
+type Request = {
+  senderId: string, 
+  receiverId: string,
+  senderName: string,
+  receiverName: string,
+  sentAt: Timestamp,
+  status: string,
+};
 
 const PROFILEPICSIZE = ms(50);
 
@@ -40,6 +52,7 @@ export default function HomeScreen() {
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[] | null>(null);
   const [overdueCount, setOverdueCount] = useState<number | null>(null);
+  const [friendRequests, setFriendRequests] = useState<Request[] | null>(null);
 
   const toggleOpen = () => {
     setOpen(!open);
@@ -58,6 +71,9 @@ export default function HomeScreen() {
           const stats = await getUserStats(uid);
           setTotalEvents(stats.totalEvents);
           setCompletedEvents(stats.completedEvents);
+
+          const requests = await getFriendRequests(uid);
+          setFriendRequests(requests);
         } catch (error) {
           console.error("Error fetching user data and stats:", error);
         }
