@@ -782,7 +782,7 @@ export const getFriendRequests = async (userId) => {
   }
 }
 
-export const addFriend = async (userId, friendId) => {
+export const addFriend = async (userId, friendId, requestId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
     const friendData = friendSnapshot.data();
@@ -801,6 +801,12 @@ export const addFriend = async (userId, friendId) => {
       username: currentUserData?.username,
       photoUrl: currentUserData?.photoUrl || null,
     });
+
+    const reqDoc = doc(db, "friendRequests", requestId);
+    //const reqSnapshot = await getDoc(reqDoc);
+
+    //await updateDoc(reqDoc, { status: "accepted" });
+    await deleteDoc(reqDoc);
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
@@ -810,15 +816,16 @@ export const addFriend = async (userId, friendId) => {
 export const rejectFriend = async (requestId) => {
   try {
     const reqDoc = doc(db, "friendRequests", requestId);
-    const reqSnapshot = await getDoc(reqDoc);
+    //const reqSnapshot = await getDoc(reqDoc);
 
-    if (!reqSnapshot.exists()) {
+    /*if (!reqSnapshot.exists()) {
       throw new Error("Request not found");
-    }
+    }*/
 
-    await updateDoc(reqDoc, { status: "rejected" });
+    //await updateDoc(reqDoc, { status: "rejected" });
+    await deleteDoc(reqDoc);
   } catch (error) {
-    console.error("Error updating status to reject", error);
+    console.error("Error rejecting friend", error);
     throw error;
   }
 }
