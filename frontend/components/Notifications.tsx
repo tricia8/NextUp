@@ -13,6 +13,7 @@ type NotifProps = {
   onClose: () => void;
   items: Notif[];
   userId: string;
+  setFriendRequests: React.Dispatch<React.SetStateAction<Notif[] | null>>;
 };
 
 export default function Notifications({
@@ -20,6 +21,7 @@ export default function Notifications({
   onClose,
   items,
   userId,
+  setFriendRequests,
 }: NotifProps) {
   const handleAccept = async (
     userId: string,
@@ -29,6 +31,9 @@ export default function Notifications({
     try {
       await addFriend(userId, senderId, requestId);
       Alert.alert("Friend added!");
+      setFriendRequests(
+        (prev) => prev?.filter((request) => request.id !== requestId) || []
+      );
     } catch (error) {
       console.log("Error adding friend:", error);
       Alert.alert("Error accepting request.");
