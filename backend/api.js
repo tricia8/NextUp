@@ -10,6 +10,54 @@ dayjs.extend(relativeTime);
 const router = Router();
 router.use(verifyFirebaseToken); // Authenticate all requests
 
+// Invite collaborators as an owner
+router.patch(
+  "/user/:userId/bucketList/subBucketLists/:sublistId",
+  async (req, res) => {
+    const { userId, sublistId } = req.params; // userId should be the owner of the sublist
+    const { collaboratorId } = req.body; // userId of invitee
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+
+      if (ownerId !== userId) {
+        const err = new Error("Only the owner can invite collaborators");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      docSnap.ref.update({
+        collaborators: [...docSnap.data().collaborators, collaboratorId], // Array of userIds
+      });
+
+      // Update collaborators array for all goals under this sublist
+      const eventsSnap = await docSnap.ref.collection("events").get();
+
+      const updatePromises = eventsSnap.docs.map((docSnap) =>
+        docSnap.ref.update([...eventsSnap.data().collaborators, collaboratorId])
+      );
+
+      // Add document to sharedSublists for the collaborator
+      await db
+        .collection("users")
+        .doc(collaboratorId)
+        .collection("sharedSublists")
+        .doc(sublistId)
+        .create({
+          ownerId: ownerId, // Sublist owner's userId
+          permissions: "write",
+        });
+
+      // Wait for all event updates to complete
+      await Promise.all(updatePromises);
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
 // Helper function
 const formatSublistData = (data) => {
   // data type: Sublist object
@@ -131,6 +179,7 @@ router.get(
   }
 );
 
+// Update a sublist (owners and collaborators only)
 router.patch(
   "/users/:userId/bucketList/subBucketLists/:sublistId",
   async (req, res) => {
