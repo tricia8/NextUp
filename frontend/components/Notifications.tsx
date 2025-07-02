@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Text } from "react-native";
 import { s, vs } from "react-native-size-matters";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -34,12 +34,28 @@ export default function Notifications({ visible, onClose, items }: NotifProps) {
             ) : (
               items.map((item) => (
                 <View key={item.id} style={styles.notifItems}>
-                  <ThemedText>
-                    {item.type === 'friend' &&
-                        `${item.senderName} sent you a friend request`}
-                    {item.type === 'sublist' &&
-                        `${item.senderName} added you to "${item.sublistTitle}"`}
-                  </ThemedText>
+                  {item.type === "friend" && (
+                    <View style={styles.friendReq}>
+                      <ThemedText>
+                        ${item.senderName} sent you a friend request
+                      </ThemedText>
+
+                      <View style={styles.buttonContainer}>
+                        <TouchableOpacity style={styles.button}>
+                            <Text>Accept</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.button}>
+                            <Text>Reject</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                  {item.type === "sublist" && (
+                    <ThemedText>
+                      ${item.senderName} added you to ${item.sublistTitle}
+                    </ThemedText>
+                  )}
                 </View>
               ))
             )}
@@ -56,11 +72,21 @@ const styles = StyleSheet.create({
     paddingVertical: vs(15),
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#7b68ee",
+    borderColor: "#66cdaa",
     gap: vs(6),
   },
   notifItems: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  friendReq: {
+    justifyContent: 'space-between',
+  },
+  buttonContainer: {
+    gap: s(4),
+  },
+  button: {
+    color: "#66cdaa",
+    borderRadius: 10,
   },
 });
