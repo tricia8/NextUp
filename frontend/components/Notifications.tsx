@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, View, TouchableOpacity, Text, Alert } from "react-native";
 import { s, vs } from "react-native-size-matters";
 import { ThemedText } from "@/components/ThemedText";
@@ -23,29 +23,44 @@ export default function Notifications({
   userId,
   setFriendRequests,
 }: NotifProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleAccept = async (
     userId: string,
     senderId: string,
     requestId: string
   ) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+
     try {
       await addFriend(userId, senderId, requestId);
-      Alert.alert("Friend added!");
       setFriendRequests(
         (prev) => prev?.filter((request) => request.id !== requestId) || []
       );
+      Alert.alert("Friend added!");
     } catch (error) {
       console.log("Error adding friend:", error);
       Alert.alert("Error accepting request.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleReject = async (requestId: string) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+
     try {
       await rejectFriend(requestId);
+      setFriendRequests(
+        (prev) => prev?.filter((request) => request.id !== requestId) || []
+      );
     } catch (error) {
       console.log("Error rejecting friend:", error);
       Alert.alert("Error rejecting request.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -80,6 +95,7 @@ export default function Notifications({
                           onPress={() =>
                             handleAccept(userId, item.senderId, item.id)
                           }
+                          disabled={isProcessing}
                         >
                           <Text>Accept</Text>
                         </TouchableOpacity>
@@ -87,6 +103,7 @@ export default function Notifications({
                         <TouchableOpacity
                           style={styles.button}
                           onPress={() => handleReject(item.id)}
+                          disabled={isProcessing}
                         >
                           <Text>Reject</Text>
                         </TouchableOpacity>
