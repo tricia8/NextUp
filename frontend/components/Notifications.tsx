@@ -27,7 +27,7 @@ export default function Notifications({
     requestId: string
   ) => {
     try {
-      await addFriend(userId, senderId);
+      await addFriend(userId, senderId, requestId);
       Alert.alert("Friend added!");
     } catch (error) {
       console.log("Error adding friend:", error);
