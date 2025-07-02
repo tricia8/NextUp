@@ -1,13 +1,12 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity, Text } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Text, Alert } from "react-native";
 import { s, vs } from "react-native-size-matters";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import Modal from "react-native-modal";
-import {} from "@/firebase/firestore";
 import { ScrollView } from "react-native-gesture-handler";
 import { Notif } from "@/types/notif";
-import { addFriend } from "@/firebase/firestore";
+import { addFriend, rejectFriend } from "@/firebase/firestore";
 
 type NotifProps = {
   visible: boolean;
@@ -16,7 +15,35 @@ type NotifProps = {
   userId: string;
 };
 
-export default function Notifications({ visible, onClose, items, userId }: NotifProps) {
+export default function Notifications({
+  visible,
+  onClose,
+  items,
+  userId,
+}: NotifProps) {
+  const handleAccept = async (
+    userId: string,
+    senderId: string,
+    requestId: string
+  ) => {
+    try {
+      await addFriend(userId, senderId);
+      Alert.alert("Friend added!");
+    } catch (error) {
+      console.log("Error adding friend:", error);
+      Alert.alert("Error accepting request.");
+    }
+  };
+
+  const handleReject = async (requestId: string) => {
+    try {
+      await rejectFriend(requestId);
+    } catch (error) {
+      console.log("Error rejecting friend:", error);
+      Alert.alert("Error rejecting request.");
+    }
+  };
+
   return (
     <Modal
       isVisible={visible}
@@ -43,12 +70,20 @@ export default function Notifications({ visible, onClose, items, userId }: Notif
                       </ThemedText>
 
                       <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.button} onPress={() => addFriend(userId, item.senderId)}>
-                            <Text>Accept</Text>
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={() =>
+                            handleAccept(userId, item.senderId, item.id)
+                          }
+                        >
+                          <Text>Accept</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.button}>
-                            <Text>Reject</Text>
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={() => handleReject(item.id)}
+                        >
+                          <Text>Reject</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -82,7 +117,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   friendReq: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   buttonContainer: {
     gap: s(4),
