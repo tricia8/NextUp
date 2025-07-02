@@ -123,7 +123,9 @@ export default function HomeScreen() {
               <ThemedText type="title">Hello {name}!</ThemedText>
 
               <View style={styles.iconContainer}>
-                <TouchableOpacity onPress={() => setModalVisible(true)}>
+                <TouchableOpacity
+                  onPress={() => debouncePress(() => setModalVisible(true))}
+                >
                   {friendRequests.length != 0 ? (
                     <RingingBell isRinging={true} />
                   ) : (
