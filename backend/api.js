@@ -19,41 +19,60 @@ router.patch(
     const { userId, sublistId } = req.params; // userId should be the owner of the sublist
     const { collaboratorId } = req.body; // userId of invitee
     try {
-      const { docSnap, ownerId } = await getSublistDocOrThrow(
-        userId,
-        sublistId
-      );
+      await db.runTransaction(async (transaction) => {
+        const { docSnap, ownerId } = await getSublistDocOrThrow(
+          userId,
+          sublistId
+        );
 
-      if (ownerId !== userId) {
-        const err = new Error("Only the owner can invite collaborators");
-        err.status = 403; // Permission denied
-        throw err;
-      }
+        if (ownerId !== userId) {
+          const err = new Error("Only the owner can invite collaborators");
+          err.status = 403; // Permission denied
+          throw err;
+        }
 
-      docSnap.ref.update({
-        collaborators: [...docSnap.data().collaborators, collaboratorId], // Array of userIds
-      });
+        const collaborators = docSnap.data().collaborators || [];
 
-      // Update collaborators array for all goals under this sublist
-      const eventsSnap = await docSnap.ref.collection("events").get();
+        // Prevent duplicates
+        if (collaborators.includes(collaboratorId)) {
+          throw new Error("User is already a collaborator");
+        }
 
-      const updatePromises = eventsSnap.docs.map((docSnap) =>
-        docSnap.ref.update([...eventsSnap.data().collaborators, collaboratorId])
-      );
+        transaction.update(docSnap.ref, {
+          collaborators: [...collaborators, collaboratorId], // Array of userIds
+        });
 
-      // Add document to sharedSublists for the collaborator
-      await db
-        .collection("users")
-        .doc(collaboratorId)
-        .collection("sharedSublists")
-        .doc(sublistId)
-        .create({
+        // Update collaborators array for all goals under this sublist
+        const eventsSnap = await docSnap.ref.collection("events").get();
+        eventsSnap.docs.forEach((eventDoc) => {
+          const eventCollaborators = eventDoc.data().collaborators || [];
+          if (!eventCollaborators.includes(collaboratorId)) {
+            transaction.update(eventDoc.ref, {
+              collaborators: [...eventCollaborators, collaboratorId],
+            });
+          }
+        });
+
+        // Add document to sharedSublists for the collaborator
+        const shareSublistDocRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId);
+
+        transaction.set(shareSublistDocRef, {
           ownerId: ownerId, // Sublist owner's userId
           permissions: "write",
         });
+      });
 
-      // Wait for all event updates to complete
-      await Promise.all(updatePromises);
+      // Update overall stats for new collaborator
+      await updateOverallStats(collaboratorId);
+
+      return res.json({
+        success: true,
+        message: "Collaborator added",
+      });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
     }
