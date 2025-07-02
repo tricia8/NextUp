@@ -82,14 +82,14 @@ router.patch(
 // Helper function
 const formatSublistData = (data) => {
   // data type: Sublist object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
 
   return {
     title: data.title,
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
     completionStatus: data.completionStatus,
   };
 };
@@ -188,7 +188,7 @@ const updateOverallStats = async (userId) => {
 // Helper function to format event data
 const formatEventData = (data) => {
   // data type: Event object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
   const deadline = data.deadline?.toDate?.();
 
   return {
@@ -197,7 +197,7 @@ const formatEventData = (data) => {
     categories: data.categories ?? [], // default to empty array
     deadline: deadline ? formatDisplayDate(deadline) : "",
     isCompleted: data.isCompleted,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
   };
 };
 
@@ -205,21 +205,38 @@ const formatEventData = (data) => {
 async function getAllEventsFormatted(userId, sublistId) {
   const allEvents = [];
 
-  const eventsRef = db
+  const completedEventsRef = db
     .collection("users")
     .doc(userId)
     .collection("bucketList")
     .doc(sublistId)
-    .collection("events");
+    .collection("events")
+    .where("isCompleted", "==", true)
+    .orderBy("updatedAt", "desc"); // Order by updated date, most recent first
 
-  const eventsSnap = await eventsRef.get();
+  const incompleteEventsRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("bucketList")
+    .doc(sublistId)
+    .collection("events")
+    .where("isCompleted", "==", false)
+    .orderBy("updatedAt", "desc");
 
-  const formattedEvents = eventsSnap.docs.map((doc) => ({
+  const completedEventsSnap = await completedEventsRef.get();
+  const incompleteEventsSnap = await incompleteEventsRef.get();
+
+  const formattedCompletedEvents = completedEventsSnap.docs.map((doc) => ({
     id: doc.id,
     ...formatEventData(doc.data()),
   }));
 
-  allEvents.push(...formattedEvents);
+  const formattedIncompleteEvents = incompleteEventsSnap.docs.map((doc) => ({
+    id: doc.id,
+    ...formatEventData(doc.data()),
+  }));
+
+  allEvents.push(...formattedIncompleteEvents, formattedCompletedEvents);
   return allEvents;
 }
 
@@ -246,7 +263,11 @@ router.patch(
     const { userId, sublistId } = req.params;
     try {
       const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
-      await docSnap.ref.update(req.body);
+      await docSnap.ref.update({
+        ...req.body,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
       return res.json({
         success: true,
         message: "Sublist updated successfully",
@@ -329,6 +350,7 @@ router.post(
         collaborators,
         isCompleted: false,
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
 
       // deadline is optional
@@ -354,4 +376,5 @@ router.post(
     }
   }
 );
+
 export default router;
