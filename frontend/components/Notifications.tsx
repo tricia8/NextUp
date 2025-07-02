@@ -7,14 +7,16 @@ import Modal from "react-native-modal";
 import {} from "@/firebase/firestore";
 import { ScrollView } from "react-native-gesture-handler";
 import { Notif } from "@/types/notif";
+import { addFriend } from "@/firebase/firestore";
 
 type NotifProps = {
   visible: boolean;
   onClose: () => void;
   items: Notif[];
+  userId: string;
 };
 
-export default function Notifications({ visible, onClose, items }: NotifProps) {
+export default function Notifications({ visible, onClose, items, userId }: NotifProps) {
   return (
     <Modal
       isVisible={visible}
@@ -41,7 +43,7 @@ export default function Notifications({ visible, onClose, items }: NotifProps) {
                       </ThemedText>
 
                       <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.button}>
+                        <TouchableOpacity style={styles.button} onPress={() => addFriend(userId, item.senderId)}>
                             <Text>Accept</Text>
                         </TouchableOpacity>
 

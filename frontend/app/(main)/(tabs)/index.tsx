@@ -214,6 +214,7 @@ export default function HomeScreen() {
         visible={isModalVisible}
         onClose={() => setModalVisible(false)}
         items={friendRequests}
+        userId={uid}
       />
     </SafeAreaView>
   );
