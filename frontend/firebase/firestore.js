@@ -862,7 +862,7 @@ export const getRequestInfo = async (requestId) => {
 export const getFriendRequests = async (userId) => {
   try {
     const q = query(
-      collection(db, "events"),
+      collection(db, "friendRequests"),
       where("receiver", "==", userId),
       where("status", "==", "pending"),
     );
@@ -915,6 +915,22 @@ export const addFriend = async (userId, friendId) => {
     throw error;
   }
 };
+
+export const rejectFriend = async (requestId) => {
+  try {
+    const reqDoc = doc(db, "friendRequests", requestId);
+    const reqSnapshot = await getDoc(reqDoc);
+
+    if (!reqSnapshot.exists()) {
+      throw new Error("Request not found");
+    }
+
+    await updateDoc(reqDoc, { status: "rejected" });
+  } catch (error) {
+    console.error("Error updating status to reject", error);
+    throw error;
+  }
+}
 
 export const deleteFriend = async (userId, friendId) => {
   try {
