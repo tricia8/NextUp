@@ -4,6 +4,8 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Router } from "express";
 import db from "./app";
 import verifyFirebaseToken from "./authenticate";
+import { WriteBatch } from "firebase-admin/firestore";
+import { serverTimestamp, Timestamp } from "firebase-admin/firestore";
 
 dayjs.extend(relativeTime);
 
@@ -174,7 +176,7 @@ router.get(
       const formatted = formatSublistData(docSnap.data());
       return res.json(formatted);
     } catch (error) {
-      res.status(error.status || 500).json({ error: error.message });
+      return res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
@@ -187,13 +189,17 @@ router.patch(
     try {
       const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
       await docSnap.ref.update(req.body);
-      res.json({ success: true, message: "Sublist updated successfully" });
+      return res.json({
+        success: true,
+        message: "Sublist updated successfully",
+      });
     } catch (error) {
-      res.status(error.status || 500).json({ error: error.message });
+      return res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
 
+// Delete a sublist (owners only)
 router.delete(
   "/users/:userId/bucketList/subBucketLists/:sublistId",
   async (req, res) => {
@@ -210,25 +216,84 @@ router.delete(
         throw err;
       }
 
+      const batch = db.batch();
+
       // Delete all goals under this sublist
       const eventsSnap = await docSnap.ref.collection("events").get();
 
       // Delete all documents in the events collection
-      const deletePromises = eventsSnap.docs.map((docSnap) =>
-        docSnap.ref.delete()
-      );
-
-      // Wait for all deletions to complete since delete is async
-      await Promise.all(deletePromises);
+      eventsSnap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
 
       // Delete sublist document
-      await docSnap.ref.delete();
+      batch.delete(docSnap.ref);
+
+      // Commit the batch
+      await batch.commit();
 
       await updateOverallStats(userId);
+
+      return res.json({
+        success: true,
+        message: "Sublist deleted successfully",
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Add a goal (owners and collaborators only)
+router.post(
+  "/user/:userId/bucketList/subBucketLists/:sublistId/events",
+  async (req, res) => {
+    const { userId, sublistId } = req.params;
+    const { title, description, categories, deadline, collaborators } =
+      req.body;
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+
+      const newEventRef = db
+        .collection("users")
+        .doc(ownerId)
+        .collection("bucketList")
+        .doc(sublistId)
+        .collection("events")
+        .doc();
+
+      const eventData = {
+        title,
+        description,
+        categories,
+        collaborators,
+        isCompleted: false,
+        createdAt: serverTimestamp(),
+      };
+
+      // deadline is optional
+      if (deadline) {
+        eventData.deadline = Timestamp.fromDate(deadline); // `deadline` is a JS Date
+      }
+
+      await newEventRef.set(eventData);
+
+      // Use transaction to update sublist completion status
+      // to ensure atomicity and prevent race conditions
+      await db.runTransaction(async (transaction) => {
+        const completionStatus = docSnap.data().completionStatus || [0, 0]; // default fallback set
+
+        transaction.update(docSnap.ref, {
+          completionStatus: [completionStatus[0], completionStatus[1] + 1],
+        });
+      });
+
+      return res.json({ success: true, id: newEventRef.id });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
-
 export default router;
