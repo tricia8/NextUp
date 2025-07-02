@@ -185,6 +185,44 @@ const updateOverallStats = async (userId) => {
   }
 };
 
+// Helper function to format event data
+const formatEventData = (data) => {
+  // data type: Event object
+  const createdAt = data.createdAt?.toDate?.();
+  const deadline = data.deadline?.toDate?.();
+
+  return {
+    title: data.title,
+    description: data.description ?? "", // default to empty string
+    categories: data.categories ?? [], // default to empty array
+    deadline: deadline ? formatDisplayDate(deadline) : "",
+    isCompleted: data.isCompleted,
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+  };
+};
+
+// Helper function to fetch all events of a sublist
+async function getAllEventsFormatted(userId, sublistId) {
+  const allEvents = [];
+
+  const eventsRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("bucketList")
+    .doc(sublistId)
+    .collection("events");
+
+  const eventsSnap = await eventsRef.get();
+
+  const formattedEvents = eventsSnap.docs.map((doc) => ({
+    id: doc.id,
+    ...formatEventData(doc.data()),
+  }));
+
+  allEvents.push(...formattedEvents);
+  return allEvents;
+}
+
 // Get a sublist (owners and collaborators only)
 router.get(
   "/users/:userId/bucketList/subBucketLists/:sublistId",
@@ -192,8 +230,9 @@ router.get(
     const { userId, sublistId } = req.params;
     try {
       const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+      const events = await getAllEventsFormatted(userId, sublistId); // Returns array of event objects
       const formatted = formatSublistData(docSnap.data());
-      return res.json(formatted);
+      return res.json({ sublistData: formatted, goalData: events });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
     }
