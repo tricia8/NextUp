@@ -26,19 +26,10 @@ import {
   getFriendRequests,
 } from "@/firebase/firestore";
 import ProfilePic from "@/components/ProfilePic";
-import { Timestamp } from "firebase/firestore";
 import { debouncePress } from "@/utils/debouncePress";
 import RingingBell from "@/components/AnimatedBell";
-
-type Request = {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  senderName: string;
-  receiverName: string;
-  sentAt: Timestamp;
-  status: string;
-};
+import Notifications from "@/components/Notifications";
+import { Notif } from "@/types/notif";
 
 const PROFILEPICSIZE = ms(50);
 
@@ -52,7 +43,8 @@ export default function HomeScreen() {
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[] | null>(null);
   const [overdueCount, setOverdueCount] = useState<number | null>(null);
-  const [friendRequests, setFriendRequests] = useState<Request[] | null>(null);
+  const [friendRequests, setFriendRequests] = useState<Notif[] | null>(null);
+  const [isModalVisible, setModalVisible] = useState<boolean>(false);
 
   const toggleOpen = () => {
     setOpen(!open);
@@ -72,8 +64,12 @@ export default function HomeScreen() {
           setTotalEvents(stats.totalEvents);
           setCompletedEvents(stats.completedEvents);
 
-          const requests = await getFriendRequests(uid);
-          setFriendRequests(requests);
+          const friendRequests = await getFriendRequests(uid);
+          const friendRequestsWithType = friendRequests.map((req) => ({
+            ...req,
+            type: "friend",
+          }));
+          setFriendRequests(friendRequestsWithType);
         } catch (error) {
           console.error("Error fetching user data and stats:", error);
         }
@@ -127,11 +123,11 @@ export default function HomeScreen() {
               <ThemedText type="title">Hello {name}!</ThemedText>
 
               <View style={styles.iconContainer}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => setModalVisible(true)}>
                   {friendRequests.length != 0 ? (
-                    <RingingBell isRinging={true}/>
+                    <RingingBell isRinging={true} />
                   ) : (
-                    <RingingBell isRinging={false}/>
+                    <RingingBell isRinging={false} />
                   )}
                 </TouchableOpacity>
 
@@ -213,6 +209,12 @@ export default function HomeScreen() {
           </View>
         </ThemedView>
       </ScrollView>
+
+      <Notifications
+        visible={isModalVisible}
+        onClose={() => setModalVisible(false)}
+        items={friendRequests}
+      />
     </SafeAreaView>
   );
 }
