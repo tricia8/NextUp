@@ -478,4 +478,71 @@ router.patch(
   }
 );
 
+// Delete a goal on [sublist] screen (owners and collaborators only)
+router.delete(
+  "/user/:userId/bucketList/:sublistId/events/:eventId",
+  async (req, res) => {
+    const { userId, sublistId, eventId } = req.params;
+    try {
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+
+      const eventDocRef = docSnap.ref.collection("events").doc(eventId);
+
+      const batch = db.batch();
+
+      // Delete all posts under this goal
+      const postsSnap = await eventDocRef.collection("posts").get();
+      postsSnap.docs.forEach((doc) => batch.delete(doc.ref));
+
+      // Delete the goal document
+      batch.delete(eventDocRef);
+
+      // Before committing the batch, update sublist's completion status and overall stats
+      await db.runTransaction(async (transaction) => {
+        const sublistSnap = await transaction.get(docSnap.ref);
+        const eventSnap = await transaction.get(eventDocRef); // Fetch event document to check completion status
+
+        if (!eventSnap.exists) {
+          const err = new Error("Event not found");
+          err.status = 404;
+          throw err;
+        }
+
+        const isCompleted = eventSnap.data().isCompleted;
+        const completionStatus = sublistSnap.data().completionStatus || [0, 0]; // default fallback set
+
+        const [completed, total] = completionStatus;
+
+        // avoid negative values
+        const updatedStatus = isCompleted
+          ? [Math.max(0, completed - 1), Math.max(0, total - 1)]
+          : [completed, Math.max(0, total - 1)];
+
+        transaction.update(docSnap.ref, {
+          completionStatus: updatedStatus,
+        });
+        console.log(`Updated sublist ${sublistId}`);
+      });
+
+      await batch.commit();
+
+      // Update overall stats for all collaborators
+      const collaborators = docSnap.data().collaborators || [];
+      const deletePromises = collaborators.forEach((collaboratorId) =>
+        updateOverallStats(collaboratorId)
+      );
+
+      await Promise.all(deletePromises);
+      console.log(`Updated overall stats for collaborators`);
+
+      return res.json({
+        success: true,
+        message: "Goal and its posts deleted successfully",
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
 export default router;
