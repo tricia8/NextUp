@@ -354,6 +354,16 @@ router.post("/user/:userId/bucketList/:sublistId/events", async (req, res) => {
       });
     });
 
+    // Update overall stats for all collaborators
+    const deletePromises = docSnap
+      .data()
+      .collaborators.forEach((collaboratorId) =>
+        updateOverallStats(collaboratorId)
+      );
+
+    await Promise.all(deletePromises);
+    console.log(`Updated overall stats for collaborators`);
+
     return res.json({ success: true, id: newEventRef.id });
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
