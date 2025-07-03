@@ -5,16 +5,16 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  Image,
 } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
 import { ThemedText } from "@/components/ThemedText";
 import { LegendList } from "@legendapp/list";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { User } from "@/types/user";
 import { router } from "expo-router";
-import ProfilePic from '@/components/ProfilePic';
+import ProfilePic from "@/components/ProfilePic";
+import { debouncePress } from "@/utils/debouncePress";
 
 type Props = {
   users: User[];
@@ -55,27 +55,28 @@ export default function UserSearch({
     return friendUids?.includes(uid);
   };
 
-
   function renderItem({ item }: { item: User }) {
     return (
       <TouchableOpacity
-        onPress={() =>
+        onPress={debouncePress(() =>
           router.push({
             pathname: "/profile",
             params: { uid: item.uid },
           })
-        }
+        )}
       >
         <View style={styles.userRowContainer}>
           <View style={styles.userDisplay}>
-            <ProfilePic imageUrl={item.photoUrl} size={40}/>
+            <ProfilePic imageUrl={item.photoUrl} size={40} />
 
             <ThemedText style={{ fontSize: RFValue(14) }}>
               {item.username}
             </ThemedText>
           </View>
           {showAddButton && !isFriend(item.uid) && userId != item.uid && (
-            <TouchableOpacity onPress={() => handleAddFriend?.(item.uid)}>
+            <TouchableOpacity
+              onPress={debouncePress(() => handleAddFriend?.(item.uid))}
+            >
               <MaterialIcons
                 name="person-add-alt-1"
                 color="#66cdaa"
