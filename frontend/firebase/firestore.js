@@ -891,6 +891,36 @@ export const getFriendRequests = async (userId) => {
   }
 }
 
+export const hasExistingRequest = async (userAId, userBId) => {
+  try {
+    const requestRef = collection(db, "friendRequests");
+
+    const incomingQ = query(     // Check for request from userB to userA
+      requestRef,
+      where("senderId", "==", userBId),
+      where("receiverId", "==", userAId),
+      where("status", "==", "pending")
+    );
+
+    const incomingSnap = await getDocs(incomingQ);
+    if (!incomingSnap.empty) return true;
+
+    const outgoingQ = query(     // Check for request from userA to userB
+      requestRef,
+      where("senderId", "==", userAId),
+      where("receiverId", "==", userBId),
+      where("status", "==", "pending")
+    );
+
+    const outgoingSnap = await getDocs(outgoingQ);
+    if (!outgoingSnap.empty) return true;
+
+    return false;
+  } catch (error) {
+    console.log("Error checking for existing request", error);
+  }
+}
+
 export const addFriend = async (userId, friendId, requestId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
