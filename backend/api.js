@@ -29,7 +29,7 @@ router.patch("/user/:userId/bucketList/:sublistId", async (req, res) => {
         throw err;
       }
 
-      const collaborators = docSnap.data().collaborators || [];
+      const collaborators = docSnap.data().collaborators;
 
       // Prevent duplicates
       if (collaborators.includes(collaboratorId)) {
@@ -269,7 +269,7 @@ router.patch("/users/:userId/bucketList/:sublistId", async (req, res) => {
   }
 });
 
-// Delete a sublist (owners only)
+// Delete a sublist (only owner has permission)
 router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params;
   try {
@@ -283,11 +283,15 @@ router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
 
     const batch = db.batch();
 
-    // Delete all goals under this sublist
+    // Delete all goals and posts under this sublist
     const eventsSnap = await docSnap.ref.collection("events").get();
-
     // Delete all documents in the events collection
-    eventsSnap.docs.forEach((docSnap) => batch.delete(docSnap.ref));
+    for (const eventDoc of eventsSnap.docs) {
+      // Delete all posts under this goal
+      const postsSnap = await eventDoc.ref.collection("posts").get();
+      postsSnap.docs.forEach((postSnap) => batch.delete(postSnap.ref));
+      batch.delete(eventDoc.ref);
+    }
 
     // Delete sublist document
     batch.delete(docSnap.ref);
@@ -295,7 +299,14 @@ router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
     // Commit the batch
     await batch.commit();
 
-    await updateOverallStats(userId);
+    const deletePromises = docSnap
+      .data()
+      .collaborators.forEach((collaboratorId) =>
+        updateOverallStats(collaboratorId)
+      );
+
+    await Promise.all(deletePromises);
+    console.log(`Updated overall stats for collaborators`);
 
     return res.json({
       success: true,
@@ -415,12 +426,12 @@ router.get(
 router.patch(
   "/user/:userId/bucketList/:sublistId/events/:eventId",
   async (req, res) => {
+    const { userId, sublistId, eventId } = req.params;
+
     try {
       let completionStatusChanged = false;
 
       await db.runTransaction(async (transaction) => {
-        const { userId, sublistId, eventId } = req.params;
-
         const { docSnap, ownerId } = await getSublistDocOrThrow(
           userId,
           sublistId
@@ -465,7 +476,14 @@ router.patch(
 
       // Update overall stats if completion status changed
       if (completionStatusChanged) {
-        await updateOverallStats(userId);
+        const deletePromises = docSnap
+          .data()
+          .collaborators.forEach((collaboratorId) =>
+            updateOverallStats(collaboratorId)
+          );
+
+        await Promise.all(deletePromises);
+        console.log(`Updated overall stats for collaborators`);
       }
 
       return res.json({
@@ -527,10 +545,11 @@ router.delete(
       await batch.commit();
 
       // Update overall stats for all collaborators
-      const collaborators = docSnap.data().collaborators || [];
-      const deletePromises = collaborators.forEach((collaboratorId) =>
-        updateOverallStats(collaboratorId)
-      );
+      const deletePromises = docSnap
+        .data()
+        .collaborators.forEach((collaboratorId) =>
+          updateOverallStats(collaboratorId)
+        );
 
       await Promise.all(deletePromises);
       console.log(`Updated overall stats for collaborators`);
