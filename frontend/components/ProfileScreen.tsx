@@ -6,6 +6,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -22,7 +23,12 @@ import { User } from "@/types/user";
 import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import LoadingScreen from "@/components/Loading";
-import { getUserProfile, getUserStats } from "@/firebase/firestore";
+import {
+  deleteFriend,
+  getRelationship,
+  getUserProfile,
+  getUserStats,
+} from "@/firebase/firestore";
 import ProfilePic from "./ProfilePic";
 import { debouncePress } from "@/utils/debouncePress";
 
@@ -38,6 +44,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [completedEvents, setCompletedEvents] = useState<number>(0);
   const [category, setCategory] = useState<string>("--");
+  const [isFriend, setIsFriend] = useState<boolean>(false);
 
   const finalUid = uid ?? auth.currentUser?.uid;
 
@@ -48,9 +55,17 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       const fetchUser = async () => {
         try {
           const user = await getUserProfile(finalUid);
+          const relationship = await getRelationship(
+            auth.currentUser?.uid,
+            finalUid
+          );
+
           if (user) {
             setUserData(user);
             setCategory(user.category?.[0] ?? "--");
+          }
+          if (relationship === "friend") {
+            setIsFriend(true);
           }
         } catch (error) {
           console.error("Failed to fetch user profile", error);
@@ -78,6 +93,35 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       fetchStats();
     }, [finalUid])
   );
+
+  const handleDelete = async () => {
+    Alert.alert(
+      "Remove friend",
+      `Are you sure you want to unfriend ${userData?.username}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteFriend(auth.currentUser?.uid, finalUid);
+              setIsFriend(false);
+              Alert.alert(
+                "Friend removed",
+                `${userData?.username} has been removed from your friends.`
+              );
+            } catch (error) {
+              Alert.alert("Error removing friend");
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (!userData || !finalUid) {
     return <LoadingScreen />;
@@ -173,6 +217,21 @@ export default function ProfileScreen({ uid }: ProfileProps) {
                 })}
               >
                 <MaterialIcons name="group-add" color="white" size={ms(18)} />
+              </TouchableOpacity>
+            )}
+
+            {isFriend && (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={debouncePress(() => {
+                  handleDelete;
+                })}
+              >
+                <MaterialIcons
+                  name="person-remove"
+                  color="white"
+                  size={ms(18)}
+                />
               </TouchableOpacity>
             )}
           </View>
