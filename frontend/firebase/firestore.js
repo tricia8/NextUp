@@ -853,7 +853,7 @@ export const getRequestInfo = async (requestId) => {
     return {
       id: requestSnapshot.id,
       senderId: requestData.senderId,
-      receiverId: requestData.friendId,
+      receiverId: requestData.receiverId,
       senderName: requestData.senderName,
       receiverName: requestData.receiverName,
       sentAt: requestData.sentAt,
