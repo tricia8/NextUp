@@ -224,7 +224,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
               <TouchableOpacity
                 style={styles.button}
                 onPress={debouncePress(() => {
-                  handleDelete;
+                  handleDelete();
                 })}
               >
                 <MaterialIcons
