@@ -71,6 +71,9 @@ export default function UsersList() {
 
       const requestId = await createRequest(currentUserId, friendId);
       const requestInfo = await getRequestInfo(requestId);
+          
+      setSentRequests((prev) => [...prev, requestInfo]); // to update UI to reflect "requested"
+
       const friendName = requestInfo.receiverName;
       Alert.alert(
         "Friend request sent!",
