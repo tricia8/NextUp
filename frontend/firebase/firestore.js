@@ -276,7 +276,11 @@ export const createSubBucketList = async (
 
 // don’t have to pass all fields every time, doesn't overwrite unchanged values
 // fields: title, description, accessLevel, collaborators, completionStatus
-const updateSubBucketList = async (userId, subBucketListId, updates = {}) => {
+export const updateSubBucketList = async (
+  userId,
+  subBucketListId,
+  updates = {}
+) => {
   try {
     const sublistDocRef = doc(
       db,
@@ -416,7 +420,7 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
 
     await deleteDoc(subBucketListRef);
 
-    updateOverallStats(userId);
+    await updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
     throw error;
@@ -430,6 +434,19 @@ export const addEvent = async (
   { title, description, categories, deadline, collaborators }
 ) => {
   try {
+    const subBucketListRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId
+    );
+
+    // generate a new document with random ID
+    const newEventRef = doc(
+      collection(db, "users", userId, "bucketList", subBucketListId, "events")
+    );
+
     const eventData = {
       ownerId: userId,
       title,
@@ -445,14 +462,31 @@ export const addEvent = async (
       eventData.deadline = Timestamp.fromDate(deadline); // `deadline` is a JS Date
     }
 
-    const eventDoc = await addDoc(
-      collection(db, "users", userId, "bucketList", subBucketListId, "events"),
-      eventData
-    );
+    // run transaction to ensure atomicity, ensures data consistency even with concurrent edits
+    // good practice for user collaboration
+    await runTransaction(db, async (transaction) => {
+      // update subBucketList completionStatus
+      const subBucketListSnap = await transaction.get(subBucketListRef);
 
-    updateOverallStats(userId);
+      if (!subBucketListSnap.exists()) {
+        throw new Error("Sub-bucket list not found.");
+      }
 
-    return eventDoc.id;
+      // add new event
+      transaction.set(newEventRef, eventData);
+
+      const completionStatus = subBucketListSnap.data().completionStatus || [
+        0, 0,
+      ]; // default fallback set
+
+      transaction.update(subBucketListRef, {
+        completionStatus: [completionStatus[0], completionStatus[1] + 1],
+      });
+    });
+    // update overall stats
+    await updateOverallStats(userId);
+
+    return newEventRef.id;
   } catch (error) {
     console.error("Error adding event:", error);
     throw error;
@@ -461,7 +495,7 @@ export const addEvent = async (
 
 export const deleteEvent = async (userId, subBucketListId, eventId) => {
   try {
-    const eventDoc = doc(
+    const eventDocRef = doc(
       db,
       "users",
       userId,
@@ -471,9 +505,49 @@ export const deleteEvent = async (userId, subBucketListId, eventId) => {
       eventId
     );
 
-    await deleteDoc(eventDoc);
+    const subBucketListRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId
+    );
 
-    updateOverallStats(userId);
+    await runTransaction(db, async (transaction) => {
+      const eventSnap = await transaction.get(eventDocRef);
+
+      if (!eventSnap.exists()) {
+        throw new Error("Event not found.");
+      }
+
+      const isCompleted = eventSnap.data().isCompleted;
+
+      const subBucketListSnap = await transaction.get(subBucketListRef);
+
+      if (!subBucketListSnap.exists()) {
+        throw new Error("Sub-bucket list not found.");
+      }
+
+      const completionStatus = subBucketListSnap.data().completionStatus || [
+        0, 0,
+      ]; // default fallback set
+
+      const [completed, total] = completionStatus;
+
+      // avoid negative values
+      const updatedStatus = isCompleted
+        ? [Math.max(0, completed - 1), Math.max(0, total - 1)]
+        : [completed, Math.max(0, total - 1)];
+
+      transaction.delete(eventDocRef);
+      transaction.update(subBucketListRef, {
+        completionStatus: updatedStatus,
+      });
+      console.log(
+        `Deleted event ${eventId} and updated sublist ${subBucketListId}`
+      );
+    });
+    await updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -605,6 +679,7 @@ export async function getAllEvents(db, uid, subBucketLists) {
 }
 
 // title, description, categories, deadline, isCompleted, collaborators
+// used for updates excluding completion status
 export const updateEvent = async (
   userId,
   subBucketListId,
@@ -612,7 +687,7 @@ export const updateEvent = async (
   updates = {}
 ) => {
   try {
-    const eventDoc = doc(
+    const eventDocRef = doc(
       db,
       "users",
       userId,
@@ -621,12 +696,12 @@ export const updateEvent = async (
       "events",
       eventId
     );
-    const docSnap = await getDoc(eventDoc);
+    const docSnap = await getDoc(eventDocRef);
     if (!docSnap.exists()) {
       throw new Error("Event not found");
     }
 
-    await updateDoc(eventDoc, updates);
+    await updateDoc(eventDocRef, updates);
   } catch (error) {
     console.error("Error updating event:", error);
     throw error;
@@ -639,7 +714,7 @@ export const toggleEventCompletion = async (
   eventId
 ) => {
   try {
-    const eventDoc = doc(
+    const eventDocRef = doc(
       db,
       "users",
       userId,
@@ -649,19 +724,47 @@ export const toggleEventCompletion = async (
       eventId
     );
 
-    const docSnap = await getDoc(eventDoc);
+    const subBucketListRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      subBucketListId
+    );
 
-    if (!docSnap.exists()) {
-      throw new Error("Event not found");
-    }
+    await runTransaction(db, async (transaction) => {
+      const eventSnap = await transaction.get(eventDocRef);
 
-    const currentCompleted = docSnap.data().isCompleted;
+      if (!eventSnap.exists()) {
+        throw new Error("Event not found");
+      }
 
-    await updateDoc(eventDoc, {
+      const subBucketListSnap = await transaction.get(subBucketListRef);
+      if (!subBucketListSnap.exists()) {
+        throw new Error("Sub-bucket list not found.");
+      }
+      const currentCompleted = eventSnap.data().isCompleted;
+      const [completed, total] = subBucketListSnap.data().completionStatus || [
+        0, 0,
+      ];
+      const updatedStatus = !currentCompleted
+        ? [completed + 1, total]
+        : [Math.max(0, completed - 1), total]; // avoid negative values
+
+      /* await updateDoc(eventDocRef, {
       isCompleted: !currentCompleted,
+    }); */
+
+      // update event
+      transaction.update(eventDocRef, { isCompleted: !currentCompleted });
+
+      // update subBucketList completionStatus
+      transaction.update(subBucketListRef, {
+        completionStatus: updatedStatus,
+      });
     });
 
-    updateOverallStats(userId);
+    await updateOverallStats(userId);
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
@@ -689,13 +792,14 @@ export async function getUpcomingEvents(uid, now, onData) {
     onData(events);
   } catch (err) {
     console.error("Error fetching upcoming:", err);
+    throw err;
   }
 }
 
 export async function getOverdueEvents(uid, now, onData) {
   try {
     const q = query(
-      collectionGroup(db, "bucketList"),
+      collectionGroup(db, "events"),
       where("collaborators", "array-contains", uid),
       where("deadline", "<", Timestamp.fromDate(now)),
       where("isCompleted", "==", false)
@@ -711,11 +815,156 @@ export async function getOverdueEvents(uid, now, onData) {
     onData(events);
   } catch (err) {
     console.error("Error fetching overdue:", err);
+    throw err;
   }
 }
 
 //friends
-export const addFriend = async (userId, friendId) => {
+export const createRequest = async (userId, friendId) => {
+  try {
+    const friendSnapshot = await getDoc(doc(db, "users", friendId));
+    const friendData = friendSnapshot.data();
+    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
+    const currentUserData = currentUserSnapshot.data();
+
+    const requestRef = await addDoc(
+      collection(db, "friendRequests"),
+      {
+        senderId: userId,
+        receiverId: friendId,
+        senderName: currentUserData?.username,
+        receiverName: friendData?.username,
+        sentAt: serverTimestamp(),
+        status: "pending",
+      }
+    );
+
+    return requestRef.id;
+  } catch (error) {
+    console.log("Error sending friend request:", error);
+    throw error;
+  }
+}
+
+export const getRequestInfo = async (requestId) => {
+  try {
+    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+
+    if (!requestSnapshot.exists()) {
+      throw new Error("Friend request not found");
+    }
+    
+    const requestData = requestSnapshot.data();
+
+    return {
+      id: requestSnapshot.id,
+      senderId: requestData.senderId,
+      receiverId: requestData.friendId,
+      senderName: requestData.senderName,
+      receiverName: requestData.receiverName,
+      sentAt: requestData.sentAt,
+      status: requestData.status,
+    }
+  } catch (error) {
+    console.log("Error getting request info:", error);
+    throw error;
+  }
+}
+
+export const getFriendRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "friendRequests"),
+      where("receiverId", "==", userId),
+      where("status", "==", "pending"),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return []; 
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        senderId: data.senderId,
+        receiverId: data.friendId,
+        senderName: data.senderName,
+        receiverName: data.receiverName,
+        sentAt: data.sentAt,
+        status: data.status,
+      }
+    });
+  } catch (error) {
+    console.log("Error fetching friend requests:", error);
+    throw error;
+  }
+}
+
+export const getSentRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "friendRequests"),
+      where("senderId", "==", userId),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return []; 
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        senderId: data.senderId,
+        receiverId: data.friendId,
+        senderName: data.senderName,
+        receiverName: data.receiverName,
+        sentAt: data.sentAt,
+        status: data.status,
+      }
+    });
+  } catch (error) {
+    console.log("Error fetching sent requests:", error);
+    throw error;
+  }
+}
+
+export const hasExistingRequest = async (userAId, userBId) => {
+  try {
+    const requestRef = collection(db, "friendRequests");
+
+    const incomingQ = query(     // Check for request from userB to userA
+      requestRef,
+      where("senderId", "==", userBId),
+      where("receiverId", "==", userAId),
+      where("status", "==", "pending")
+    );
+
+    const incomingSnap = await getDocs(incomingQ);
+    if (!incomingSnap.empty) return true;
+
+    const outgoingQ = query(     // Check for request from userA to userB
+      requestRef,
+      where("senderId", "==", userAId),
+      where("receiverId", "==", userBId),
+      where("status", "==", "pending")
+    );
+
+    const outgoingSnap = await getDocs(outgoingQ);
+    if (!outgoingSnap.empty) return true;
+
+    return false;
+  } catch (error) {
+    console.log("Error checking for existing request", error);
+  }
+}
+
+export const addFriend = async (userId, friendId, requestId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
     const friendData = friendSnapshot.data();
@@ -734,11 +983,34 @@ export const addFriend = async (userId, friendId) => {
       username: currentUserData?.username,
       photoUrl: currentUserData?.photoUrl || null,
     });
+
+    const reqDoc = doc(db, "friendRequests", requestId);
+    //const reqSnapshot = await getDoc(reqDoc);
+
+    //await updateDoc(reqDoc, { status: "accepted" });
+    await deleteDoc(reqDoc);
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
   }
 };
+
+export const rejectFriend = async (requestId) => {
+  try {
+    const reqDoc = doc(db, "friendRequests", requestId);
+    //const reqSnapshot = await getDoc(reqDoc);
+
+    /*if (!reqSnapshot.exists()) {
+      throw new Error("Request not found");
+    }*/
+
+    //await updateDoc(reqDoc, { status: "rejected" });
+    await deleteDoc(reqDoc);
+  } catch (error) {
+    console.error("Error rejecting friend", error);
+    throw error;
+  }
+}
 
 export const deleteFriend = async (userId, friendId) => {
   try {
