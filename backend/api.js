@@ -91,7 +91,7 @@ const formatSublistData = (data) => {
   };
 };
 
-// convert Timestamp to string e.g. "3 days ago (14 Jun)"
+// convert Timestamp to string e.g. "3 days ago (14 Jun 2025)"
 const formatDisplayDate = (fetchedDate) => {
   return `${dayjs(fetchedDate).fromNow()} (${dayjs(fetchedDate).format(
     "DD MMM YYYY"
@@ -312,7 +312,7 @@ router.post("/user/:userId/bucketList/:sublistId/events", async (req, res) => {
   const { title, description, categories, deadline, collaborators } = req.body;
 
   try {
-    const { docSnap, ownerId } = await getSublistDocOrThrow(userId, sublistId);
+    const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
 
     const newEventRef = docSnap.ref.collection("events").doc();
 
@@ -348,6 +348,68 @@ router.post("/user/:userId/bucketList/:sublistId/events", async (req, res) => {
     res.status(error.status || 500).json({ error: error.message });
   }
 });
+
+// convert Timestamp to string e.g. "4 June 2025, 10:12am"
+const formatPostDate = (fetchedDate) => {
+  return `${dayjs(fetchedDate).format("DD MMM YYYY")}, ${dayjs(
+    fetchedDate
+  ).format("h:mma")}`;
+};
+
+const formatPostData = (data) => {
+  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
+
+  return {
+    username: data.username,
+    profilePhotoUrl: data.profilePhotoUrl,
+    createdAt: createdAt ? formatPostDate(createdAt) : "",
+    updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
+    comment: data.comment ?? "", // default to empty string
+    imageUrl: data.imageUrl ?? "", // default to empty string
+  };
+};
+
+// Fetch individual goal details (owners and collaborators only)
+router.get(
+  "/user/:userId/bucketList/:sublistId/events/:eventId",
+  async (req, res) => {
+    const { userId, sublistId, eventId } = req.params;
+    try {
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+
+      const eventDocsSnap = await docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .get();
+      if (!eventDocsSnap.exists) {
+        const err = new Error("Event not found");
+        err.status = 404;
+        throw err;
+      }
+
+      const formattedEventData = formatEventData(eventDocsSnap.data());
+
+      // Fetch all posts under this goal
+      const postsSnap = await eventDocsSnap.ref
+        .collection("posts")
+        .orderBy("createdAt", "desc")
+        .get();
+
+      const formattedPosts = postsSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...formatPostData(doc.data()),
+      }));
+
+      return res.json({
+        eventData: formattedEventData,
+        formattedPosts,
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
 
 // Update goal metadata (owners and collaborators only), excluding post content
 router.patch(
