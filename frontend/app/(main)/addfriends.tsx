@@ -9,7 +9,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import LoadingScreen from "@/components/Loading";
-import { createRequest, getRequestInfo, getAllUsers, getFriends } from "@/firebase/firestore";
+import { createRequest, getRequestInfo, getAllUsers, getFriends, getFriendRequests, hasExistingRequest } from "@/firebase/firestore";
 
 export default function UsersList() {
   const [users, setUsers] = useState<User[]>([]);
@@ -47,10 +47,16 @@ export default function UsersList() {
 
   const handleAddFriend = async (friendId: string) => {
       try {
+        const requestExists = await hasExistingRequest(currentUserId, friendId);
+        if (requestExists) {
+          Alert.alert("Friend request pending", "You already have a pending request with this user.");
+          return;
+        }
+
         const requestId = await createRequest(currentUserId, friendId);
         const requestInfo = await getRequestInfo(requestId);
         const friendName = requestInfo.receiverName;
-        Alert.alert("Friend request sent", `Sent friend request to ${friendName}!`);
+        Alert.alert("Friend request sent!", `Sent friend request to ${friendName}.`);
       } catch (error) {
         console.log("Error sending friend request.");
         Alert.alert("Error", "Error sending friend request.");
