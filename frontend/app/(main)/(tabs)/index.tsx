@@ -29,7 +29,7 @@ import ProfilePic from "@/components/ProfilePic";
 import { debouncePress } from "@/utils/debouncePress";
 import RingingBell from "@/components/AnimatedBell";
 import Notifications from "@/components/Notifications";
-import { Notif } from "@/types/notif";
+import { Activity } from "@/types/activity";
 
 const PROFILEPICSIZE = ms(50);
 
@@ -43,7 +43,7 @@ export default function HomeScreen() {
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[] | null>(null);
   const [overdueCount, setOverdueCount] = useState<number | null>(null);
-  const [friendRequests, setFriendRequests] = useState<Notif[] | null>(null);
+  const [friendRequests, setFriendRequests] = useState<Activity[] | null>(null);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
 
   const toggleOpen = () => {
