@@ -142,6 +142,80 @@ router.delete("/user/:userId/bucketList/:sublistId", async (req, res) => {
   }
 });
 
+// Self-remove collaborator status (not owner)
+router.delete("/user/:userId/bucketList/:sublistId", async (req, res) => {
+  const { userId, sublistId } = req.params;
+  const { collaboratorId } = req.body; // userId of collaborator to remove
+  try {
+    if (userId !== collaboratorId) {
+      const err = new Error("You can only remove yourself as a collaborator");
+      err.status = 403; // Permission denied
+      throw err;
+    }
+
+    await db.runTransaction(async (transaction) => {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+
+      if (ownerId == userId) {
+        const err = new Error(
+          "You are the owner, delete the sublist if you wish to revoke your access rights"
+        );
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const collaborators = docSnap.data().collaborators;
+
+      // Prevent duplicates
+      if (!collaborators.includes(collaboratorId)) {
+        throw new Error("You are not a collaborator");
+      }
+
+      transaction.update(docSnap.ref, {
+        collaborators: collaborators.filter((id) => id !== collaboratorId),
+      });
+
+      // Update collaborators array for all goals under this sublist
+      const eventsSnap = await docSnap.ref.collection("events").get();
+      eventsSnap.docs.forEach((eventDoc) => {
+        const eventCollaborators = eventDoc.data().collaborators;
+        if (eventCollaborators.includes(collaboratorId)) {
+          transaction.update(eventDoc.ref, {
+            collaborators: eventCollaborators.filter(
+              (id) => id !== collaboratorId
+            ),
+          });
+        }
+      });
+
+      // Remove document from sharedSublists for the collaborator
+      const shareSublistDocRef = await db
+        .collection("users")
+        .doc(collaboratorId)
+        .collection("sharedSublists")
+        .doc(sublistId)
+        .get();
+
+      if (shareSublistDocRef.exists) {
+        transaction.delete(shareSublistDocRef.ref);
+      }
+    });
+
+    // Update overall stats for removed collaborator
+    await updateOverallStats(collaboratorId);
+
+    return res.json({
+      success: true,
+      message: "Revoked collaborator status",
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
 // Helper function
 const formatSublistData = (data) => {
   // data type: Sublist object
