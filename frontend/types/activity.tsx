@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase/firestore";
 
-export type Notif = {
+export type Activity = {
   id: string;
   senderId: string;
   receiverId: string;
@@ -8,6 +8,6 @@ export type Notif = {
   receiverName: string;
   sentAt: Timestamp;
   status?: string;
-  type: string;
+  type?: string;
   sublistTitle?: string;
 };
