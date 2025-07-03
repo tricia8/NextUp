@@ -124,7 +124,7 @@ export default function HomeScreen() {
 
               <View style={styles.iconContainer}>
                 <TouchableOpacity
-                  onPress={() => debouncePress(() => setModalVisible(true))}
+                  onPress={debouncePress(() => setModalVisible(true))}
                 >
                   {friendRequests.length != 0 ? (
                     <RingingBell isRinging={true} />
@@ -133,7 +133,7 @@ export default function HomeScreen() {
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => debouncePress(toggleOpen)}>
+                <TouchableOpacity onPress={debouncePress(toggleOpen)}>
                   <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
                 </TouchableOpacity>
               </View>
