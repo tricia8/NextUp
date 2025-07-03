@@ -863,7 +863,7 @@ export const getFriendRequests = async (userId) => {
   try {
     const q = query(
       collection(db, "friendRequests"),
-      where("receiver", "==", userId),
+      where("receiverId", "==", userId),
       where("status", "==", "pending"),
     );
 
