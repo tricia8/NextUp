@@ -86,7 +86,7 @@ export default function UserSearch({
             userId !== item.uid &&
             (isRequested(item.uid) ? (
               <View style={styles.pendingContainer}>
-                <ThemedText>Requested</ThemedText>
+                <ThemedText style={{fontSize: RFValue(12)}}>Requested</ThemedText>
               </View>
             ) : (
               <TouchableOpacity
@@ -160,8 +160,8 @@ const makeStyles = (colorScheme: any) =>
     },
     pendingContainer: {
       backgroundColor: "rgba(102, 205, 170, 0.5)",
-      paddingHorizontal: s(10),
-      paddingVertical: vs(4),
+      paddingHorizontal: s(8),
+      paddingVertical: vs(2),
       borderRadius: 10,
     },
   });
