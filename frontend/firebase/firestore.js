@@ -851,6 +851,7 @@ export const getRequestInfo = async (requestId) => {
     const requestData = requestSnapshot.data();
 
     return {
+      id: requestSnapshot.id,
       senderId: requestData.senderId,
       receiverId: requestData.friendId,
       senderName: requestData.senderName,
