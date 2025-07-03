@@ -104,11 +104,9 @@ export default function ProfileScreen({ uid }: ProfileProps) {
                 {finalUid === auth.currentUser?.uid && (
                   <TouchableOpacity
                     style={styles.button}
-                    onPress={() =>
-                      debouncePress(() => {
-                        setModalVisible(true);
-                      })
-                    }
+                    onPress={debouncePress(() => {
+                      setModalVisible(true);
+                    })}
                   >
                     <Text style={styles.buttonText}>Edit Profile</Text>
                   </TouchableOpacity>
@@ -156,14 +154,12 @@ export default function ProfileScreen({ uid }: ProfileProps) {
           <View style={styles.friendsContainer}>
             <TouchableOpacity
               style={styles.button}
-              onPress={() =>
-                debouncePress(() => {
-                  router.push({
-                    pathname: "../friends",
-                    params: { viewedUid: finalUid },
-                  });
-                })
-              }
+              onPress={debouncePress(() => {
+                router.push({
+                  pathname: "../friends",
+                  params: { viewedUid: finalUid },
+                });
+              })}
             >
               <Ionicons name="people-outline" color="white" size={ms(18)} />
               <Text style={styles.buttonText}>View Friends</Text>
@@ -172,11 +168,9 @@ export default function ProfileScreen({ uid }: ProfileProps) {
             {finalUid === auth.currentUser?.uid && (
               <TouchableOpacity
                 style={styles.button}
-                onPress={() =>
-                  debouncePress(() => {
-                    router.push("../addfriends");
-                  })
-                }
+                onPress={debouncePress(() => {
+                  router.push("../addfriends");
+                })}
               >
                 <MaterialIcons name="group-add" color="white" size={ms(18)} />
               </TouchableOpacity>
@@ -221,14 +215,12 @@ type Props = {
 function Preview({ route, title, color, component, uid }: Props) {
   return (
     <TouchableOpacity
-      onPress={() =>
-        debouncePress(() => {
-          router.push({
-            pathname: "/journey",
-            params: { uid },
-          });
-        })
-      }
+      onPress={debouncePress(() => {
+        router.push({
+          pathname: "/journey",
+          params: { uid },
+        });
+      })}
     >
       <View style={{ height: "100%", width: "100%" }}>
         <View style={{ padding: 15 }}>

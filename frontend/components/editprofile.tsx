@@ -96,7 +96,7 @@ export default function EditProfile({
       <View style={{ justifyContent: "center" }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <TouchableOpacity onPress={() => debouncePress(handlePickImage)}>
+            <TouchableOpacity onPress={debouncePress(handlePickImage)}>
               {image ? (
                 <Image source={{ uri: image }} style={styles.profilePic} />
               ) : (
@@ -134,14 +134,12 @@ export default function EditProfile({
 
             <TouchableOpacity
               style={styles.button}
-              onPress={() =>
-                debouncePress(() =>
-                  handleSave(userData.uid, {
-                    bio: bioText,
-                    category: selectedTag,
-                  })
-                )
-              }
+              onPress={debouncePress(() =>
+                handleSave(userData.uid, {
+                  bio: bioText,
+                  category: selectedTag,
+                })
+              )}
             >
               <Text style={styles.buttonText}>SAVE</Text>
             </TouchableOpacity>
