@@ -769,7 +769,7 @@ export const getFriendRequests = async (userId) => {
       return {
         id: doc.id,
         senderId: data.senderId,
-        receiverId: data.friendId,
+        receiverId: data.receiverId,
         senderName: data.senderName,
         receiverName: data.receiverName,
         sentAt: data.sentAt,
