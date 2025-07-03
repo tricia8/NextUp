@@ -5,16 +5,17 @@ import {
   TextInput,
   TouchableOpacity,
   useColorScheme,
-  Image,
 } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
 import { ThemedText } from "@/components/ThemedText";
 import { LegendList } from "@legendapp/list";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 import { User } from "@/types/user";
 import { router } from "expo-router";
-import ProfilePic from '@/components/ProfilePic';
+import ProfilePic from "@/components/ProfilePic";
+import { debouncePress } from "@/utils/debouncePress";
+import { Activity } from "@/types/activity";
 
 type Props = {
   users: User[];
@@ -23,6 +24,7 @@ type Props = {
   userId?: string;
   friendUids?: string[];
   handleAddFriend?: (friendId: string) => Promise<void>;
+  sentRequests?: Activity[];
 };
 
 export default function UserSearch({
@@ -32,6 +34,7 @@ export default function UserSearch({
   userId,
   friendUids,
   handleAddFriend,
+  sentRequests,
 }: Props) {
   const [search, setSearch] = React.useState<string>("");
   const [filteredUsers, setUsers] = React.useState<User[]>([]);
@@ -55,34 +58,47 @@ export default function UserSearch({
     return friendUids?.includes(uid);
   };
 
+  const isRequested = (uid: string) => {
+    return sentRequests?.some((req) => req.receiverId === uid);
+  };
 
   function renderItem({ item }: { item: User }) {
     return (
       <TouchableOpacity
-        onPress={() =>
+        onPress={debouncePress(() =>
           router.push({
-            pathname: "/profile/[uid]",
+            pathname: "/profile",
             params: { uid: item.uid },
           })
-        }
+        )}
       >
         <View style={styles.userRowContainer}>
           <View style={styles.userDisplay}>
-            <ProfilePic imageUrl={item.photoUrl} size={40}/>
+            <ProfilePic imageUrl={item.photoUrl} size={40} />
 
             <ThemedText style={{ fontSize: RFValue(14) }}>
               {item.username}
             </ThemedText>
           </View>
-          {showAddButton && !isFriend(item.uid) && userId != item.uid && (
-            <TouchableOpacity onPress={() => handleAddFriend?.(item.uid)}>
-              <MaterialIcons
-                name="person-add-alt-1"
-                color="white"
-                size={ms(22)}
-              />
-            </TouchableOpacity>
-          )}
+
+          {showAddButton &&
+            !isFriend(item.uid) &&
+            userId !== item.uid &&
+            (isRequested(item.uid) ? (
+              <View style={styles.pendingContainer}>
+                <ThemedText style={{fontSize: RFValue(12)}}>Requested</ThemedText>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={debouncePress(() => handleAddFriend?.(item.uid))}
+              >
+                <MaterialIcons
+                  name="person-add-alt-1"
+                  color="#66cdaa"
+                  size={ms(25)}
+                />
+              </TouchableOpacity>
+            ))}
         </View>
       </TouchableOpacity>
     );
@@ -141,5 +157,11 @@ const makeStyles = (colorScheme: any) =>
       flexDirection: "row",
       alignItems: "center",
       gap: s(12),
+    },
+    pendingContainer: {
+      backgroundColor: "rgba(102, 205, 170, 0.5)",
+      paddingHorizontal: s(8),
+      paddingVertical: vs(2),
+      borderRadius: 10,
     },
   });

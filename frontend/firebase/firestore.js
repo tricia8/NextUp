@@ -788,6 +788,7 @@ export async function getUpcomingEvents(uid, now, onData) {
     onData(events);
   } catch (err) {
     console.error("Error fetching upcoming:", err);
+    throw err;
   }
 }
 
@@ -810,11 +811,156 @@ export async function getOverdueEvents(uid, now, onData) {
     onData(events);
   } catch (err) {
     console.error("Error fetching overdue:", err);
+    throw err;
   }
 }
 
 //friends
-export const addFriend = async (userId, friendId) => {
+export const createRequest = async (userId, friendId) => {
+  try {
+    const friendSnapshot = await getDoc(doc(db, "users", friendId));
+    const friendData = friendSnapshot.data();
+    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
+    const currentUserData = currentUserSnapshot.data();
+
+    const requestRef = await addDoc(
+      collection(db, "friendRequests"),
+      {
+        senderId: userId,
+        receiverId: friendId,
+        senderName: currentUserData?.username,
+        receiverName: friendData?.username,
+        sentAt: serverTimestamp(),
+        status: "pending",
+      }
+    );
+
+    return requestRef.id;
+  } catch (error) {
+    console.log("Error sending friend request:", error);
+    throw error;
+  }
+}
+
+export const getRequestInfo = async (requestId) => {
+  try {
+    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+
+    if (!requestSnapshot.exists()) {
+      throw new Error("Friend request not found");
+    }
+    
+    const requestData = requestSnapshot.data();
+
+    return {
+      id: requestSnapshot.id,
+      senderId: requestData.senderId,
+      receiverId: requestData.receiverId,
+      senderName: requestData.senderName,
+      receiverName: requestData.receiverName,
+      sentAt: requestData.sentAt,
+      status: requestData.status,
+    }
+  } catch (error) {
+    console.log("Error getting request info:", error);
+    throw error;
+  }
+}
+
+export const getFriendRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "friendRequests"),
+      where("receiverId", "==", userId),
+      where("status", "==", "pending"),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return []; 
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        senderName: data.senderName,
+        receiverName: data.receiverName,
+        sentAt: data.sentAt,
+        status: data.status,
+      }
+    });
+  } catch (error) {
+    console.log("Error fetching friend requests:", error);
+    throw error;
+  }
+}
+
+export const getSentRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "friendRequests"),
+      where("senderId", "==", userId),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return []; 
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        senderName: data.senderName,
+        receiverName: data.receiverName,
+        sentAt: data.sentAt,
+        status: data.status,
+      }
+    });
+  } catch (error) {
+    console.log("Error fetching sent requests:", error);
+    throw error;
+  }
+}
+
+export const hasExistingRequest = async (userAId, userBId) => {
+  try {
+    const requestRef = collection(db, "friendRequests");
+
+    const incomingQ = query(     // Check for request from userB to userA
+      requestRef,
+      where("senderId", "==", userBId),
+      where("receiverId", "==", userAId),
+      where("status", "==", "pending")
+    );
+
+    const incomingSnap = await getDocs(incomingQ);
+    if (!incomingSnap.empty) return true;
+
+    const outgoingQ = query(     // Check for request from userA to userB
+      requestRef,
+      where("senderId", "==", userAId),
+      where("receiverId", "==", userBId),
+      where("status", "==", "pending")
+    );
+
+    const outgoingSnap = await getDocs(outgoingQ);
+    if (!outgoingSnap.empty) return true;
+
+    return false;
+  } catch (error) {
+    console.log("Error checking for existing request", error);
+  }
+}
+
+export const addFriend = async (userId, friendId, requestId) => {
   try {
     const friendSnapshot = await getDoc(doc(db, "users", friendId));
     const friendData = friendSnapshot.data();
@@ -833,11 +979,34 @@ export const addFriend = async (userId, friendId) => {
       username: currentUserData?.username,
       photoUrl: currentUserData?.photoUrl || null,
     });
+
+    const reqDoc = doc(db, "friendRequests", requestId);
+    //const reqSnapshot = await getDoc(reqDoc);
+
+    //await updateDoc(reqDoc, { status: "accepted" });
+    await deleteDoc(reqDoc);
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
   }
 };
+
+export const rejectFriend = async (requestId) => {
+  try {
+    const reqDoc = doc(db, "friendRequests", requestId);
+    //const reqSnapshot = await getDoc(reqDoc);
+
+    /*if (!reqSnapshot.exists()) {
+      throw new Error("Request not found");
+    }*/
+
+    //await updateDoc(reqDoc, { status: "rejected" });
+    await deleteDoc(reqDoc);
+  } catch (error) {
+    console.error("Error rejecting friend", error);
+    throw error;
+  }
+}
 
 export const deleteFriend = async (userId, friendId) => {
   try {
