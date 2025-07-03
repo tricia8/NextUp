@@ -884,7 +884,7 @@ export const getFriendRequests = async (userId) => {
       return {
         id: doc.id,
         senderId: data.senderId,
-        receiverId: data.friendId,
+        receiverId: data.receiverId,
         senderName: data.senderName,
         receiverName: data.receiverName,
         sentAt: data.sentAt,
@@ -893,6 +893,37 @@ export const getFriendRequests = async (userId) => {
     });
   } catch (error) {
     console.log("Error fetching friend requests:", error);
+    throw error;
+  }
+}
+
+export const getSentRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, "friendRequests"),
+      where("senderId", "==", userId),
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return []; 
+    }
+
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        senderId: data.senderId,
+        receiverId: data.receiverId,
+        senderName: data.senderName,
+        receiverName: data.receiverName,
+        sentAt: data.sentAt,
+        status: data.status,
+      }
+    });
+  } catch (error) {
+    console.log("Error fetching sent requests:", error);
     throw error;
   }
 }
