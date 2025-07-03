@@ -843,6 +843,11 @@ export const createRequest = async (userId, friendId) => {
 export const getRequestInfo = async (requestId) => {
   try {
     const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+
+    if (!requestSnapshot.exists()) {
+      throw new Error("Friend request not found");
+    }
+    
     const requestData = requestSnapshot.data();
 
     return {
