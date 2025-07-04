@@ -1,11 +1,10 @@
 // Wrapper for all routes implemented in the backend
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import relativeTime from "dayjs/plugin/relativeTime.js";
 import { Router } from "express";
-import db from "./app";
-import verifyFirebaseToken from "./authenticate";
-import { WriteBatch } from "firebase-admin/firestore";
-import { serverTimestamp, Timestamp } from "firebase-admin/firestore";
+import db from "./app.js";
+import verifyFirebaseToken from "./authenticate.js";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 dayjs.extend(relativeTime);
 
@@ -377,6 +376,84 @@ async function getAllEventsFormatted(userId, sublistId) {
   return allEvents;
 }
 
+// Get all sublists for a user (both owned and shared)
+router.get("/users/:userId/bucketList", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const allSublists = await db
+      .collectionGroup("bucketList")
+      .where("collaborators", "array-contains", userId)
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    const formattedSublists = allSublists.docs.map((doc) => ({
+      id: doc.id,
+      ...formatSublistData(doc.data()),
+    }));
+
+    return res.json(formattedSublists);
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
+// Get only shared sublists (not owned)
+router.get("/users/:userId/sharedSublists", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const sharedListsSnap = await db
+      .collection("users")
+      .doc(userId)
+      .collection("sharedSublists")
+      .get();
+
+    const sharedSublists = await Promise.all(
+      sharedListsSnap.docs.map(async (doc) => {
+        const sublistId = doc.data().sublistId;
+        const ownerId = doc.data().ownerId;
+        const { docSnap } = await getSublistDocOrThrow(ownerId, sublistId);
+        return {
+          id: doc.id,
+          updatedAtDate: docSnap.data().updatedAt.toDate(),
+          ...formatSublistData(docSnap.data()),
+        };
+      })
+    );
+
+    return res.json(
+      sharedSublists.sort((a, b) => {
+        a.updatedAtDate > b.updatedAtDate ? -1 : 1; // sort by most recently updated
+      })
+    );
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
+// Get only owned sublists
+router.get("/users/:userId/bucketList/owned", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const bucketListSnap = await db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .orderBy("updatedAt", "desc")
+      .get();
+
+    const ownedSublists = bucketListSnap.docs
+      .filter((doc) => doc.id !== "stats")
+      .map((doc) => ({
+        id: doc.id,
+        ...formatSublistData(doc.data()),
+      }));
+
+    return res.json(ownedSublists);
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
 // Get a sublist (owners and collaborators only)
 router.get("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params;
@@ -397,8 +474,8 @@ router.patch("/users/:userId/bucketList/:sublistId", async (req, res) => {
     const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
     await docSnap.ref.update({
       ...req.body,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
     return res.json({
       success: true,
