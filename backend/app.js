@@ -3,7 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import api from "./api";
+import api from "./api.js";
 
 // Create Express app
 const app = express();
