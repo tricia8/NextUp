@@ -7,7 +7,7 @@ const verifyFirebaseToken = async (req, res, next) => {
     res.statusMessage = "Unauthorized Header. Access Denied";
     return res.status(401).send("Unauthorized Header. Access Denied");
   }
-  const token = header.spilt(" ")[1];
+  const token = header.split(" ")[1];
 
   if (!token) {
     res.statusMessage = "Unauthorized Header. Access Denied";
