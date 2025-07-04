@@ -5,15 +5,15 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import Modal from "react-native-modal";
 import { ScrollView } from "react-native-gesture-handler";
-import { Notif } from "@/types/notif";
+import { Activity } from "@/types/activity";
 import { addFriend, rejectFriend } from "@/firebase/firestore";
 
 type NotifProps = {
   visible: boolean;
   onClose: () => void;
-  items: Notif[];
+  items: Activity[];
   userId: string;
-  setFriendRequests: React.Dispatch<React.SetStateAction<Notif[] | null>>;
+  setFriendRequests: React.Dispatch<React.SetStateAction<Activity[] | null>>;
 };
 
 export default function Notifications({
