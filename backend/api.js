@@ -654,15 +654,11 @@ router.patch(
   "/users/:userId/bucketList/:sublistId/events/:eventId",
   async (req, res) => {
     const { userId, sublistId, eventId } = req.params;
-
     try {
       let completionStatusChanged = false;
 
       await db.runTransaction(async (transaction) => {
-        const { docSnap, ownerId } = await getSublistDocOrThrow(
-          userId,
-          sublistId
-        );
+        const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
 
         const eventDocRef = docSnap.ref.collection("events").doc(eventId);
         const eventDocSnap = await eventDocRef.get();
@@ -688,7 +684,6 @@ router.patch(
 
           // Update sublist
           transaction.update(docSnap.ref, {
-            ...req.body,
             updatedAt: FieldValue.serverTimestamp(),
             completionStatus: updatedStatus,
           });
@@ -700,6 +695,14 @@ router.patch(
           updatedAt: FieldValue.serverTimestamp(),
         });
       });
+
+      // Fetch updated event data after the transaction
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+      const updatedEventDoc = await docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .get();
+      const formattedEventData = formatEventData(updatedEventDoc.data());
 
       // Update overall stats if completion status changed
       if (completionStatusChanged) {
@@ -713,10 +716,12 @@ router.patch(
         console.log(`Updated overall stats for collaborators`);
       }
 
-      return res.json({
+      /* return res.json({
         success: true,
         message: "Event updated successfully",
-      });
+      }); */
+
+      return res.json(formattedEventData);
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
     }
