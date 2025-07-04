@@ -1017,11 +1017,13 @@ export const rejectFriend = async (requestId) => {
 
 export const deleteFriend = async (userId, friendId) => {
   try {
-    const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
-    await deleteDoc(currentUserfriendRef);
+    await runTransaction(db, async (transaction) => {
+      const currentUserFriendRef = doc(db, "users", userId, "friends", friendId);
+      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
 
-    const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
-    await deleteDoc(otherUserfriendRef);
+      transaction.delete(currentUserFriendRef);
+      transaction.delete(otherUserFriendRef);
+    });
   } catch (error) {
     console.error("Error deleting friend:", error);
     throw error;
