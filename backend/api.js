@@ -13,7 +13,7 @@ const router = Router();
 router.use(verifyFirebaseToken); // Authenticate all requests
 
 // Invite collaborators as an owner
-router.patch("/user/:userId/bucketList/:sublistId", async (req, res) => {
+router.patch("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params; // userId should be the owner of the sublist
   const { collaboratorId } = req.body; // userId of invitee
   try {
@@ -77,7 +77,7 @@ router.patch("/user/:userId/bucketList/:sublistId", async (req, res) => {
 });
 
 // Remove collaborator as an owner
-router.delete("/user/:userId/bucketList/:sublistId", async (req, res) => {
+router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params; // userId should be the owner of the sublist
   const { collaboratorId } = req.body; // userId of collaborator to remove
   try {
@@ -143,7 +143,7 @@ router.delete("/user/:userId/bucketList/:sublistId", async (req, res) => {
 });
 
 // Self-remove collaborator status (not owner)
-router.delete("/user/:userId/bucketList/:sublistId", async (req, res) => {
+router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params;
   const { collaboratorId } = req.body; // userId of collaborator to remove
   try {
@@ -458,7 +458,7 @@ router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
 });
 
 // Add a goal (owners and collaborators only)
-router.post("/user/:userId/bucketList/:sublistId/events", async (req, res) => {
+router.post("/users/:userId/bucketList/:sublistId/events", async (req, res) => {
   const { userId, sublistId } = req.params;
   const { title, description, categories, deadline, collaborators } = req.body;
 
@@ -533,7 +533,7 @@ const formatPostData = (data) => {
 
 // Fetch individual goal details (owners and collaborators only)
 router.get(
-  "/user/:userId/bucketList/:sublistId/events/:eventId",
+  "/users/:userId/bucketList/:sublistId/events/:eventId",
   async (req, res) => {
     const { userId, sublistId, eventId } = req.params;
     try {
@@ -574,7 +574,7 @@ router.get(
 
 // Update goal metadata (owners and collaborators only), excluding post content
 router.patch(
-  "/user/:userId/bucketList/:sublistId/events/:eventId",
+  "/users/:userId/bucketList/:sublistId/events/:eventId",
   async (req, res) => {
     const { userId, sublistId, eventId } = req.params;
 
@@ -648,7 +648,7 @@ router.patch(
 
 // Delete a goal on [sublist] screen (owners and collaborators only)
 router.delete(
-  "/user/:userId/bucketList/:sublistId/events/:eventId",
+  "/users/:userId/bucketList/:sublistId/events/:eventId",
   async (req, res) => {
     const { userId, sublistId, eventId } = req.params;
     try {
