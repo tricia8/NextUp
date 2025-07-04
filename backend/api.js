@@ -372,7 +372,7 @@ async function getAllEventsFormatted(userId, sublistId) {
     ...formatEventData(doc.data()),
   }));
 
-  allEvents.push(...formattedIncompleteEvents, formattedCompletedEvents);
+  allEvents.push(...formattedIncompleteEvents, ...formattedCompletedEvents);
   return allEvents;
 }
 
@@ -550,8 +550,8 @@ router.post("/users/:userId/bucketList/:sublistId/events", async (req, res) => {
       categories,
       collaborators,
       isCompleted: false,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     // deadline is optional
@@ -689,7 +689,7 @@ router.patch(
           // Update sublist
           transaction.update(docSnap.ref, {
             ...req.body,
-            updatedAt: serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
             completionStatus: updatedStatus,
           });
         }
@@ -697,7 +697,7 @@ router.patch(
         // Update event document
         transaction.update(eventDocRef, {
           ...req.body,
-          updatedAt: serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         });
       });
 
