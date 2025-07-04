@@ -518,7 +518,7 @@ router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
 
     const deletePromises = docSnap
       .data()
-      .collaborators.forEach((collaboratorId) =>
+      .collaborators.map((collaboratorId) =>
         updateOverallStats(collaboratorId)
       );
 
@@ -574,7 +574,7 @@ router.post("/users/:userId/bucketList/:sublistId/events", async (req, res) => {
     // Update overall stats for all collaborators
     const deletePromises = docSnap
       .data()
-      .collaborators.forEach((collaboratorId) =>
+      .collaborators.map((collaboratorId) =>
         updateOverallStats(collaboratorId)
       );
 
@@ -705,7 +705,7 @@ router.patch(
       if (completionStatusChanged) {
         const deletePromises = docSnap
           .data()
-          .collaborators.forEach((collaboratorId) =>
+          .collaborators.map((collaboratorId) =>
             updateOverallStats(collaboratorId)
           );
 
@@ -774,7 +774,7 @@ router.delete(
       // Update overall stats for all collaborators
       const deletePromises = docSnap
         .data()
-        .collaborators.forEach((collaboratorId) =>
+        .collaborators.map((collaboratorId) =>
           updateOverallStats(collaboratorId)
         );
 
