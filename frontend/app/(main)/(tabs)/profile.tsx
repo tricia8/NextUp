@@ -1,4 +1,4 @@
-import ProfileScreen from "@/components/ProfileScreen";
+import ProfileScreen from '@/components/ProfileScreen';
 import { useContext } from "react";
 import { AuthContext } from "../../../context/AuthContext";
 

@@ -6,11 +6,12 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
-import { FontAwesome, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,8 +23,14 @@ import { User } from "@/types/user";
 import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import LoadingScreen from "@/components/Loading";
-import { getUserProfile, getUserStats } from "@/firebase/firestore";
+import {
+  deleteFriend,
+  getRelationship,
+  getUserProfile,
+  getUserStats,
+} from "@/firebase/firestore";
 import ProfilePic from "./ProfilePic";
+import { debouncePress } from "@/utils/debouncePress";
 
 const PROFILEPICSIZE = ms(80);
 
@@ -37,6 +44,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
   const [totalEvents, setTotalEvents] = useState<number>(0);
   const [completedEvents, setCompletedEvents] = useState<number>(0);
   const [category, setCategory] = useState<string>("--");
+  const [isFriend, setIsFriend] = useState<boolean>(false);
 
   const finalUid = uid ?? auth.currentUser?.uid;
 
@@ -47,9 +55,17 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       const fetchUser = async () => {
         try {
           const user = await getUserProfile(finalUid);
+          const relationship = await getRelationship(
+            auth.currentUser?.uid,
+            finalUid
+          );
+
           if (user) {
             setUserData(user);
             setCategory(user.category?.[0] ?? "--");
+          }
+          if (relationship === "friend") {
+            setIsFriend(true);
           }
         } catch (error) {
           console.error("Failed to fetch user profile", error);
@@ -78,6 +94,35 @@ export default function ProfileScreen({ uid }: ProfileProps) {
     }, [finalUid])
   );
 
+  const handleDelete = async () => {
+    Alert.alert(
+      "Remove friend",
+      `Are you sure you want to unfriend ${userData?.username}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteFriend(auth.currentUser?.uid, finalUid);
+              setIsFriend(false);
+              Alert.alert(
+                "Friend removed",
+                `${userData?.username} has been removed from your friends.`
+              );
+            } catch (error) {
+              Alert.alert("Error removing friend");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (!userData || !finalUid) {
     return <LoadingScreen />;
   }
@@ -87,7 +132,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <ProfilePic imageUrl={userData?.photoUrl} size={PROFILEPICSIZE}/>
+            <ProfilePic imageUrl={userData?.photoUrl} size={PROFILEPICSIZE} />
 
             <View style={styles.profileDetails}>
               <View style={styles.username}>
@@ -103,7 +148,9 @@ export default function ProfileScreen({ uid }: ProfileProps) {
                 {finalUid === auth.currentUser?.uid && (
                   <TouchableOpacity
                     style={styles.button}
-                    onPress={() => setModalVisible(true)}
+                    onPress={debouncePress(() => {
+                      setModalVisible(true);
+                    })}
                   >
                     <Text style={styles.buttonText}>Edit Profile</Text>
                   </TouchableOpacity>
@@ -151,12 +198,12 @@ export default function ProfileScreen({ uid }: ProfileProps) {
           <View style={styles.friendsContainer}>
             <TouchableOpacity
               style={styles.button}
-              onPress={() =>
+              onPress={debouncePress(() => {
                 router.push({
                   pathname: "../friends",
                   params: { viewedUid: finalUid },
-                })
-              }
+                });
+              })}
             >
               <Ionicons name="people-outline" color="white" size={ms(18)} />
               <Text style={styles.buttonText}>View Friends</Text>
@@ -165,9 +212,26 @@ export default function ProfileScreen({ uid }: ProfileProps) {
             {finalUid === auth.currentUser?.uid && (
               <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push("../addfriends")}
+                onPress={debouncePress(() => {
+                  router.push("../addfriends");
+                })}
               >
                 <MaterialIcons name="group-add" color="white" size={ms(18)} />
+              </TouchableOpacity>
+            )}
+
+            {isFriend && (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={debouncePress(() => {
+                  handleDelete();
+                })}
+              >
+                <MaterialIcons
+                  name="person-remove"
+                  color="white"
+                  size={ms(18)}
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -210,12 +274,12 @@ type Props = {
 function Preview({ route, title, color, component, uid }: Props) {
   return (
     <TouchableOpacity
-      onPress={() =>
+      onPress={debouncePress(() => {
         router.push({
-          pathname: "/journey/[uid]",
+          pathname: "../app/(main)/journey/[uid]",
           params: { uid: uid },
-        })
-      }
+        });
+      })}
     >
       <View style={{ height: "100%", width: "100%" }}>
         <View style={{ padding: 15 }}>
