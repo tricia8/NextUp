@@ -276,7 +276,7 @@ function Preview({ route, title, color, component, uid }: Props) {
     <TouchableOpacity
       onPress={debouncePress(() => {
         router.push({
-          pathname: "../app/(main)/journey/[uid]",
+          pathname: "../journey/[uid]",
           params: { uid: uid },
         });
       })}
