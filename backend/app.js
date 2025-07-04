@@ -1,6 +1,7 @@
 // Import dependencies (ESM-style)
 import express from "express";
 import morgan from "morgan";
+import * as admin from "firebase-admin";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import api from "./api.js";
@@ -12,9 +13,11 @@ app.use(express.json());
 app.use("/api", api); // All routes in api are prefixed with /api
 
 // Initialise app with admin privileges
-initializeApp({
-  credential: applicationDefault(),
-});
+if (!admin.apps?.length) {
+  initializeApp({
+    credential: applicationDefault(),
+  });
+}
 
 const db = getFirestore();
 
