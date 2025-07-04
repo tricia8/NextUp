@@ -69,8 +69,8 @@ export default function Notifications({
       isVisible={visible}
       backdropOpacity={0.4}
       onBackdropPress={onClose}
-      animationIn="zoomIn"
-      animationOut="zoomOut"
+      animationIn="slideInDown"
+      animationOut="slideOutUp"
       useNativeDriver
     >
       <View>
