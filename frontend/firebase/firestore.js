@@ -966,29 +966,38 @@ export const hasExistingRequest = async (userAId, userBId) => {
 
 export const addFriend = async (userId, friendId, requestId) => {
   try {
-    const friendSnapshot = await getDoc(doc(db, "users", friendId));
-    const friendData = friendSnapshot.data();
+    await runTransaction(db, async (transaction) => {
+      // Read both user docs inside transaction
+      const friendDocRef = doc(db, "users", friendId);
+      const friendSnapshot = await transaction.get(friendDocRef);
+      if (!friendSnapshot.exists()) {
+        throw new Error("Friend user does not exist");
+      }
+      const friendData = friendSnapshot.data();
 
-    const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
-    await setDoc(currentUserfriendRef, {
-      username: friendData?.username,
-      photoUrl: friendData?.photoUrl || null,
+      const currentUserDocRef = doc(db, "users", userId);
+      const currentUserSnapshot = await transaction.get(currentUserDocRef);
+      if (!currentUserSnapshot.exists()) {
+        throw new Error("Current user does not exist");
+      }
+      const currentUserData = currentUserSnapshot.data();
+
+      const currentUserFriendRef = doc(db, "users", userId, "friends", friendId);
+      transaction.set(currentUserFriendRef, {
+        username: friendData?.username,
+        photoUrl: friendData?.photoUrl || null,
+      });
+
+      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
+      transaction.set(otherUserFriendRef, {
+        username: currentUserData?.username,
+        photoUrl: currentUserData?.photoUrl || null,
+      });
+
+      // Delete friend request
+      const requestDocRef = doc(db, "friendRequests", requestId);
+      transaction.delete(requestDocRef);
     });
-
-    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
-    const currentUserData = currentUserSnapshot.data();
-
-    const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
-    await setDoc(otherUserfriendRef, {
-      username: currentUserData?.username,
-      photoUrl: currentUserData?.photoUrl || null,
-    });
-
-    const reqDoc = doc(db, "friendRequests", requestId);
-    //const reqSnapshot = await getDoc(reqDoc);
-
-    //await updateDoc(reqDoc, { status: "accepted" });
-    await deleteDoc(reqDoc);
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
@@ -1014,11 +1023,13 @@ export const rejectFriend = async (requestId) => {
 
 export const deleteFriend = async (userId, friendId) => {
   try {
-    const currentUserfriendRef = doc(db, "users", userId, "friends", friendId);
-    await deleteDoc(currentUserfriendRef);
+    await runTransaction(db, async (transaction) => {
+      const currentUserFriendRef = doc(db, "users", userId, "friends", friendId);
+      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
 
-    const otherUserfriendRef = doc(db, "users", friendId, "friends", userId);
-    await deleteDoc(otherUserfriendRef);
+      transaction.delete(currentUserFriendRef);
+      transaction.delete(otherUserFriendRef);
+    });
   } catch (error) {
     console.error("Error deleting friend:", error);
     throw error;
