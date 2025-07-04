@@ -7,6 +7,7 @@ import Modal from "react-native-modal";
 import { ScrollView } from "react-native-gesture-handler";
 import { Activity } from "@/types/activity";
 import { addFriend, rejectFriend } from "@/firebase/firestore";
+import { FlashList } from "@shopify/flash-list";
 
 type NotifProps = {
   visible: boolean;
@@ -81,47 +82,78 @@ export default function Notifications({
                 <ThemedText>No notifications</ThemedText>
               </View>
             ) : (
-              items.map((item) => (
-                <View key={item.id} style={styles.notifItems}>
-                  {item.type === "friend" && (
-                    <View style={styles.friendReq}>
-                      <ThemedText>
-                        ${item.senderName} sent you a friend request
-                      </ThemedText>
-
-                      <View style={styles.buttonContainer}>
-                        <TouchableOpacity
-                          style={styles.button}
-                          onPress={() =>
-                            handleAccept(userId, item.senderId, item.id)
-                          }
-                          disabled={isProcessing}
-                        >
-                          <Text>Accept</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          style={styles.button}
-                          onPress={() => handleReject(item.id)}
-                          disabled={isProcessing}
-                        >
-                          <Text>Reject</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-                  {item.type === "sublist" && (
-                    <ThemedText>
-                      ${item.senderName} added you to ${item.sublistTitle}
-                    </ThemedText>
-                  )}
-                </View>
-              ))
+              <FlashList
+                data={items}
+                keyExtractor={(item) => item.id}
+                estimatedItemSize={120} 
+                ListEmptyComponent={
+                  <View style={{justifyContent: "center"}}>
+                    <ThemedText>No notifications</ThemedText>
+                  </View>
+                }
+                renderItem={({ item }) => (
+                  <NotificationItem
+                    item={item}
+                    userId={userId}
+                    isProcessing={isProcessing}
+                    handleAccept={handleAccept}
+                    handleReject={handleReject}
+                  />
+                )}
+              />
             )}
           </ThemedView>
         </ScrollView>
       </View>
     </Modal>
+  );
+}
+
+function NotificationItem({
+  item,
+  userId,
+  isProcessing,
+  handleAccept,
+  handleReject,
+}: {
+  item: Activity;
+  userId: string;
+  isProcessing: boolean;
+  handleAccept: (userId: string, senderId: string, requestId: string) => void;
+  handleReject: (requestId: string) => void;
+}) {
+  return (
+    <View style={styles.notifItems}>
+      {item.type === "friend" && (
+        <View style={styles.friendReq}>
+          <ThemedText>{item.senderName} sent you a friend request</ThemedText>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleAccept(userId, item.senderId, item.id)}
+              disabled={isProcessing}
+            >
+              <Text>Accept</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => handleReject(item.id)}
+              disabled={isProcessing}
+            >
+              <Text>Reject</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {item.type === "sublist" && (
+        <ThemedText>
+          {item.senderName} added you to {item.sublistTitle}
+        </ThemedText>
+      )}
+    </View>
   );
 }
 
