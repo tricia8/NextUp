@@ -14,16 +14,13 @@ const verifyFirebaseToken = async (req, res, next) => {
     return res.status(401).send("Unauthorized Header. Access Denied");
   }
 
-  getAuth()
-    .verifyIdToken(token)
-    .then((decodedToken) => {
-      // Attach uid to body for the route to use
-      req.headers.uid = decodedToken.uid;
-      next();
-    })
-    .catch((error) => {
-      return res.status(401).send("Unauthorized Header. Access Denied");
-    });
+  try {
+    const decodedToken = await getAuth().verifyIdToken(token);
+    req.user = decodedToken.uid; // Attach uid to req.user
+    next();
+  } catch (error) {
+    return res.status(401).send("Unauthorized Header. Access Denied");
+  }
 };
 
 export default verifyFirebaseToken;
