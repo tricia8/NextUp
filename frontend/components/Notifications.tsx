@@ -77,31 +77,25 @@ export default function Notifications({
       <View>
         <ScrollView>
           <ThemedView style={styles.mainContainer}>
-            {items.length === 0 ? (
-              <View>
-                <ThemedText>No notifications</ThemedText>
-              </View>
-            ) : (
-              <FlashList
-                data={items}
-                keyExtractor={(item) => item.id}
-                estimatedItemSize={120} 
-                ListEmptyComponent={
-                  <View style={{justifyContent: "center"}}>
-                    <ThemedText>No notifications</ThemedText>
-                  </View>
-                }
-                renderItem={({ item }) => (
-                  <NotificationItem
-                    item={item}
-                    userId={userId}
-                    isProcessing={isProcessing}
-                    handleAccept={handleAccept}
-                    handleReject={handleReject}
-                  />
-                )}
-              />
-            )}
+            <FlashList
+              data={items}
+              keyExtractor={(item) => item.id}
+              estimatedItemSize={120}
+              ListEmptyComponent={
+                <View style={{ justifyContent: "center" }}>
+                  <ThemedText>No notifications</ThemedText>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <NotificationItem
+                  item={item}
+                  userId={userId}
+                  isProcessing={isProcessing}
+                  handleAccept={handleAccept}
+                  handleReject={handleReject}
+                />
+              )}
+            />
           </ThemedView>
         </ScrollView>
       </View>
