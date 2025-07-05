@@ -450,7 +450,7 @@ router.get("/user/sharedSublists", async (req, res) => {
 
     const sharedSublists = await Promise.all(
       sharedListsSnap.docs.map(async (doc) => {
-        const sublistId = doc.data().sublistId;
+        const sublistId = doc.id;
         const ownerId = doc.data().ownerId;
         const { docSnap } = await getSublistDocOrThrow(ownerId, sublistId);
         return {
