@@ -1,9 +1,9 @@
 import { getIdTokenFromFirebaseUser } from "../utils/getIdToken";
 
-const token = await getIdTokenFromFirebaseUser();
-
 export async function uploadToCloudinary(base64Image, uid, subfolder) {
   try {
+    const token = await getIdTokenFromFirebaseUser();
+
     const public_id = `nextup/users/${uid}/${subfolder}`;
     const folder = `nextup/users/${uid}/${subfolder}`;
 
