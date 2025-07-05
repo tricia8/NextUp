@@ -684,7 +684,6 @@ router.patch(
 
           // Update sublist
           transaction.update(docSnap.ref, {
-            updatedAt: FieldValue.serverTimestamp(),
             completionStatus: updatedStatus,
           });
         }
@@ -692,6 +691,11 @@ router.patch(
         // Update event document
         transaction.update(eventDocRef, {
           ...req.body,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        // Update sublist updatedAt timestamp
+        transaction.update(docSnap.data(), {
           updatedAt: FieldValue.serverTimestamp(),
         });
       });
