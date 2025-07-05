@@ -567,6 +567,7 @@ router.post("/users/:userId/bucketList/:sublistId/events", async (req, res) => {
       const completionStatus = docSnap.data().completionStatus || [0, 0]; // default fallback set
 
       transaction.update(docSnap.ref, {
+        updatedAt: FieldValue.serverTimestamp(),
         completionStatus: [completionStatus[0], completionStatus[1] + 1],
       });
     });
@@ -695,7 +696,7 @@ router.patch(
         });
 
         // Update sublist updatedAt timestamp
-        transaction.update(docSnap.data(), {
+        transaction.update(docSnap.ref, {
           updatedAt: FieldValue.serverTimestamp(),
         });
       });
