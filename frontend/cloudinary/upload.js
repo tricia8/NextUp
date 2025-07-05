@@ -3,7 +3,7 @@ export async function uploadToCloudinary(base64Image, uid, subfolder) {
     const public_id = `nextup/users/${uid}/${subfolder}`;
     const folder = `nextup/users/${uid}/${subfolder}`;
 
-    const res = await fetch("https://nextup-l0e9.onrender.com/signature", {
+    const res = await fetch("https://nextup-l0e9.onrender.com/api/cloudinary/signature", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ folder, public_id }),
