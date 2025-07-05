@@ -12,7 +12,7 @@ const router = Router();
 router.use(verifyFirebaseToken); // Authenticate all requests
 
 // Invite collaborators as an owner
-router.patch("/users/:userId/bucketList/:sublistId", async (req, res) => {
+router.patch("/users/:userId/invitation", async (req, res) => {
   const { userId, sublistId } = req.params; // userId should be the owner of the sublist
   const { collaboratorId } = req.body; // userId of invitee
   try {
@@ -470,16 +470,23 @@ router.get("/users/:userId/bucketList/:sublistId", async (req, res) => {
 // Update a sublist (owners and collaborators only)
 router.patch("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params;
+
   try {
     const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+
     await docSnap.ref.update({
       ...req.body,
-      createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+    // Refetch the updated sublist
+    const updatedSnap = await docSnap.ref.get();
+    const formatted = formatSublistData(updatedSnap.data());
+
     return res.json({
       success: true,
       message: "Sublist updated successfully",
+      sublistData: formatted,
     });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
