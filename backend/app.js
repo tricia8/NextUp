@@ -20,6 +20,7 @@ if (!admin.apps?.length) {
 }
 
 const db = getFirestore();
+db.settings({ ignoreUndefinedProperties: true }); // Ignore undefined values
 
 // Root route for basic API health check
 app.get("/", (req, res) => {
