@@ -495,6 +495,79 @@ router.get("/user/bucketList/owned", async (req, res) => {
   }
 });
 
+// Create a new sublist
+router.post("/user/bucketList", async (req, res) => {
+  const userId = req.user; // Verified from middleware
+  const { title, description, accessLevel, collaborators } = req.body;
+
+  try {
+    if (!title || !accessLevel) {
+      const err = new Error("Title and access level are required");
+      err.status = 400; // Bad request
+      throw err;
+    }
+
+    if (!Array.isArray(collaborators) || collaborators.length === 0) {
+      const err = new Error("Collaborators must be a non-empty array");
+      err.status = 400; // Bad request
+      throw err;
+    }
+
+    if (!collaborators.includes(userId)) {
+      const err = new Error(
+        "You must be a collaborator on the sublist you're creating"
+      );
+      err.status = 400; // Bad request
+      throw err;
+    }
+
+    const sublistRef = await db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .add({
+        title,
+        description,
+        accessLevel,
+        collaborators, // array of userIds
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        completionStatus: [0, 0],
+      });
+
+    // Add to sharedSublists for all collaborators except for the owner
+    const batch = db.batch();
+    collaborators
+      .filter((collaboratorId) => collaboratorId !== userId)
+      .forEach((collaboratorId) => {
+        const sharedSublistDocRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistRef.id);
+
+        batch.set(sharedSublistDocRef, {
+          ownerId: userId,
+          permissions: "write",
+        });
+      });
+
+    await batch.commit();
+
+    const sublistDataSnap = await sublistRef.get();
+    const sublistData = formatSublistData(sublistDataSnap.data());
+
+    return res.json({
+      success: true,
+      message: "Sublist created successfully",
+      sublistId: sublistRef.id,
+      sublistData,
+    });
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
 // Get a sublist (owners and collaborators only)
 router.get("/user/bucketList/:sublistId", async (req, res) => {
   const { sublistId } = req.params;
