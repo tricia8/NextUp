@@ -12,208 +12,244 @@ const router = Router();
 router.use(verifyFirebaseToken); // Authenticate all requests
 
 // Invite collaborators as an owner
-router.patch("/users/:userId/invitation", async (req, res) => {
-  const { userId, sublistId } = req.params; // userId should be the owner of the sublist
-  const { collaboratorId } = req.body; // userId of invitee
-  try {
-    await db.runTransaction(async (transaction) => {
-      const { docSnap, ownerId } = await getSublistDocOrThrow(
-        userId,
-        sublistId
-      );
+router.patch(
+  "/users/:userId/bucketList/:sublistId/userInvitation",
+  async (req, res) => {
+    const { userId, sublistId } = req.params; // userId should be the owner of the sublist
+    const { collaboratorId } = req.body; // userId of invitee
+    console.log(
+      `Inviting collaborator ${collaboratorId} to sublist ${sublistId} by ${userId}`
+    );
 
-      if (ownerId !== userId) {
-        const err = new Error("Only the owner can invite collaborators");
-        err.status = 403; // Permission denied
-        throw err;
-      }
+    let invite;
+    try {
+      await db.runTransaction(async (transaction) => {
+        const { docSnap, ownerId } = await getSublistDocOrThrow(
+          userId,
+          sublistId
+        );
 
-      const collaborators = docSnap.data().collaborators;
-
-      // Prevent duplicates
-      if (collaborators.includes(collaboratorId)) {
-        throw new Error("User is already a collaborator");
-      }
-
-      transaction.update(docSnap.ref, {
-        collaborators: [...collaborators, collaboratorId], // Array of userIds
-      });
-
-      // Update collaborators array for all goals under this sublist
-      const eventsSnap = await docSnap.ref.collection("events").get();
-      eventsSnap.docs.forEach((eventDoc) => {
-        const eventCollaborators = eventDoc.data().collaborators || [];
-        if (!eventCollaborators.includes(collaboratorId)) {
-          transaction.update(eventDoc.ref, {
-            collaborators: [...eventCollaborators, collaboratorId],
-          });
+        if (ownerId !== userId) {
+          const err = new Error("Only the owner can invite collaborators");
+          err.status = 403; // Permission denied
+          throw err;
         }
+
+        const ownerDataSnap = await transaction.get(
+          db.collection("users").doc(ownerId)
+        );
+        const inviteeDataSnap = await transaction.get(
+          db.collection("users").doc(collaboratorId)
+        );
+        const eventsSnap = await transaction.get(
+          docSnap.ref.collection("events")
+        );
+
+        const collaborators = docSnap.data().collaborators;
+
+        // Prevent duplicates
+        if (collaborators.includes(collaboratorId)) {
+          throw new Error("Invitee is already a collaborator");
+        }
+
+        transaction.update(docSnap.ref, {
+          collaborators: [...collaborators, collaboratorId], // Array of userIds
+        });
+
+        // Update collaborators array for all goals under this sublist
+        eventsSnap.docs.forEach((eventDoc) => {
+          const eventCollaborators = eventDoc.data().collaborators || [];
+          if (!eventCollaborators.includes(collaboratorId)) {
+            transaction.update(eventDoc.ref, {
+              collaborators: [...eventCollaborators, collaboratorId],
+            });
+          }
+        });
+
+        // Add document to sharedSublists for the collaborator
+        const shareSublistDocRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId);
+
+        transaction.set(shareSublistDocRef, {
+          ownerId: ownerId, // Sublist owner's userId
+          permissions: "write",
+        });
+
+        const invitationDocRef = db.collection("listInvites").doc();
+
+        transaction.set(invitationDocRef, {
+          senderId: ownerId,
+          receiverId: collaboratorId,
+          senderName: ownerDataSnap.data()?.username,
+          receiverName: inviteeDataSnap.data()?.username,
+          sentAt: FieldValue.serverTimestamp(),
+          status: "unread",
+        });
+        invite = invitationDocRef.id; // ID of created invitation doc
       });
 
-      // Add document to sharedSublists for the collaborator
-      const shareSublistDocRef = db
-        .collection("users")
-        .doc(collaboratorId)
-        .collection("sharedSublists")
-        .doc(sublistId);
+      // Update overall stats for new collaborator
+      await updateOverallStats(collaboratorId);
 
-      transaction.set(shareSublistDocRef, {
-        ownerId: ownerId, // Sublist owner's userId
-        permissions: "write",
+      return res.json({
+        success: true,
+        message: "Collaborator added",
+        invite,
       });
-    });
-
-    // Update overall stats for new collaborator
-    await updateOverallStats(collaboratorId);
-
-    return res.json({
-      success: true,
-      message: "Collaborator added",
-    });
-  } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
   }
-});
+);
 
 // Remove collaborator as an owner
-router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
-  const { userId, sublistId } = req.params; // userId should be the owner of the sublist
-  const { collaboratorId } = req.body; // userId of collaborator to remove
-  try {
-    await db.runTransaction(async (transaction) => {
-      const { docSnap, ownerId } = await getSublistDocOrThrow(
-        userId,
-        sublistId
-      );
+router.delete(
+  "/users/:userId/bucketList/:sublistId/userRemoval",
+  async (req, res) => {
+    const { userId, sublistId } = req.params; // userId should be the owner of the sublist
+    const { collaboratorId } = req.body; // userId of collaborator to remove
+    try {
+      await db.runTransaction(async (transaction) => {
+        const { docSnap, ownerId } = await getSublistDocOrThrow(
+          userId,
+          sublistId
+        );
 
-      if (ownerId !== userId) {
-        const err = new Error("Only the owner can remove collaborators");
-        err.status = 403; // Permission denied
-        throw err;
-      }
+        if (ownerId !== userId) {
+          const err = new Error("Only the owner can remove collaborators");
+          err.status = 403; // Permission denied
+          throw err;
+        }
 
-      const collaborators = docSnap.data().collaborators;
+        const collaborators = docSnap.data().collaborators;
 
-      // Prevent duplicates
-      if (!collaborators.includes(collaboratorId)) {
-        throw new Error("User is not a collaborator");
-      }
+        // Prevent duplicates
+        if (!collaborators.includes(collaboratorId)) {
+          throw new Error("User is not a collaborator");
+        }
 
-      transaction.update(docSnap.ref, {
-        collaborators: collaborators.filter((id) => id !== collaboratorId),
-      });
+        transaction.update(docSnap.ref, {
+          collaborators: collaborators.filter((id) => id !== collaboratorId),
+        });
 
-      // Update collaborators array for all goals under this sublist
-      const eventsSnap = await docSnap.ref.collection("events").get();
-      eventsSnap.docs.forEach((eventDoc) => {
-        const eventCollaborators = eventDoc.data().collaborators;
-        if (eventCollaborators.includes(collaboratorId)) {
-          transaction.update(eventDoc.ref, {
-            collaborators: eventCollaborators.filter(
-              (id) => id !== collaboratorId
-            ),
-          });
+        // Update collaborators array for all goals under this sublist
+        const eventsSnap = await docSnap.ref.collection("events").get();
+        eventsSnap.docs.forEach((eventDoc) => {
+          const eventCollaborators = eventDoc.data().collaborators;
+          if (eventCollaborators.includes(collaboratorId)) {
+            transaction.update(eventDoc.ref, {
+              collaborators: eventCollaborators.filter(
+                (id) => id !== collaboratorId
+              ),
+            });
+          }
+        });
+
+        // Remove document from sharedSublists for the collaborator
+        const shareSublistDocRef = await db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId)
+          .get();
+
+        if (shareSublistDocRef.exists) {
+          transaction.delete(shareSublistDocRef.ref);
         }
       });
 
-      // Remove document from sharedSublists for the collaborator
-      const shareSublistDocRef = await db
-        .collection("users")
-        .doc(collaboratorId)
-        .collection("sharedSublists")
-        .doc(sublistId)
-        .get();
+      // Update overall stats for removed collaborator
+      await updateOverallStats(collaboratorId);
 
-      if (shareSublistDocRef.exists) {
-        transaction.delete(shareSublistDocRef.ref);
-      }
-    });
-
-    // Update overall stats for removed collaborator
-    await updateOverallStats(collaboratorId);
-
-    return res.json({
-      success: true,
-      message: "Collaborator removed",
-    });
-  } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message });
+      return res.json({
+        success: true,
+        message: "Collaborator removed",
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
   }
-});
+);
 
 // Self-remove collaborator status (not owner)
-router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
-  const { userId, sublistId } = req.params;
-  const { collaboratorId } = req.body; // userId of collaborator to remove
-  try {
-    if (userId !== collaboratorId) {
-      const err = new Error("You can only remove yourself as a collaborator");
-      err.status = 403; // Permission denied
-      throw err;
-    }
-
-    await db.runTransaction(async (transaction) => {
-      const { docSnap, ownerId } = await getSublistDocOrThrow(
-        userId,
-        sublistId
-      );
-
-      if (ownerId == userId) {
-        const err = new Error(
-          "You are the owner, delete the sublist if you wish to revoke your access rights"
-        );
+router.delete(
+  "/users/:userId/bucketList/:sublistId/selfRemoval",
+  async (req, res) => {
+    const { userId, sublistId } = req.params;
+    const { collaboratorId } = req.body; // userId of collaborator to remove
+    try {
+      if (userId !== collaboratorId) {
+        const err = new Error("You can only remove yourself as a collaborator");
         err.status = 403; // Permission denied
         throw err;
       }
 
-      const collaborators = docSnap.data().collaborators;
+      await db.runTransaction(async (transaction) => {
+        const { docSnap, ownerId } = await getSublistDocOrThrow(
+          userId,
+          sublistId
+        );
 
-      // Prevent duplicates
-      if (!collaborators.includes(collaboratorId)) {
-        throw new Error("You are not a collaborator");
-      }
+        if (ownerId == userId) {
+          const err = new Error(
+            "You are the owner, delete the sublist if you wish to revoke your access rights"
+          );
+          err.status = 403; // Permission denied
+          throw err;
+        }
 
-      transaction.update(docSnap.ref, {
-        collaborators: collaborators.filter((id) => id !== collaboratorId),
-      });
+        const collaborators = docSnap.data().collaborators;
 
-      // Update collaborators array for all goals under this sublist
-      const eventsSnap = await docSnap.ref.collection("events").get();
-      eventsSnap.docs.forEach((eventDoc) => {
-        const eventCollaborators = eventDoc.data().collaborators;
-        if (eventCollaborators.includes(collaboratorId)) {
-          transaction.update(eventDoc.ref, {
-            collaborators: eventCollaborators.filter(
-              (id) => id !== collaboratorId
-            ),
-          });
+        // Prevent duplicates
+        if (!collaborators.includes(collaboratorId)) {
+          throw new Error("You are not a collaborator");
+        }
+
+        transaction.update(docSnap.ref, {
+          collaborators: collaborators.filter((id) => id !== collaboratorId),
+        });
+
+        // Update collaborators array for all goals under this sublist
+        const eventsSnap = await docSnap.ref.collection("events").get();
+        eventsSnap.docs.forEach((eventDoc) => {
+          const eventCollaborators = eventDoc.data().collaborators;
+          if (eventCollaborators.includes(collaboratorId)) {
+            transaction.update(eventDoc.ref, {
+              collaborators: eventCollaborators.filter(
+                (id) => id !== collaboratorId
+              ),
+            });
+          }
+        });
+
+        // Remove document from sharedSublists for the collaborator
+        const shareSublistDocRef = await db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId)
+          .get();
+
+        if (shareSublistDocRef.exists) {
+          transaction.delete(shareSublistDocRef.ref);
         }
       });
 
-      // Remove document from sharedSublists for the collaborator
-      const shareSublistDocRef = await db
-        .collection("users")
-        .doc(collaboratorId)
-        .collection("sharedSublists")
-        .doc(sublistId)
-        .get();
+      // Update overall stats for removed collaborator
+      await updateOverallStats(collaboratorId);
 
-      if (shareSublistDocRef.exists) {
-        transaction.delete(shareSublistDocRef.ref);
-      }
-    });
-
-    // Update overall stats for removed collaborator
-    await updateOverallStats(collaboratorId);
-
-    return res.json({
-      success: true,
-      message: "Revoked collaborator status",
-    });
-  } catch (error) {
-    return res.status(error.status || 500).json({ error: error.message });
+      return res.json({
+        success: true,
+        message: "Revoked collaborator status",
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
   }
-});
+);
 
 // Helper function
 const formatSublistData = (data) => {
