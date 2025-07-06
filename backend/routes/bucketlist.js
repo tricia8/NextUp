@@ -741,17 +741,26 @@ router.post("/users/:userId/bucketList/allEvents", async (req, res) => {
   const { subBucketLists } = req.body;
 
   if (!Array.isArray(subBucketLists)) {
-    return res.status(400).json({ error: 'subBucketLists must be an array of IDs' });
+    return res
+      .status(400)
+      .json({ error: "subBucketLists must be an array of IDs" });
   }
 
   try {
     const allEvents = [];
 
     for (const sub of subBucketLists) {
-      const eventsRef = collection(db, "users", userId, "bucketList", sub.id, "events");
+      const eventsRef = collection(
+        db,
+        "users",
+        userId,
+        "bucketList",
+        sub.id,
+        "events"
+      );
       const eventsSnap = await getDocs(eventsRef);
 
-      const events = eventsSnap.docs.map(doc => {
+      const events = eventsSnap.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -1042,6 +1051,68 @@ router.delete(
       });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Toggle event completion
+router.post(
+  "/users/:userId/bucketList/:sublistId/events/:eventId/toggleCompletion",
+  async (req, res) => {
+    const { userId, sublistId, eventId } = req.params;
+
+    const eventDocRef = doc(
+      db,
+      "users",
+      userId,
+      "bucketList",
+      sublistId,
+      "events",
+      eventId
+    );
+
+    const subBucketListRef = doc(db, "users", userId, "bucketList", sublistId);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const eventSnap = await transaction.get(eventDocRef);
+
+        if (!eventSnap.exists()) {
+          throw new Error("Event not found");
+        }
+
+        const subBucketListSnap = await transaction.get(subBucketListRef);
+        if (!subBucketListSnap.exists()) {
+          throw new Error("Sub-bucket list not found.");
+        }
+
+        const currentCompleted = eventSnap.data().isCompleted;
+        const [completed, total] = subBucketListSnap.data()
+          .completionStatus || [0, 0];
+        const updatedStatus = !currentCompleted
+          ? [completed + 1, total]
+          : [Math.max(0, completed - 1), total]; // avoid negative values
+
+        /* await updateDoc(eventDocRef, {
+      isCompleted: !currentCompleted,
+    }); */
+
+        // update event
+        transaction.update(eventDocRef, { isCompleted: !currentCompleted });
+
+        // update subBucketList completionStatus
+        transaction.update(subBucketListRef, {
+          completionStatus: updatedStatus,
+        });
+      });
+      await updateOverallStats(userId);
+
+      return res
+        .status(200)
+        .json({ success: true, message: "Completion toggled" });
+    } catch (error) {
+      console.error("Error toggling event completion:", error);
+      return res.status(500).json({ error: error.message });
     }
   }
 );
