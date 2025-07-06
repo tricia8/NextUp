@@ -539,6 +539,8 @@ router.delete("/users/:userId/bucketList/:sublistId", async (req, res) => {
   }
 });
 
+// Events
+
 // Helper function to format event data
 const formatEventData = (data) => {
   // data type: Event object
@@ -593,6 +595,46 @@ async function getAllEventsFormatted(userId, sublistId) {
   allEvents.push(...formattedIncompleteEvents, ...formattedCompletedEvents);
   return allEvents;
 }
+
+// Get all events of given sublists
+router.post("/users/:userId/bucketList/allEvents", async (req, res) => {
+  const { userId } = req.params;
+  const { subBucketLists } = req.body;
+
+  if (!Array.isArray(subBucketLists)) {
+    return res.status(400).json({ error: 'subBucketLists must be an array of IDs' });
+  }
+
+  try {
+    const allEvents = [];
+
+    for (const sub of subBucketLists) {
+      const eventsRef = collection(db, "users", userId, "bucketList", sub.id, "events");
+      const eventsSnap = await getDocs(eventsRef);
+
+      const events = eventsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ownerId: data.ownerId,
+          title: data.title,
+          description: data.description,
+          categories: data.categories,
+          isCompleted: data.completed,
+          deadline: data.deadline,
+          createdAt: data.createdAt,
+        };
+      });
+
+      allEvents.push(...events);
+    }
+
+    return res.status(200).json({ events: allEvents });
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return res.status(500).json({ error: "Failed to fetch events" });
+  }
+});
 
 // Add a goal (owners and collaborators only)
 router.post("/users/:userId/bucketList/:sublistId/events", async (req, res) => {
