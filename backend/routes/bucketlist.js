@@ -409,6 +409,47 @@ router.get("/users/:userId/bucketList/:sublistId", async (req, res) => {
   }
 });
 
+// Get sublists filtered by access levels
+router.get("/users/:userId/bucketList/filteredSublists", async (req, res) => {
+  const { userId } = req.params;
+  const { accessLevels } = req.query;
+
+  if (!accessLevels) {
+    return res
+      .status(400)
+      .json({ error: "Missing 'accessLevels' query parameter" });
+  }
+
+  try {
+    const accessLevelArray = Array.isArray(accessLevels)
+      ? accessLevels
+      : accessLevels.split(",");
+
+    const q = query(
+      collectionGroup(db, "bucketList"),
+      where("collaborators", "array-contains", userId),
+      where("accessLevel", "in", accessLevelArray)
+    );
+
+    const sublists = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        description: data.description ?? "",
+        accessLevel: data.accessLevel,
+        collaborators: data.collaborators,
+        createdAt: data.createdAt,
+      };
+    });
+
+    return res.status(200).json({ sublists });
+  } catch (error) {
+    console.error("Error fetching sublists:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Update a sublist (owners and collaborators only)
 router.patch("/users/:userId/bucketList/:sublistId", async (req, res) => {
   const { userId, sublistId } = req.params;
