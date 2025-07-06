@@ -1,0 +1,641 @@
+﻿{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "NextUp's Bucket List API",
+    "version": "1.0.0",
+    "description": "A minimal API to manage collaborative bucket lists.",
+    "contact": {
+      "name": "API Support",
+      "email": "e1354127@u.nus.edu"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sublists",
+      "description": "Operations related to sublists"
+    },
+    {
+      "name": "Goals",
+      "description": "Operations related to goals"
+    },
+    {
+      "name": "Collaborators",
+      "description": "Operations related to collaborators"
+    }
+  ],
+  "paths": {
+    "/user/bucketList": {
+      "get": {
+        "summary": "Get all sublists shared with user",
+        "description": "Returns a list of all sublists, whether owned or not owned by the user.",
+        "operationId": "listAllSublists",
+        "tags": [
+          "Sublists"
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON array of sublists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sublist"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new sublist",
+        "description": "Creates a new sublist and returns it",
+        "operationId": "createSublist",
+        "tags": [
+          "Sublists"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "accessLevel",
+                  "collaborators"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "accessLevel": {
+                    "type": "string"
+                  },
+                  "collaborators": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success message and the created sublist"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/user/bucketList/owned": {
+      "get": {
+        "summary": "Get sublists owned by user",
+        "description": "Returns a list of all owned sublists",
+        "operationId": "listOwnedSublists",
+        "tags": [
+          "Sublists"
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON array of owned sublists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Sublist"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/bucketList/{sublistId}": {
+      "get": {
+        "summary": "Get a specific sublist and its events",
+        "description": "Returns sublist object and a list of events",
+        "operationId": "getSublist",
+        "tags": [
+          "Sublists"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "object with sublistData and goalData",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SublistAndEvents"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update sublist metadata",
+        "description": "Excludes updates to collaborator array, returns updated sublist data",
+        "operationId": "updateSublist",
+        "tags": [
+          "Sublists"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "title": "Updated title",
+                  "description": "Updated description",
+                  "accessLevel": "public"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sublist updated"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete sublist",
+        "description": "Deletes sublist data and all its goals and posts",
+        "operationId": "deleteSublist",
+        "tags": [
+          "Sublists"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sublist deleted"
+          }
+        }
+      }
+    },
+    "/user/bucketList/{sublistId}/events": {
+      "post": {
+        "summary": "Add a goal to a sublist",
+        "description": "Creates a new goal",
+        "operationId": "addGoal",
+        "tags": [
+          "Goals"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "categories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "collaborators": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Goal created"
+          }
+        }
+      }
+    },
+    "/user/bucketList/{sublistId}/events/{eventId}": {
+      "get": {
+        "summary": "Get a specific goal",
+        "description": "Returns a goal item and its posts",
+        "operationId": "getGoal",
+        "tags": [
+          "Goals"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Goal details and array of posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalAndPosts"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a goal",
+        "description": "Updates a goal item",
+        "operationId": "updateGoal",
+        "tags": [
+          "Goals"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Returns updated goal data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Goal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a goal",
+        "description": "Deletes a goal item",
+        "operationId": "deleteGoal",
+        "tags": [
+          "Goals"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "eventId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message"
+          }
+        }
+      }
+    },
+    "/user/bucketList/{sublistId}/collaborators/{collaboratorId}": {
+      "post": {
+        "summary": "Add collaborator",
+        "description": "Invites a collaborator to a sublist (Only the owner is allowed to do this)",
+        "operationId": "addCollaborator",
+        "tags": [
+          "Collaborators"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "collaboratorId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success message and the id of invitation document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "invite": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove another user as collaborator",
+        "description": "Removes some other collaborator (Only the owner is allowed to do this)",
+        "operationId": "removeOtherCollaborator",
+        "tags": [
+          "Collaborators"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "collaboratorId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collaborator removed"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Self-remove collaborator status",
+        "description": "Removes oneself as collaborator from an unowned sublist",
+        "operationId": "removeSelf",
+        "tags": [
+          "Collaborators"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sublistId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "collaboratorId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collaborator removed self"
+          },
+          "403": {
+            "description": "Permission denied"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Sublist": {
+        "type": "object",
+        "description": "A formated sublist object return from db fetches",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The title of the sublist"
+          },
+          "description": {
+            "type": "string",
+            "description": "An optional description of the sublist"
+          },
+          "accessLevel": {
+            "type": "string",
+            "description": "The visibility of the sublist (\"private\", \"friends\" or \"everyone\")"
+          },
+          "collaborators": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "An array of userIds belonging to collaborators of the sublist"
+          },
+          "updatedAt": {
+            "type": "string",
+            "description": "A formatted date string showing when the sublist was last updated"
+          },
+          "completionStatus": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Indicates the number of completed goals and total number of goals"
+          }
+        }
+      },
+      "Goal": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "isCompleted": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      },
+      "SublistAndEvents": {
+        "type": "object",
+        "description": "Fetched sublist data together with a list of its events",
+        "properties": {
+          "sublistData": {
+            "$ref": "#/components/schemas/Sublist"
+          },
+          "goalData": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Goal"
+            }
+          }
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "profilePhotoUrl": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "GoalAndPosts": {
+        "type": "object",
+        "description": "Fetched goal data together with a list of its posts",
+        "properties": {
+          "goalData": {
+            "$ref": "#/components/schemas/Goal"
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
+          }
+        }
+      }
+    }
+  }
+}
