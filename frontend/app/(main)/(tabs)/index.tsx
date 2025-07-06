@@ -4,6 +4,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -13,7 +14,7 @@ import { ThemedView } from "@/components/ThemedView";
 import DonutChart from "@/components/AnimatedDonutChart";
 import AnimatedTextInput from "@/components/AnimatedTextInput";
 import SideMenu from "@/components/SideMenu";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { AuthContext } from "@/context/AuthContext";
 import { Event } from "@/types/event";
@@ -30,6 +31,8 @@ import { debouncePress } from "@/utils/debouncePress";
 import RingingBell from "@/components/AnimatedBell";
 import Notifications from "@/components/Notifications";
 import { Activity } from "@/types/activity";
+import { generateSuggestion } from "@/gemini/generateSuggestion";
+import Markdown from "react-native-markdown-display";
 
 const PROFILEPICSIZE = ms(50);
 
@@ -45,6 +48,9 @@ export default function HomeScreen() {
   const [overdueCount, setOverdueCount] = useState<number | null>(null);
   const [friendRequests, setFriendRequests] = useState<Activity[] | null>(null);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
+  const [suggestion, setSuggestion] = useState<string>("");
+
+  const colorScheme = useColorScheme();
 
   const toggleOpen = () => {
     setOpen(!open);
@@ -100,6 +106,20 @@ export default function HomeScreen() {
       fetchData();
     }, [uid])
   );
+
+  useEffect(() => {
+    const getSuggestion = async () => {
+      try {
+        const data = await generateSuggestion();
+        setSuggestion(data.output);
+      } catch (error) {
+        console.log("Error generating suggestion:", error);
+        setSuggestion("Oops, unable to generate a suggestion at the moment.");
+      }
+    };
+
+    getSuggestion();
+  }, [uid]);
 
   if (
     !uid ||
@@ -200,12 +220,18 @@ export default function HomeScreen() {
               </ScrollView>
             </View>
 
-            <View style={styles.quoteContainer}>
+            <View style={styles.suggestionsContainer}>
+              <Text style={{fontSize: RFValue(13), fontWeight: 'bold'}}>Bucket List Inspiration 🪄</Text>
               <ScrollView>
-                <ThemedText>
-                  Twenty years from now you will be more disappointed by the
-                  things you didn't do than by the ones you did do. — Mark Twain
-                </ThemedText>
+                <Markdown
+                  style={{
+                    text: {
+                      fontSize: RFValue(13),
+                    },
+                  }}
+                >
+                  {suggestion}
+                </Markdown>
               </ScrollView>
             </View>
           </View>
@@ -243,7 +269,7 @@ const styles = StyleSheet.create({
   subContainer: {
     alignItems: "center",
     paddingVertical: vs(15),
-    paddingHorizontal: s(10),
+    paddingHorizontal: s(12),
     backgroundColor: "#6a5acd",
     gap: vs(10),
   },
@@ -269,13 +295,17 @@ const styles = StyleSheet.create({
     paddingVertical: vs(6),
     alignItems: "center",
   },
-  quoteContainer: {
-    height: vs(100),
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: vs(10),
-    paddingHorizontal: s(10),
-    backgroundColor: "rgba(102, 205, 170, 0.7)",
+  suggestionsContainer: {
+    height: vs(140),
+    paddingVertical: vs(13),
+    paddingHorizontal: s(12),
+    backgroundColor: "rgba(102, 205, 170, 1)",
+    borderColor: '#6a5acd',
+    borderRadius: 5,
+    borderWidth: 1,
+    shadowColor: '#0000cd',
+    shadowOpacity: 1,
+    elevation: 10,
   },
   header: {
     color: "white",
