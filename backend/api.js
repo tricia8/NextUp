@@ -636,6 +636,19 @@ router.delete("/user/bucketList/:sublistId", async (req, res) => {
       batch.delete(eventDoc.ref);
     }
 
+    docSnap
+      .data()
+      .collaborators.filter((id) => id !== ownerId)
+      .forEach((collaboratorId) => {
+        // Remove document from sharedSublists for each collaborator
+        const sharedListRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId);
+        batch.delete(sharedListRef);
+      });
+
     // Delete sublist document
     batch.delete(docSnap.ref);
 
@@ -768,8 +781,8 @@ router.get("/user/bucketList/:sublistId/events/:eventId", async (req, res) => {
     }));
 
     return res.json({
-      eventData: formattedEventData,
-      formattedPosts,
+      goalData: formattedEventData,
+      posts: formattedPosts,
     });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
