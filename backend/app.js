@@ -4,7 +4,10 @@ import morgan from "morgan";
 import * as admin from "firebase-admin";
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import dotenv from "dotenv";
 import api from "./api.js";
+
+dotenv.config();
 
 // Create Express app
 const app = express();
@@ -29,7 +32,7 @@ app.get("/", (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
