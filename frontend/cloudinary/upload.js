@@ -39,6 +39,11 @@ export async function uploadToCloudinary(base64Image, uid, subfolder) {
       }
     );
 
+    if (!uploadRes.ok) {
+      const errMessage = await uploadRes.text();
+      throw new Error(`Cloudinary upload failed: ${errMessage}`);
+    }
+
     const data = await uploadRes.json();
     console.log(data);
     return data.secure_url;
