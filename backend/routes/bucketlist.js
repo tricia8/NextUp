@@ -318,6 +318,28 @@ const updateOverallStats = async (userId) => {
   }
 };
 
+router.get("/user/:userId/bucketList/stats", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const statsRef = doc(db, "users", uid, "bucketList", "stats");
+    const docSnapshot = getDoc(statsRef);
+
+    if (docSnapshot.exists()) {
+      const data = docSnapshot.data();
+      return res.json({
+        totalEvents: data.totalEvents,
+        completedEvents: data.completedEvents,
+      });
+    } else {
+      return res.json({ totalEvents: 0, completedEvents: 0 });
+    }
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
+    return res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
 // Get all sublists for a user (both owned and shared)
 router.get("/users/:userId/bucketList", async (req, res) => {
   const { userId } = req.params;
