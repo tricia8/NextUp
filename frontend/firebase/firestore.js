@@ -640,7 +640,7 @@ export async function getAllEventsFormatted(uid, subBucketListId) {
 }
 
 // unformatted
-export async function getAllEvents(db, uid, subBucketLists) {
+export async function getAllEvents(uid, subBucketLists) {
   const allEvents = [];
   for (const sub of subBucketLists) {
     const eventsRef = collection(
