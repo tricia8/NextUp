@@ -38,7 +38,7 @@ router.post("/signature", (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    throw error;
+    res.status(500).json({ error: "Failed to generate Cloudinary signature." });
   }
 });
 
