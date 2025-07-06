@@ -44,5 +44,6 @@ export async function uploadToCloudinary(base64Image, uid, subfolder) {
     return data.secure_url;
   } catch (error) {
     console.log(error);
+    throw error;
   }
 }
