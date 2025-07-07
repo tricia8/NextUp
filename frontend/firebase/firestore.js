@@ -698,105 +698,71 @@ export const toggleEventCompletion = async (
   eventId
 ) => {
   try {
-    const eventDocRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId,
-      "events",
-      eventId
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${userId}/bucketList/${subBucketListId}/events/${eventId}/toggleCompletion`,
+      {
+        method: "POST",
+      }
     );
 
-    const subBucketListRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId
-    );
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to toggle event completion");
+    }
 
-    await runTransaction(db, async (transaction) => {
-      const eventSnap = await transaction.get(eventDocRef);
-
-      if (!eventSnap.exists()) {
-        throw new Error("Event not found");
-      }
-
-      const subBucketListSnap = await transaction.get(subBucketListRef);
-      if (!subBucketListSnap.exists()) {
-        throw new Error("Sub-bucket list not found.");
-      }
-      const currentCompleted = eventSnap.data().isCompleted;
-      const [completed, total] = subBucketListSnap.data().completionStatus || [
-        0, 0,
-      ];
-      const updatedStatus = !currentCompleted
-        ? [completed + 1, total]
-        : [Math.max(0, completed - 1), total]; // avoid negative values
-
-      /* await updateDoc(eventDocRef, {
-      isCompleted: !currentCompleted,
-    }); */
-
-      // update event
-      transaction.update(eventDocRef, { isCompleted: !currentCompleted });
-
-      // update subBucketList completionStatus
-      transaction.update(subBucketListRef, {
-        completionStatus: updatedStatus,
-      });
-    });
-
-    await updateOverallStats(userId);
+    return true;
   } catch (error) {
     console.error("Error toggling event completion");
     throw error;
   }
 };
 
-export async function getUpcomingEvents(uid, now, onData) {
+export async function getUpcomingEvents(uid, now) {
   try {
-    const q = query(
-      collectionGroup(db, "events"),
-      where("collaborators", "array-contains", uid),
-      where("deadline", ">=", Timestamp.fromDate(now)),
-      where("isCompleted", "==", false),
-      orderBy("deadline"),
-      limit(3)
-    );
+    const res = await fetch(`https://nextup-l0e9.onrender.com/api/events/upcoming`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uid,
+        now: new Date(now).toISOString(),
+      }),
+    });
 
-    const snapshot = await getDocs(q);
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to fetch upcoming events");
+    }
 
-    const events = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    onData(events);
+    const data = await res.json();
+    return data.events;
   } catch (err) {
     console.error("Error fetching upcoming:", err);
     throw err;
   }
 }
 
-export async function getOverdueEvents(uid, now, onData) {
+export async function getOverdueEvents(uid, now) {
   try {
-    const q = query(
-      collectionGroup(db, "events"),
-      where("collaborators", "array-contains", uid),
-      where("deadline", "<", Timestamp.fromDate(now)),
-      where("isCompleted", "==", false)
-    );
+    const res = await fetch(`https://nextup-l0e9.onrender.com/api/events/overdue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uid,
+        now: new Date(now).toISOString(),
+      }),
+    });
 
-    const snapshot = await getDocs(q);
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to fetch overdue events");
+    }
 
-    const events = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    onData(events);
+    const data = await res.json();
+    return data.events;
   } catch (err) {
     console.error("Error fetching overdue:", err);
     throw err;
