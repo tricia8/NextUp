@@ -363,7 +363,7 @@ router.get("/user/:userId/bucketList/stats", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const statsRef = doc(db, "users", uid, "bucketList", "stats");
+    const statsRef = doc(db, "users", userId, "bucketList", "stats");
     const docSnapshot = getDoc(statsRef);
 
     if (docSnapshot.exists()) {
@@ -548,7 +548,7 @@ router.get("/user/bucketList/:sublistId", async (req, res) => {
 });
 
 // Get sublists filtered by access levels
-router.get("/users/:userId/bucketList/filteredSublists", async (req, res) => {
+router.get("/filteredSublists", async (req, res) => {
   const { userId } = req.params;
   const { accessLevels } = req.query;
 
@@ -736,7 +736,7 @@ async function getAllEventsFormatted(userId, sublistId) {
 }
 
 // Get all events of given sublists
-router.post("/users/:userId/bucketList/allEvents", async (req, res) => {
+router.post("/sublists/allEvents", async (req, res) => {
   const { userId } = req.params;
   const { subBucketLists } = req.body;
 
@@ -783,6 +783,36 @@ router.post("/users/:userId/bucketList/allEvents", async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch events" });
   }
 });
+
+// Get upcoming events
+router.post("/events/upcoming", async (req, res) => {
+  const { uid, now } = req.body;
+
+  if (!uid || !now) {
+    return res.status(400).json({ error: "'uid' and 'now' are required in request body" });
+  }
+
+  try {
+    const q = query(
+      collectionGroup(db, "events"),
+      where("collaborators", "array-contains", uid),
+      where("deadline", ">=", Timestamp.fromDate(now)),
+      where("isCompleted", "==", false),
+      orderBy("deadline"),
+      limit(3)
+    );
+
+    const snapshot = await getDocs(q);
+    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return res.json({ events });
+  } catch (error) {
+    console.error('Error fetching upcoming events:', err);
+    return res.status(500).json({ error: 'Failed to fetch upcoming events' });
+  }
+})
+
+// Get overdue events
 
 // Add a goal (owners and collaborators only)
 router.post("/user/bucketList/:sublistId/events", async (req, res) => {
