@@ -196,19 +196,19 @@ export const getOwnerProfile = async (uid) => {
 
 export const getUserStats = async (uid) => {
   try {
-    const statsRef = doc(db, "users", uid, "bucketList", "stats");
-    const docSnapshot = getDoc(statsRef);
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/${uid}/bucketList/stats`
+    );
 
-    if (docSnapshot.exists()) {
-      const data = docSnapshot.data();
-      return {
-        totalEvents: data.totalEvents,
-        completedEvents: data.completedEvents,
-      };
-    } else {
-      console.log("Stats document does not exist for user:", uid);
-      return { totalEvents: 0, completedEvents: 0 };
+    if (!res.ok) {
+      throw new Error("Failed to fetch user stats");
     }
+
+    const data = await res.json();
+    return {
+      totalEvents: data.totalEvents,
+      completedEvents: data.completedEvents,
+    };
   } catch (error) {
     console.error("Error fetching user stats:", error);
     throw error;
