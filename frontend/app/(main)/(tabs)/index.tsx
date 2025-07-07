@@ -93,11 +93,10 @@ export default function HomeScreen() {
         const now = new Date();
 
         try {
-          await getUpcomingEvents(uid, now, setUpcomingEvents);
-
-          await getOverdueEvents(uid, now, (overdue: Event[]) => {
-            setOverdueCount(overdue.length);
-          });
+          const upcoming = await getUpcomingEvents(uid, now);
+          const overdue = await getOverdueEvents(uid, now);
+          setUpcomingEvents(upcoming);
+          setOverdueCount(overdue.length);
         } catch (error) {
           console.log("Error fetching upcoming and overdue events:", error);
         }
