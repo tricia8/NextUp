@@ -816,7 +816,7 @@ router.post("/events/upcoming", async (req, res) => {
 router.post("/events/overdue", async (req, res) => {
   const { uid, now } = req.body;
 
-  if (!uid || now) {
+  if (!uid || !now) {
     return res.status(400).json({ error: "'uid' and 'now' are required in request body"})
   }
 
