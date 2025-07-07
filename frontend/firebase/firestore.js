@@ -333,24 +333,21 @@ export const getSubBucketList = async (userId, subBucketListId) => {
 
 export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   try {
-    const q = query(
-    collectionGroup(db, 'bucketList'),
-    where("collaborators", "array-contains", uid),
-    where("accessLevel", "in", accessLevels),
-  );
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        title: data.title,
-        description: data.description ?? "",
-        accessLevel: data.accessLevel,
-        collaborators: data.collaborators,
-        createdAt: data.createdAt,
-      };
+    const queryParams = new URLSearchParams({
+      userId: uid,
+      accessLevels: accessLevels.join(","),
     });
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/filteredSublists?${queryParams}`
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch sublists");
+    }
+
+    const data = await res.json();
+    return data.sublists;
   } catch (error) {
     console.error("Error fetching filtered subbucketlists:", error);
     throw error;
