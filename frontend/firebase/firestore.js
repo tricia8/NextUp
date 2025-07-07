@@ -804,23 +804,29 @@ export async function getOverdueEvents(uid, now) {
 }
 
 //friends
-export const createRequest = async (userId, friendId) => {
+export const createRequest = async (senderId, receiverId) => {
   try {
-    const friendSnapshot = await getDoc(doc(db, "users", friendId));
-    const friendData = friendSnapshot.data();
-    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
-    const currentUserData = currentUserSnapshot.data();
+    const token = await getIdTokenFromFirebaseUser();
 
-    const requestRef = await addDoc(collection(db, "friendRequests"), {
-      senderId: userId,
-      receiverId: friendId,
-      senderName: currentUserData?.username,
-      receiverName: friendData?.username,
-      sentAt: serverTimestamp(),
-      status: "pending",
-    });
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/friends/request",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ senderId, receiverId }),
+      }
+    );
 
-    return requestRef.id;
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to send friend request");
+    }
+
+    const data = await res.json();
+    return data.requestId;
   } catch (error) {
     console.log("Error sending friend request:", error);
     throw error;
@@ -829,23 +835,24 @@ export const createRequest = async (userId, friendId) => {
 
 export const getRequestInfo = async (requestId) => {
   try {
-    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (!requestSnapshot.exists()) {
-      throw new Error("Friend request not found");
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/request/${requestId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch friend request info");
     }
 
-    const requestData = requestSnapshot.data();
-
-    return {
-      id: requestSnapshot.id,
-      senderId: requestData.senderId,
-      receiverId: requestData.receiverId,
-      senderName: requestData.senderName,
-      receiverName: requestData.receiverName,
-      sentAt: requestData.sentAt,
-      status: requestData.status,
-    };
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.log("Error getting request info:", error);
     throw error;
@@ -854,30 +861,24 @@ export const getRequestInfo = async (requestId) => {
 
 export const getFriendRequests = async (userId) => {
   try {
-    const q = query(
-      collection(db, "friendRequests"),
-      where("receiverId", "==", userId),
-      where("status", "==", "pending")
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/requests/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return [];
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch friend requests");
     }
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        senderId: data.senderId,
-        receiverId: data.receiverId,
-        senderName: data.senderName,
-        receiverName: data.receiverName,
-        sentAt: data.sentAt,
-        status: data.status,
-      };
-    });
+    const { requests } = await res.json();
+    return requests;
   } catch (error) {
     console.log("Error fetching friend requests:", error);
     throw error;
@@ -886,29 +887,24 @@ export const getFriendRequests = async (userId) => {
 
 export const getSentRequests = async (userId) => {
   try {
-    const q = query(
-      collection(db, "friendRequests"),
-      where("senderId", "==", userId)
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/sent/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return [];
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch sent requests");
     }
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        senderId: data.senderId,
-        receiverId: data.receiverId,
-        senderName: data.senderName,
-        receiverName: data.receiverName,
-        sentAt: data.sentAt,
-        status: data.status,
-      };
-    });
+    const { requests } = await res.json();
+    return requests;
   } catch (error) {
     console.log("Error fetching sent requests:", error);
     throw error;
@@ -917,31 +913,28 @@ export const getSentRequests = async (userId) => {
 
 export const hasExistingRequest = async (userAId, userBId) => {
   try {
-    const requestRef = collection(db, "friendRequests");
+    const token = await getIdTokenFromFirebaseUser();
 
-    const incomingQ = query(
-      // Check for request from userB to userA
-      requestRef,
-      where("senderId", "==", userBId),
-      where("receiverId", "==", userAId),
-      where("status", "==", "pending")
+    const queryParams = new URLSearchParams({ userAId, userBId });
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/hasRequest?${queryParams}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const incomingSnap = await getDocs(incomingQ);
-    if (!incomingSnap.empty) return true;
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        errorData.error || "Failed to check for existing request"
+      );
+    }
 
-    const outgoingQ = query(
-      // Check for request from userA to userB
-      requestRef,
-      where("senderId", "==", userAId),
-      where("receiverId", "==", userBId),
-      where("status", "==", "pending")
-    );
-
-    const outgoingSnap = await getDocs(outgoingQ);
-    if (!outgoingSnap.empty) return true;
-
-    return false;
+    const data = await res.json();
+    return data.exists;
   } catch (error) {
     console.log("Error checking for existing request", error);
   }
@@ -949,44 +942,26 @@ export const hasExistingRequest = async (userAId, userBId) => {
 
 export const addFriend = async (userId, friendId, requestId) => {
   try {
-    await runTransaction(db, async (transaction) => {
-      // Read both user docs inside transaction
-      const friendDocRef = doc(db, "users", friendId);
-      const friendSnapshot = await transaction.get(friendDocRef);
-      if (!friendSnapshot.exists()) {
-        throw new Error("Friend user does not exist");
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/add`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId, friendId, requestId }),
       }
-      const friendData = friendSnapshot.data();
+    );
 
-      const currentUserDocRef = doc(db, "users", userId);
-      const currentUserSnapshot = await transaction.get(currentUserDocRef);
-      if (!currentUserSnapshot.exists()) {
-        throw new Error("Current user does not exist");
-      }
-      const currentUserData = currentUserSnapshot.data();
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to add friend");
+    }
 
-      const currentUserFriendRef = doc(
-        db,
-        "users",
-        userId,
-        "friends",
-        friendId
-      );
-      transaction.set(currentUserFriendRef, {
-        username: friendData?.username,
-        photoUrl: friendData?.photoUrl || null,
-      });
-
-      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
-      transaction.set(otherUserFriendRef, {
-        username: currentUserData?.username,
-        photoUrl: currentUserData?.photoUrl || null,
-      });
-
-      // Delete friend request
-      const requestDocRef = doc(db, "friendRequests", requestId);
-      transaction.delete(requestDocRef);
-    });
+    return true;
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
@@ -995,15 +970,24 @@ export const addFriend = async (userId, friendId, requestId) => {
 
 export const rejectFriend = async (requestId) => {
   try {
-    const reqDoc = doc(db, "friendRequests", requestId);
-    //const reqSnapshot = await getDoc(reqDoc);
+    const token = await getIdTokenFromFirebaseUser();
 
-    /*if (!reqSnapshot.exists()) {
-      throw new Error("Request not found");
-    }*/
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friendRequests/${requestId}/reject`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    //await updateDoc(reqDoc, { status: "rejected" });
-    await deleteDoc(reqDoc);
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to reject friend request");
+    }
+
+    return true;
   } catch (error) {
     console.error("Error rejecting friend", error);
     throw error;
@@ -1012,19 +996,24 @@ export const rejectFriend = async (requestId) => {
 
 export const deleteFriend = async (userId, friendId) => {
   try {
-    await runTransaction(db, async (transaction) => {
-      const currentUserFriendRef = doc(
-        db,
-        "users",
-        userId,
-        "friends",
-        friendId
-      );
-      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
+    const token = await getIdTokenFromFirebaseUser();
 
-      transaction.delete(currentUserFriendRef);
-      transaction.delete(otherUserFriendRef);
-    });
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${userId}/friends/${friendId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to delete friend");
+    }
+
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error deleting friend:", error);
     throw error;
@@ -1033,17 +1022,23 @@ export const deleteFriend = async (userId, friendId) => {
 
 export async function getFriends(currentUserId) {
   try {
-    const ref = collection(db, "users", currentUserId, "friends");
-    const snapshot = await getDocs(ref);
-    const data = snapshot.docs.map((doc) => {
-      const docData = doc.data();
-      return {
-        uid: doc.id,
-        username: docData.username ?? "",
-        photoUrl: docData.photoUrl ?? null,
-      };
-    });
-    return data;
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${currentUserId}/friends`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch friends");
+    }
+
+    const data = await res.json();
+    return data.friends;
   } catch (error) {
     console.error("Error fetching friends:", error);
     throw error;
