@@ -638,35 +638,28 @@ export async function getAllEventsFormatted(uid, subBucketListId) {
 
 // unformatted
 export async function getAllEvents(uid, subBucketLists) {
-  const allEvents = [];
-  for (const sub of subBucketLists) {
-    const eventsRef = collection(
-      db,
-      "users",
-      uid,
-      "bucketList",
-      sub.id,
-      "events"
+  try {
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/sublists/allEvents`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ uid, subBucketLists }),
+      }
     );
 
-    const eventsSnap = await getDocs(eventsRef);
+    if (!res.ok) {
+      throw new Error("Failed to fetch events");
+    }
 
-    const events = eventsSnap.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ownerId: data.ownerId,
-        title: data.title,
-        description: data.description,
-        categories: data.categories,
-        isCompleted: data.completed,
-        deadline: data.deadline,
-        createdAt: data.createdAt,
-      };
-    });
-    allEvents.push(...events);
+    const data = await res.json();
+    return data.events;
+  } catch (error) {
+    console.error("Error fetching events of given sublists:", error);
+    throw error;
   }
-  return allEvents;
 }
 
 // title, description, categories, deadline, isCompleted, collaborators
@@ -818,24 +811,21 @@ export const createRequest = async (userId, friendId) => {
     const currentUserSnapshot = await getDoc(doc(db, "users", userId));
     const currentUserData = currentUserSnapshot.data();
 
-    const requestRef = await addDoc(
-      collection(db, "friendRequests"),
-      {
-        senderId: userId,
-        receiverId: friendId,
-        senderName: currentUserData?.username,
-        receiverName: friendData?.username,
-        sentAt: serverTimestamp(),
-        status: "pending",
-      }
-    );
+    const requestRef = await addDoc(collection(db, "friendRequests"), {
+      senderId: userId,
+      receiverId: friendId,
+      senderName: currentUserData?.username,
+      receiverName: friendData?.username,
+      sentAt: serverTimestamp(),
+      status: "pending",
+    });
 
     return requestRef.id;
   } catch (error) {
     console.log("Error sending friend request:", error);
     throw error;
   }
-}
+};
 
 export const getRequestInfo = async (requestId) => {
   try {
@@ -844,7 +834,7 @@ export const getRequestInfo = async (requestId) => {
     if (!requestSnapshot.exists()) {
       throw new Error("Friend request not found");
     }
-    
+
     const requestData = requestSnapshot.data();
 
     return {
@@ -855,28 +845,28 @@ export const getRequestInfo = async (requestId) => {
       receiverName: requestData.receiverName,
       sentAt: requestData.sentAt,
       status: requestData.status,
-    }
+    };
   } catch (error) {
     console.log("Error getting request info:", error);
     throw error;
   }
-}
+};
 
 export const getFriendRequests = async (userId) => {
   try {
     const q = query(
       collection(db, "friendRequests"),
       where("receiverId", "==", userId),
-      where("status", "==", "pending"),
+      where("status", "==", "pending")
     );
 
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return []; 
+      return [];
     }
 
-    return snapshot.docs.map(doc => {
+    return snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -886,28 +876,28 @@ export const getFriendRequests = async (userId) => {
         receiverName: data.receiverName,
         sentAt: data.sentAt,
         status: data.status,
-      }
+      };
     });
   } catch (error) {
     console.log("Error fetching friend requests:", error);
     throw error;
   }
-}
+};
 
 export const getSentRequests = async (userId) => {
   try {
     const q = query(
       collection(db, "friendRequests"),
-      where("senderId", "==", userId),
+      where("senderId", "==", userId)
     );
 
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return []; 
+      return [];
     }
 
-    return snapshot.docs.map(doc => {
+    return snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -917,19 +907,20 @@ export const getSentRequests = async (userId) => {
         receiverName: data.receiverName,
         sentAt: data.sentAt,
         status: data.status,
-      }
+      };
     });
   } catch (error) {
     console.log("Error fetching sent requests:", error);
     throw error;
   }
-}
+};
 
 export const hasExistingRequest = async (userAId, userBId) => {
   try {
     const requestRef = collection(db, "friendRequests");
 
-    const incomingQ = query(     // Check for request from userB to userA
+    const incomingQ = query(
+      // Check for request from userB to userA
       requestRef,
       where("senderId", "==", userBId),
       where("receiverId", "==", userAId),
@@ -939,7 +930,8 @@ export const hasExistingRequest = async (userAId, userBId) => {
     const incomingSnap = await getDocs(incomingQ);
     if (!incomingSnap.empty) return true;
 
-    const outgoingQ = query(     // Check for request from userA to userB
+    const outgoingQ = query(
+      // Check for request from userA to userB
       requestRef,
       where("senderId", "==", userAId),
       where("receiverId", "==", userBId),
@@ -953,7 +945,7 @@ export const hasExistingRequest = async (userAId, userBId) => {
   } catch (error) {
     console.log("Error checking for existing request", error);
   }
-}
+};
 
 export const addFriend = async (userId, friendId, requestId) => {
   try {
@@ -973,7 +965,13 @@ export const addFriend = async (userId, friendId, requestId) => {
       }
       const currentUserData = currentUserSnapshot.data();
 
-      const currentUserFriendRef = doc(db, "users", userId, "friends", friendId);
+      const currentUserFriendRef = doc(
+        db,
+        "users",
+        userId,
+        "friends",
+        friendId
+      );
       transaction.set(currentUserFriendRef, {
         username: friendData?.username,
         photoUrl: friendData?.photoUrl || null,
@@ -1010,12 +1008,18 @@ export const rejectFriend = async (requestId) => {
     console.error("Error rejecting friend", error);
     throw error;
   }
-}
+};
 
 export const deleteFriend = async (userId, friendId) => {
   try {
     await runTransaction(db, async (transaction) => {
-      const currentUserFriendRef = doc(db, "users", userId, "friends", friendId);
+      const currentUserFriendRef = doc(
+        db,
+        "users",
+        userId,
+        "friends",
+        friendId
+      );
       const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
 
       transaction.delete(currentUserFriendRef);
