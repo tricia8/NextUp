@@ -18,10 +18,12 @@ export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setLoading(false);
     });
 
     return () => {
@@ -75,7 +77,10 @@ export function AuthProvider({ children }) {
         type: "warning",
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
+        color: "black",
+        duration: 2300,
       });
+      return results;
     } catch (error) {
       console.error("Signup error:", error.message);
       throw error;
@@ -112,7 +117,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, register, logout, forgotPassword }}
+      value={{ user, loading, login, register, logout, forgotPassword }}
     >
       {children}
     </AuthContext.Provider>
