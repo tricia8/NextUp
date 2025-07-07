@@ -796,7 +796,7 @@ router.post("/events/upcoming", async (req, res) => {
     const q = query(
       collectionGroup(db, "events"),
       where("collaborators", "array-contains", uid),
-      where("deadline", ">=", Timestamp.fromDate(now)),
+      where("deadline", ">=", Timestamp.fromDate(new Date(now))),
       where("isCompleted", "==", false),
       orderBy("deadline"),
       limit(3)
@@ -813,6 +813,34 @@ router.post("/events/upcoming", async (req, res) => {
 })
 
 // Get overdue events
+router.post("/events/overdue", async (req, res) => {
+  const { uid, now } = req.body;
+
+  if (!uid || now) {
+    return res.status(400).json({ error: "'uid' and 'now' are required in request body"})
+  }
+
+  try {
+    const q = query(
+      collectionGroup(db, "events"),
+      where("collaborators", "array-contains", uid),
+      where("deadline", "<", Timestamp.fromDate(new Date(now))),
+      where("isCompleted", "==", false)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const events = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.json({ events });
+  } catch (err) {
+    console.error("Error fetching overdue events:", err);
+    return res.status(500).json({ error: 'Failed to fetch overdue events' });
+  }
+})
 
 // Add a goal (owners and collaborators only)
 router.post("/user/bucketList/:sublistId/events", async (req, res) => {
