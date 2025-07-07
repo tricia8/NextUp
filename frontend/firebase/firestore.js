@@ -14,12 +14,11 @@ import {
   where,
   collectionGroup,
   getDocs,
-  orderBy,
-  limit,
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { getIdTokenFromFirebaseUser } from "../utils/getIdToken";
 
 dayjs.extend(relativeTime);
 
@@ -196,8 +195,16 @@ export const getOwnerProfile = async (uid) => {
 
 export const getUserStats = async (uid) => {
   try {
+    const token = await getIdTokenFromFirebaseUser();
+
     const res = await fetch(
-      `https://nextup-l0e9.onrender.com/api/user/${uid}/bucketList/stats`
+      `https://nextup-l0e9.onrender.com/api/user/${uid}/bucketList/stats`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
     if (!res.ok) {
@@ -333,13 +340,20 @@ export const getSubBucketList = async (userId, subBucketListId) => {
 
 export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   try {
+    const token = await getIdTokenFromFirebaseUser();
+
     const queryParams = new URLSearchParams({
       userId: uid,
       accessLevels: accessLevels.join(","),
     });
 
     const res = await fetch(
-      `https://nextup-l0e9.onrender.com/api/filteredSublists?${queryParams}`
+      `https://nextup-l0e9.onrender.com/api/filteredSublists?${queryParams}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
     if (!res.ok) {
@@ -639,12 +653,15 @@ export async function getAllEventsFormatted(uid, subBucketListId) {
 // unformatted
 export async function getAllEvents(uid, subBucketLists) {
   try {
+    const token = await getIdTokenFromFirebaseUser();
+
     const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/sublists/allEvents`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ uid, subBucketLists }),
       }
@@ -698,10 +715,15 @@ export const toggleEventCompletion = async (
   eventId
 ) => {
   try {
+    const token = await getIdTokenFromFirebaseUser();
+
     const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/users/${userId}/bucketList/${subBucketListId}/events/${eventId}/toggleCompletion`,
       {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
@@ -719,16 +741,22 @@ export const toggleEventCompletion = async (
 
 export async function getUpcomingEvents(uid, now) {
   try {
-    const res = await fetch(`https://nextup-l0e9.onrender.com/api/events/upcoming`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        uid,
-        now: new Date(now).toISOString(),
-      }),
-    });
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/events/upcoming`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          uid,
+          now: new Date(now).toISOString(),
+        }),
+      }
+    );
 
     if (!res.ok) {
       const data = await res.json();
@@ -745,16 +773,22 @@ export async function getUpcomingEvents(uid, now) {
 
 export async function getOverdueEvents(uid, now) {
   try {
-    const res = await fetch(`https://nextup-l0e9.onrender.com/api/events/overdue`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        uid,
-        now: new Date(now).toISOString(),
-      }),
-    });
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/events/overdue`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          uid,
+          now: new Date(now).toISOString(),
+        }),
+      }
+    );
 
     if (!res.ok) {
       const data = await res.json();
