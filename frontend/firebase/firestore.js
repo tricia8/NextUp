@@ -27,71 +27,78 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   console.log("Normalized username:", normalizedUsername);
 
   if (normalizedUsername.length >= 1 && normalizedUsername.length <= 15) {
-    const usernameRef = doc(db, "usernames", normalizedUsername);
-    const usernameSnap = await getDoc(usernameRef);
-    console.log("Username exists in DB:", usernameSnap.exists());
-    setAvailable(!usernameSnap.exists());
+    try {
+      const res = await fetch(
+        `https://nextup-l0e9.onrender.com/api/checkUsername?username=${normalizedUsername}`
+      );
+
+      if (!res.ok) {
+        console.error("Server error checking username");
+        setAvailable(null);
+        return;
+      }
+
+      const data = await res.json();
+      setAvailable(data.available);
+    } catch (error) {
+      console.error("Error checking username:", error);
+      setAvailable(null);
+    }
   } else {
     console.log("Invalid username length");
-    setAvailable(null); // invalid length
+    setAvailable(null);
   }
 }, 500);
 
 export const createUser = async (user, username) => {
-  const userRef = doc(db, "users", user.uid);
-  const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = doc(db, "users", user.uid, "bucketList", "stats");
+  const token = await getIdTokenFromFirebaseUser();
 
-  await runTransaction(db, async (transaction) => {
-    const usernameDoc = await transaction.get(usernameRef);
-    if (usernameDoc.exists()) {
-      throw new Error("Username already taken at final step.");
+  try {
+    const res = await fetch(`https://nextup-l0e9.onrender.com/api/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ uid: user.uid, username, email: user.email }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error?.error || "Failed to create user");
     }
 
-    transaction.set(userRef, {
-      uid: user.uid,
-      username: username,
-      email: user.email,
-      photoUrl: user.photoURL ?? null,
-      displayName: user.displayName ?? username,
-      bio: "",
-      category: user.category ?? null,
-    });
-
-    transaction.set(usernameRef, { uid: user.uid });
-
-    transaction.set(bucketListStatsRef, {
-      totalEvents: 0,
-      completedEvents: 0,
-    });
-  });
+    return true;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 };
 
 //profile
 export const updateProfile = async (userId, newData) => {
   try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (!userSnap.exists()) {
-      throw new Error("User does not exist");
-    }
-
-    const existingData = userSnap.data();
-    const updatedFields = {};
-
-    for (const key in newData) {
-      if (newData[key] !== existingData[key]) {
-        updatedFields[key] = newData[key];
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/users/updateProfile",
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newData),
       }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error?.error || "Failed to update profile");
     }
 
-    if (Object.keys(updatedFields).length > 0) {
-      await updateDoc(userRef, updatedFields);
-      console.log("Updated fields:", updatedFields);
-    } else {
-      console.log("No fields were changed. Skipping update.");
-    }
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error updating profile.");
     throw error;
@@ -100,24 +107,33 @@ export const updateProfile = async (userId, newData) => {
 
 export const getUserProfile = async (uid) => {
   try {
-    const docRef = doc(db, "users", uid);
-    const docSnapshot = await getDoc(docRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (docSnapshot.exists()) {
-      const data = docSnapshot.data();
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${uid}/profile`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      return {
-        uid: data.id,
-        username: data.username,
-        email: data.email,
-        photoUrl: data.photoUrl,
-        displayName: data.displayName,
-        bio: data.bio,
-        category: data.category,
-      };
-    } else {
-      return null;
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error?.error || "Failed to fetch user profile");
     }
+
+    const data = await res.json();
+
+    return {
+      uid: data.uid,
+      username: data.username,
+      email: data.email,
+      photoUrl: data.photoUrl,
+      displayName: data.displayName,
+      bio: data.bio,
+      category: data.category,
+    };
   } catch (error) {
     console.error("Error fetching user profile:", error);
     throw error;
@@ -519,6 +535,33 @@ export const deleteSubBucketList = async (subBucketList) => {
     return data; // success message
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSublistInvites = async () => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/sublists/invites`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData?.error || "Failed to fetch list invites");
+    }
+
+    const data = await res.json();
+    return data.invites;
+  } catch (error) {
+    console.error("Error fetching list invites:", error);
     throw error;
   }
 };
@@ -1164,19 +1207,26 @@ export async function getFriends(currentUserId) {
 
 //miscellaneous
 export const getRelationship = async (currentUserId, targetUserId) => {
-  if (currentUserId === targetUserId) {
-    return "self";
-  }
-
   try {
-    const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
-    const docSnap = await getDoc(docRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (docSnap.exists()) {
-      return "friend";
-    } else {
-      return "none";
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/relationship?targetUserId=${targetUserId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to get relationship");
     }
+
+    const data = await res.json();
+    return data.relationship;
   } catch (error) {
     console.error("Error fetching relationship:", error);
     throw error;
@@ -1185,20 +1235,29 @@ export const getRelationship = async (currentUserId, targetUserId) => {
 
 export async function getAllUsers() {
   try {
-    const snapshot = await getDocs(collection(db, "users"));
-    const data = snapshot.docs.map((doc) => {
-      const docData = doc.data();
-      return {
-        uid: doc.id,
-        username: docData.username,
-        photoUrl: docData.photoUrl,
-        email: docData.email,
-        displayName: docData.displayName,
-        bio: docData.bio,
-        category: docData.category,
-      };
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch("https://nextup-l0e9.onrender.com/api/users", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-    return data;
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch users");
+    }
+
+    const users = await res.json();
+    return users.map((user) => ({
+      uid: user.uid,
+      username: user.username,
+      photoUrl: user.photoUrl,
+      email: user.email,
+      displayName: user.displayName,
+      bio: user.bio,
+      category: user.category,
+    }));
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;
