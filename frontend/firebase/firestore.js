@@ -470,125 +470,68 @@ export const deleteSubBucketList = async (subBucketList) => {
 
 //events
 export const addEvent = async (
-  userId,
   subBucketListId,
   { title, description, categories, deadline, collaborators }
 ) => {
   try {
-    const subBucketListRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await post(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          categories,
+          deadline,
+          collaborators, // array of userIds
+        }),
+      }
     );
 
-    // generate a new document with random ID
-    const newEventRef = doc(
-      collection(db, "users", userId, "bucketList", subBucketListId, "events")
-    );
-
-    const eventData = {
-      ownerId: userId,
-      title,
-      description,
-      categories,
-      collaborators,
-      isCompleted: false,
-      createdAt: serverTimestamp(),
-    };
-
-    // deadline is optional
-    if (deadline) {
-      eventData.deadline = Timestamp.fromDate(deadline); // `deadline` is a JS Date
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` || "Failed to add event"
+      );
     }
 
-    // run transaction to ensure atomicity, ensures data consistency even with concurrent edits
-    // good practice for user collaboration
-    await runTransaction(db, async (transaction) => {
-      // update subBucketList completionStatus
-      const subBucketListSnap = await transaction.get(subBucketListRef);
-
-      if (!subBucketListSnap.exists()) {
-        throw new Error("Sub-bucket list not found.");
-      }
-
-      // add new event
-      transaction.set(newEventRef, eventData);
-
-      const completionStatus = subBucketListSnap.data().completionStatus || [
-        0, 0,
-      ]; // default fallback set
-
-      transaction.update(subBucketListRef, {
-        completionStatus: [completionStatus[0], completionStatus[1] + 1],
-      });
-    });
-    // update overall stats
-    await updateOverallStats(userId);
-
-    return newEventRef.id;
+    const data = await res.json();
+    return data; // success boolean and new event ID
   } catch (error) {
     console.error("Error adding event:", error);
     throw error;
   }
 };
 
-export const deleteEvent = async (userId, subBucketListId, eventId) => {
+export const deleteEvent = async (subBucketListId, eventId) => {
   try {
-    const eventDocRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId,
-      "events",
-      eventId
-    );
+    const token = await getIdTokenFromFirebaseUser();
 
-    const subBucketListRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId
-    );
-
-    await runTransaction(db, async (transaction) => {
-      const eventSnap = await transaction.get(eventDocRef);
-
-      if (!eventSnap.exists()) {
-        throw new Error("Event not found.");
-      }
-
-      const isCompleted = eventSnap.data().isCompleted;
-
-      const subBucketListSnap = await transaction.get(subBucketListRef);
-
-      if (!subBucketListSnap.exists()) {
-        throw new Error("Sub-bucket list not found.");
-      }
-
-      const completionStatus = subBucketListSnap.data().completionStatus || [
-        0, 0,
-      ]; // default fallback set
-
-      const [completed, total] = completionStatus;
-
-      // avoid negative values
-      const updatedStatus = isCompleted
-        ? [Math.max(0, completed - 1), Math.max(0, total - 1)]
-        : [completed, Math.max(0, total - 1)];
-
-      transaction.delete(eventDocRef);
-      transaction.update(subBucketListRef, {
-        completionStatus: updatedStatus,
+    const res =
+      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      console.log(
-        `Deleted event ${eventId} and updated sublist ${subBucketListId}`
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` ||
+          "Failed to delete event or update completion stats"
       );
-    });
-    await updateOverallStats(userId);
+    }
+
+    const data = await res.json();
+    return data; // success boolean and message
   } catch (error) {
     console.error("Error deleting event:", error);
     throw error;
@@ -618,52 +561,37 @@ const formatEventData = (data) => {
 };
 
 // for [goalId] screen
-export const getEvent = async (userId, subBucketListId, eventId) => {
+export const getEvent = async (subBucketListId, eventId) => {
   try {
-    const eventDoc = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId,
-      "events",
-      eventId
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const docSnap = await getDoc(eventDoc);
-    if (!docSnap.exists()) {
-      throw new Error("Event not found");
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` ||
+          "Failed to fetch event"
+      );
     }
 
-    const data = docSnap.data(); // object
-
-    const title = data.title;
-    const description = data.description ?? ""; // default to empty string
-    const categories = data.categories ?? []; // default to empty array
-    const deadlineFormatted = data.deadline.toDate()
-      ? formatDisplayDate(data.deadline.toDate())
-      : null;
-    const isCompleted = data.isCompleted;
-    const collaborators = data.collaborators;
-    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
-    const createdAtFormatted = formatDisplayDate(createdAt);
-
-    return {
-      title,
-      description,
-      categories,
-      deadline: deadlineFormatted, // could be null
-      isCompleted,
-      collaborators,
-      createdAt: createdAtFormatted,
-    };
+    const data = await res.json();
+    return data; // goalData, posts
   } catch (error) {
     console.error("Error fetching event:", error);
     throw error;
   }
 };
 
-// for [sublistId] screen
+// for [sublistId] screen (might not need, since logic is encapsulated in getSubBucketList))
 export async function getAllEventsFormatted(uid, subBucketListId) {
   const allEvents = [];
 
@@ -716,29 +644,32 @@ export async function getAllEvents(uid, subBucketLists) {
 }
 
 // title, description, categories, deadline, isCompleted, collaborators
-// used for updates excluding completion status
-export const updateEvent = async (
-  userId,
-  subBucketListId,
-  eventId,
-  updates = {}
-) => {
+export const updateEvent = async (subBucketListId, eventId, updates = {}) => {
   try {
-    const eventDocRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId,
-      "events",
-      eventId
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await patch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      }
     );
-    const docSnap = await getDoc(eventDocRef);
-    if (!docSnap.exists()) {
-      throw new Error("Event not found");
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` ||
+          "Failed to update event"
+      );
     }
 
-    await updateDoc(eventDocRef, updates);
+    const data = await res.json();
+    return { eventData: data.formattedEventData };
   } catch (error) {
     console.error("Error updating event:", error);
     throw error;
