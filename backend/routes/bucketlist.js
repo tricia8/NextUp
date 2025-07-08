@@ -3,10 +3,44 @@ import db from "../app.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime.js";
+import {
+  collection,
+  doc,
+  getDoc,
+  runTransaction,
+  Timestamp,
+  query,
+  where,
+  collectionGroup,
+  getDocs,
+} from "firebase/firestore";
 
 dayjs.extend(relativeTime);
 
 const router = Router();
+
+// Get sublist invites
+router.get("/sublists/invites", async (req, res) => {
+  const authUserId = req.user;
+
+  try {
+    const q = query(
+      collection(db, "listInvites"),
+      where("receiverId", "==", authUserId)
+    );
+    const snapshot = await getDocs(q);
+
+    const invites = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.status(200).json({ invites });
+  } catch (error) {
+    console.error("Error fetching invites:", error);
+    return res.status(500).json({ error: "Failed to fetch list invites" });
+  }
+});
 
 // Invite collaborators as an owner
 router.post(
@@ -359,6 +393,7 @@ const updateOverallStats = async (userId) => {
   }
 };
 
+// Get user stats
 router.get("/user/:userId/bucketList/stats", async (req, res) => {
   const { userId } = req.params;
 
@@ -549,8 +584,12 @@ router.get("/user/bucketList/:sublistId", async (req, res) => {
 
 // Get sublists filtered by access levels
 router.get("/filteredSublists", async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.query;
   const { accessLevels } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: "Missing 'userId' query parameter" });
+  }
 
   if (!accessLevels) {
     return res
@@ -737,8 +776,11 @@ async function getAllEventsFormatted(userId, sublistId) {
 
 // Get all events of given sublists
 router.post("/sublists/allEvents", async (req, res) => {
-  const { userId } = req.params;
-  const { subBucketLists } = req.body;
+  const { uid, subBucketLists } = req.body;
+
+  if (!uid) {
+    return res.status(400).json({ error: "Missing 'uid' in request body" });
+  }
 
   if (!Array.isArray(subBucketLists)) {
     return res
@@ -753,7 +795,7 @@ router.post("/sublists/allEvents", async (req, res) => {
       const eventsRef = collection(
         db,
         "users",
-        userId,
+        uid,
         "bucketList",
         sub.id,
         "events"
@@ -786,16 +828,23 @@ router.post("/sublists/allEvents", async (req, res) => {
 
 // Get upcoming events
 router.post("/events/upcoming", async (req, res) => {
+  const authUserId = req.user;
   const { uid, now } = req.body;
 
   if (!uid || !now) {
-    return res.status(400).json({ error: "'uid' and 'now' are required in request body" });
+    return res
+      .status(400)
+      .json({ error: "'uid' and 'now' are required in request body" });
+  }
+
+  if (authUserId !== uid) {
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
   try {
     const q = query(
       collectionGroup(db, "events"),
-      where("collaborators", "array-contains", uid),
+      where("collaborators", "array-contains", authUserId),
       where("deadline", ">=", Timestamp.fromDate(new Date(now))),
       where("isCompleted", "==", false),
       orderBy("deadline"),
@@ -803,27 +852,34 @@ router.post("/events/upcoming", async (req, res) => {
     );
 
     const snapshot = await getDocs(q);
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     return res.json({ events });
   } catch (error) {
-    console.error('Error fetching upcoming events:', err);
-    return res.status(500).json({ error: 'Failed to fetch upcoming events' });
+    console.error("Error fetching upcoming events:", error);
+    return res.status(500).json({ error: "Failed to fetch upcoming events" });
   }
-})
+});
 
 // Get overdue events
 router.post("/events/overdue", async (req, res) => {
+  const authUserId = req.user;
   const { uid, now } = req.body;
 
   if (!uid || !now) {
-    return res.status(400).json({ error: "'uid' and 'now' are required in request body"})
+    return res
+      .status(400)
+      .json({ error: "'uid' and 'now' are required in request body" });
+  }
+
+  if (authUserId !== uid) {
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
   try {
     const q = query(
       collectionGroup(db, "events"),
-      where("collaborators", "array-contains", uid),
+      where("collaborators", "array-contains", authUserId),
       where("deadline", "<", Timestamp.fromDate(new Date(now))),
       where("isCompleted", "==", false)
     );
@@ -838,9 +894,9 @@ router.post("/events/overdue", async (req, res) => {
     return res.json({ events });
   } catch (err) {
     console.error("Error fetching overdue events:", err);
-    return res.status(500).json({ error: 'Failed to fetch overdue events' });
+    return res.status(500).json({ error: "Failed to fetch overdue events" });
   }
-})
+});
 
 // Add a goal (owners and collaborators only)
 router.post("/user/bucketList/:sublistId/events", async (req, res) => {
