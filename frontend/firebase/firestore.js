@@ -278,17 +278,11 @@ export const createSubBucketList = async ({
       }
     );
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to create sub-bucket list"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to create sub-bucket list"
+      );
     }
 
     const data = await res.json();
@@ -318,17 +312,11 @@ export const updateSubBucketList = async (subBucketListId, updates = {}) => {
     );
 
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to update sub-bucket list"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to update sub-bucket list"
+      );
     }
 
     const data = await res.json();
@@ -355,17 +343,11 @@ export const getSubBucketList = async (subBucketListId) => {
     );
 
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to fetch sub-bucket list"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch sub-bucket list"
+      );
     }
 
     const data = await res.json();
@@ -437,17 +419,11 @@ export async function getAllSubBucketLists() {
       }
     );
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to fetch all sub-bucket lists"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch all sub-bucket lists"
+      );
     }
 
     const data = await res.json();
@@ -473,17 +449,11 @@ export async function getUnownedSubBucketLists() {
       }
     );
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to fetch unowned sub-bucket lists"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch unowned sub-bucket lists"
+      );
     }
 
     const data = await res.json();
@@ -509,17 +479,11 @@ export async function getOwnedSubBucketLists() {
       }
     );
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to fetch owned sub-bucket lists"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch owned sub-bucket lists"
+      );
     }
 
     const data = await res.json();
@@ -544,17 +508,11 @@ export const deleteSubBucketList = async (subBucketList) => {
         },
       });
     if (!res.ok) {
-      const contentType = res.headers.get("content-type");
-
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const data = await res.json();
-        throw new Error(
-          `${res.status.toString()}: ${data.error}` ||
-            "Failed to delete sub-bucket list"
-        );
-      } else {
-        throw new Error(`Error making request: ${res.status.toString()}`);
-      }
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to delete sub-bucket list"
+      );
     }
 
     const data = await res.json();
