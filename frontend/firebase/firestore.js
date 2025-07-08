@@ -283,7 +283,8 @@ export const createSubBucketList = async ({
       if (contentType && contentType.indexOf("application/json") !== -1) {
         const data = await res.json();
         throw new Error(
-          `Error making request: ${res.status.toString()}: ${data.error}`
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to create sub-bucket list"
         );
       } else {
         throw new Error(`Error making request: ${res.status.toString()}`);
@@ -322,7 +323,8 @@ export const updateSubBucketList = async (subBucketListId, updates = {}) => {
       if (contentType && contentType.indexOf("application/json") !== -1) {
         const data = await res.json();
         throw new Error(
-          `Error making request: ${res.status.toString()}: ${data.error}`
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to update sub-bucket list"
         );
       } else {
         throw new Error(`Error making request: ${res.status.toString()}`);
@@ -358,7 +360,8 @@ export const getSubBucketList = async (subBucketListId) => {
       if (contentType && contentType.indexOf("application/json") !== -1) {
         const data = await res.json();
         throw new Error(
-          `Error making request: ${res.status.toString()}: ${data.error}`
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to fetch sub-bucket list"
         );
       } else {
         throw new Error(`Error making request: ${res.status.toString()}`);
@@ -449,7 +452,8 @@ export const deleteSubBucketList = async (subBucketList) => {
       if (contentType && contentType.indexOf("application/json") !== -1) {
         const data = await res.json();
         throw new Error(
-          `Error making request: ${res.status.toString()}: ${data.error}`
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to delete sub-bucket list"
         );
       } else {
         throw new Error(`Error making request: ${res.status.toString()}`);
@@ -835,7 +839,102 @@ export async function getOverdueEvents(uid, now) {
   }
 }
 
-//friends
+// collaborators
+export const addCollaborator = async (subBucketListId, collaboratorId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` ||
+          "Failed to add collaborator"
+      );
+    }
+
+    const data = await res.json();
+    return data; // returns success boolean, message and invitationId
+  } catch (error) {
+    console.log("Error inviting collaborator:", error);
+    throw error;
+  }
+};
+
+// remove collaborator as an owner
+export const removeCollaboratorByOwner = async (
+  subBucketListId,
+  collaboratorId
+) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res =
+      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` ||
+          "Failed to remove collaborator"
+      );
+    }
+
+    const data = await res.json();
+    return data; // returns success boolean and message
+  } catch (error) {
+    console.log("Error removing collaborator:", error);
+    throw error;
+  }
+};
+
+// self-remove collaborator status (not owner)
+export const removeCollaboratorBySelf = async (subBucketListId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await patch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${errorData.error}` ||
+          "Failed to remove self as collaborator"
+      );
+    }
+
+    const data = await res.json();
+    return data; // returns success boolean, message and invitationId
+  } catch (error) {
+    console.log("Error removing collaborator:", error);
+    throw error;
+  }
+};
+
+// friends
 export const createRequest = async (senderId, receiverId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
