@@ -19,6 +19,29 @@ dayjs.extend(relativeTime);
 
 const router = Router();
 
+// Get sublist invites
+router.get("/sublists/invites", async (req, res) => {
+  const authUserId = req.user;
+
+  try {
+    const q = query(
+      collection(db, "listInvites"),
+      where("receiverId", "==", authUserId)
+    );
+    const snapshot = await getDocs(q);
+
+    const invites = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.status(200).json({ invites });
+  } catch (error) {
+    console.error("Error fetching invites:", error);
+    return res.status(500).json({ error: "Failed to fetch list invites" });
+  }
+});
+
 // Invite collaborators as an owner
 router.post(
   "/user/bucketList/:sublistId/collaborators/:collaboratorId",
@@ -816,7 +839,7 @@ router.post("/events/upcoming", async (req, res) => {
 
   if (authUserId !== uid) {
     return res.status(403).json({ error: "Unauthorized" });
-  } 
+  }
 
   try {
     const q = query(
@@ -851,7 +874,7 @@ router.post("/events/overdue", async (req, res) => {
 
   if (authUserId !== uid) {
     return res.status(403).json({ error: "Unauthorized" });
-  } 
+  }
 
   try {
     const q = query(
