@@ -13,10 +13,15 @@ const router = Router();
 
 // Create user
 router.post("/users", async (req, res) => {
+  const authUserId = req.user;
   const { uid, username, email } = req.body;
 
   if (!uid || !username || !email) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (authUserId !== uid) {
+    return res.status(403).json({ error: "Unauthorized action" });
   }
 
   const userRef = doc(db, "users", uid);
