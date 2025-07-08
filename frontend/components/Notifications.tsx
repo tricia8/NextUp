@@ -16,7 +16,7 @@ type NotifProps = {
   onClose: () => void;
   items: Activity[];
   userId: string;
-  setFriendRequests: React.Dispatch<React.SetStateAction<Activity[] | null>>;
+  setActivities: React.Dispatch<React.SetStateAction<Activity[] | null>>;
 };
 
 export default function Notifications({
@@ -24,7 +24,7 @@ export default function Notifications({
   onClose,
   items,
   userId,
-  setFriendRequests,
+  setActivities,
 }: NotifProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -38,7 +38,7 @@ export default function Notifications({
 
     try {
       await addFriend(userId, senderId, requestId);
-      setFriendRequests(
+      setActivities(
         (prev) => prev?.filter((request) => request.id !== requestId) || []
       );
       Alert.alert("Friend added!");
@@ -56,7 +56,7 @@ export default function Notifications({
 
     try {
       await rejectFriend(requestId);
-      setFriendRequests(
+      setActivities(
         (prev) => prev?.filter((request) => request.id !== requestId) || []
       );
     } catch (error) {
@@ -69,7 +69,7 @@ export default function Notifications({
 
   const handleSwipe = async (id: string) => {
     try {
-      setFriendRequests((prev) => prev?.filter((item) => item.id !== id) || []);
+      setActivities((prev) => prev?.filter((item) => item.id !== id) || []);
     } catch (error) {
       Alert.alert("Error", "Failed to dismiss notification.");
     }

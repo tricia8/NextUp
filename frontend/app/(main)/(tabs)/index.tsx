@@ -25,6 +25,7 @@ import {
   getOverdueEvents,
   getUserProfile,
   getFriendRequests,
+  getSublistInvites,
 } from "@/firebase/firestore";
 import ProfilePic from "@/components/ProfilePic";
 import { debouncePress } from "@/utils/debouncePress";
@@ -46,7 +47,7 @@ export default function HomeScreen() {
   const [completedEvents, setCompletedEvents] = useState<number | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<Event[] | null>(null);
   const [overdueCount, setOverdueCount] = useState<number | null>(null);
-  const [friendRequests, setFriendRequests] = useState<Activity[] | null>(null);
+  const [activities, setActivities] = useState<Activity[] | null>(null);
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>("");
 
@@ -70,12 +71,34 @@ export default function HomeScreen() {
           setTotalEvents(stats.totalEvents);
           setCompletedEvents(stats.completedEvents);
 
-          const friendRequests = await getFriendRequests(uid);
-          const friendRequestsWithType = friendRequests.map((req) => ({
-            ...req,
-            type: "friend",
+          const [friendRequests, listInvites] = await Promise.all([
+            getFriendRequests(uid),
+            getSublistInvites(),
+          ]);
+
+          const friendRequestsWithType = friendRequests.map(
+            (req: Activity) => ({
+              ...req,
+              type: "friend",
+            })
+          );
+
+          const listInvitesWithType = listInvites.map((invite: Activity) => ({
+            ...invite,
+            type: "sublist",
           }));
-          setFriendRequests(friendRequestsWithType);
+
+          const allActivities = [
+            ...friendRequestsWithType,
+            ...listInvitesWithType,
+          ];
+          allActivities.sort((a, b) => {
+            const aTime = a.sentAt?.toMillis?.() ?? 0;
+            const bTime = b.sentAt?.toMillis?.() ?? 0;
+            return bTime - aTime; // Most recent first
+          });
+
+          setActivities(allActivities);
         } catch (error) {
           console.error("Error fetching user data and stats:", error);
         }
@@ -126,7 +149,7 @@ export default function HomeScreen() {
     completedEvents === null ||
     upcomingEvents === null ||
     overdueCount === null ||
-    friendRequests === null
+    activities === null
   ) {
     return <LoadingScreen />;
   }
@@ -145,7 +168,7 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   onPress={debouncePress(() => setModalVisible(true))}
                 >
-                  {friendRequests.length != 0 ? (
+                  {activities.length != 0 ? (
                     <RingingBell isRinging={true} />
                   ) : (
                     <RingingBell isRinging={false} />
@@ -220,7 +243,9 @@ export default function HomeScreen() {
             </View>
 
             <View style={styles.suggestionsContainer}>
-              <Text style={{fontSize: RFValue(13), fontWeight: 'bold'}}>Bucket List Inspiration 🪄</Text>
+              <Text style={{ fontSize: RFValue(13), fontWeight: "bold" }}>
+                Bucket List Inspiration 🪄
+              </Text>
               <ScrollView>
                 <Markdown
                   style={{
@@ -240,9 +265,9 @@ export default function HomeScreen() {
       <Notifications
         visible={isModalVisible}
         onClose={() => setModalVisible(false)}
-        items={friendRequests}
+        items={activities}
         userId={uid}
-        setFriendRequests={setFriendRequests}
+        setActivities={setActivities}
       />
     </SafeAreaView>
   );
@@ -299,10 +324,10 @@ const styles = StyleSheet.create({
     paddingVertical: vs(13),
     paddingHorizontal: s(12),
     backgroundColor: "rgba(102, 205, 170, 1)",
-    borderColor: '#6a5acd',
+    borderColor: "#6a5acd",
     borderRadius: 5,
     borderWidth: 1,
-    shadowColor: '#0000cd',
+    shadowColor: "#0000cd",
     shadowOpacity: 1,
     elevation: 10,
   },
