@@ -448,6 +448,33 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
   }
 };
 
+export const getSublistInvites = async () => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/sublists/invites`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData?.error || "Failed to fetch list invites");
+    }
+
+    const data = await res.json();
+    return data.invites;
+  } catch (error) {
+    console.error("Error fetching list invites:", error);
+    throw error;
+  }
+};
+
 //events
 export const addEvent = async (
   userId,
