@@ -1,17 +1,38 @@
 import { Router } from "express";
 import db from "../app.js";
+import {
+  collection,
+  addDoc,
+  doc,
+  getDoc,
+  deleteDoc,
+  runTransaction,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 
 const router = Router();
 
 // Create request
 router.post("/friends/request", async (req, res) => {
   const { senderId, receiverId } = req.body;
+  const authUserId = req.user;
 
   if (!senderId || !receiverId) {
     return res
       .status(400)
       .json({ error: "senderId and receiverId are required" });
   }
+
+  if (senderId === receiverId) {
+    return res.status(400).json({ error: "Cannot send request to yourself" });
+  }
+
+  if (authUserId !== senderId) {
+    return res.status(403).json({ error: "Unauthorized action" });
+  } 
 
   try {
     const friendSnapshot = await getDoc(doc(db, "users", receiverId));
@@ -42,9 +63,10 @@ router.post("/friends/request", async (req, res) => {
 
 // Get request info
 router.get("/friends/request/:requestId", async (req, res) => {
-    const { requestId } = req.params;
+  const { requestId } = req.params;
+  const authUserId = req.user;
 
-    try {
+  try {
     const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
 
     if (!requestSnapshot.exists()) {
@@ -52,6 +74,10 @@ router.get("/friends/request/:requestId", async (req, res) => {
     }
 
     const data = requestSnapshot.data();
+
+    if (authUserId !== data.senderId && authUserId !== data.receiverId) {
+      return res.status(403).json({ error: "Unauthorized" });
+    }
 
     return res.status(200).json({
       id: requestSnapshot.id,
@@ -66,11 +92,16 @@ router.get("/friends/request/:requestId", async (req, res) => {
     console.error("Error getting request info:", error);
     return res.status(500).json({ error: "Failed to fetch request info" });
   }
-})
+});
 
 // Get friend requests
 router.get("/friends/requests/:userId", async (req, res) => {
   const { userId } = req.params;
+  const authUserId = req.user;
+
+  if (authUserId !== userId) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
 
   try {
     const q = query(
@@ -108,6 +139,11 @@ router.get("/friends/requests/:userId", async (req, res) => {
 // Get sent requests
 router.get("/friends/sent/:userId", async (req, res) => {
   const { userId } = req.params;
+  const authUserId = req.user;
+
+  if (authUserId !== userId) {
+    return res.status(403).json({ error: "Unauthorized" });
+  }
 
   try {
     const q = query(
@@ -144,9 +180,14 @@ router.get("/friends/sent/:userId", async (req, res) => {
 // Get existing requests
 router.get("/friends/hasRequest", async (req, res) => {
   const { userAId, userBId } = req.query;
+  const authUserId = req.user;
 
   if (!userAId || !userBId) {
     return res.status(400).json({ error: "Missing userAId or userBId" });
+  }
+
+  if (authUserId !== userAId && authUserId !== userBId) {
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
   try {
@@ -179,10 +220,15 @@ router.get("/friends/hasRequest", async (req, res) => {
 
 // Add friend
 router.post("/friends/add", async (req, res) => {
+  const authUserId = req.user;
   const { userId, friendId, requestId } = req.body;
 
   if (!userId || !friendId || !requestId) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (authUserId !== userId) {
+    return res.status(403).json({ error: "Unauthorized action" });
   }
 
   try {
@@ -194,7 +240,7 @@ router.post("/friends/add", async (req, res) => {
       }
       const friendData = friendSnap.data();
 
-      const userDocRef = doc(db, "users", userId);
+      const userDocRef = doc(db, "users", authUserId);
       const userSnap = await transaction.get(userDocRef);
       if (!userSnap.exists()) {
         throw new Error("Current user does not exist");
@@ -202,12 +248,12 @@ router.post("/friends/add", async (req, res) => {
       const userData = userSnap.data();
 
       // Add each other as friends
-      transaction.set(doc(db, "users", userId, "friends", friendId), {
+      transaction.set(doc(db, "users", authUserId, "friends", friendId), {
         username: friendData?.username,
         photoUrl: friendData?.photoUrl || null,
       });
 
-      transaction.set(doc(db, "users", friendId, "friends", userId), {
+      transaction.set(doc(db, "users", friendId, "friends", authUserId), {
         username: userData?.username,
         photoUrl: userData?.photoUrl || null,
       });
@@ -226,6 +272,7 @@ router.post("/friends/add", async (req, res) => {
 // Reject friend
 router.delete("/friendRequests/:requestId/reject", async (req, res) => {
   const { requestId } = req.params;
+  const userId = req.user;
 
   if (!requestId) {
     return res.status(400).json({ error: "Missing requestId" });
@@ -233,8 +280,22 @@ router.delete("/friendRequests/:requestId/reject", async (req, res) => {
 
   try {
     const reqDocRef = doc(db, "friendRequests", requestId);
+    const reqDocSnap = await getDoc(reqDocRef);
+
+    if (!reqDocSnap.exists()) {
+      return res.status(404).json({ error: "Friend request not found" });
+    }
+
+    const friendRequestData = reqDocSnap.data();
+
+    if (friendRequestData.receiverId !== userId) {
+      return res.status(403).json({ error: "Unauthorized action" });
+    }
+
     await deleteDoc(reqDocRef);
-    return res.status(200).json({ success: true, message: "Friend request rejected" });
+    return res
+      .status(200)
+      .json({ success: true, message: "Friend request rejected" });
   } catch (error) {
     console.error("Error rejecting friend request:", error);
     return res.status(500).json({ error: "Failed to reject friend request" });
@@ -243,12 +304,29 @@ router.delete("/friendRequests/:requestId/reject", async (req, res) => {
 
 // Remove friend
 router.delete("/users/:userId/friends/:friendId", async (req, res) => {
+  const authUserId = req.user;
   const { userId, friendId } = req.params;
+
+  if (authUserId !== userId) {
+    return res.status(403).json({ error: "Unauthorized action" });
+  }
 
   try {
     await runTransaction(db, async (transaction) => {
-      const currentUserFriendRef = doc(db, "users", userId, "friends", friendId);
-      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
+      const currentUserFriendRef = doc(
+        db,
+        "users",
+        authUserId,
+        "friends",
+        friendId
+      );
+      const otherUserFriendRef = doc(
+        db,
+        "users",
+        friendId,
+        "friends",
+        authUserId
+      );
 
       transaction.delete(currentUserFriendRef);
       transaction.delete(otherUserFriendRef);
@@ -282,6 +360,34 @@ router.get("/users/:userId/friends", async (req, res) => {
   } catch (error) {
     console.error("Error fetching friends:", error);
     return res.status(500).json({ error: "Failed to fetch friends" });
+  }
+});
+
+// Get relationship
+router.get("/relationship", async (req, res) => {
+  const authUserId = req.user;
+  const { targetUserId } = req.query;
+
+  if (!authUserId || !targetUserId) {
+    return res.status(400).json({ error: "Missing userId or targetUserId" });
+  }
+
+  if (authUserId === targetUserId) {
+    return res.json({ relationship: "self" });
+  }
+
+  try {
+    const docRef = doc(db, "users", authUserId, "friends", targetUserId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return res.json({ relationship: "friend" });
+    } else {
+      return res.json({ relationship: "none" });
+    }
+  } catch (error) {
+    console.error("Error checking relationship:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
