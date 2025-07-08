@@ -252,23 +252,46 @@ async function updateOverallStats(uid) {
 }
 
 //subbucketlists
-export const createSubBucketList = async (
-  userId,
-  { title, description, accessLevel, collaborators }
-) => {
+export const createSubBucketList = async ({
+  title,
+  description,
+  accessLevel,
+  collaborators,
+}) => {
   try {
-    const subBucketListRef = await addDoc(
-      collection(db, "users", userId, "bucketList"),
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await post(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList`,
       {
-        title,
-        description,
-        accessLevel,
-        collaborators, // array of userIds
-        createdAt: serverTimestamp(), // ensures time format consistency, works better with .toDate()
-        completionStatus: [0, 0],
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          accessLevel,
+          collaborators, // array of userIds
+        }),
       }
-    ); // go to bucketList collection
-    return subBucketListRef.id;
+    );
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `Error making request: ${res.status.toString()}: ${data.error}`
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
+    }
+
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error creating sub-bucket list:", error);
     throw error;
@@ -277,26 +300,37 @@ export const createSubBucketList = async (
 
 // don’t have to pass all fields every time, doesn't overwrite unchanged values
 // fields: title, description, accessLevel, collaborators, completionStatus
-export const updateSubBucketList = async (
-  userId,
-  subBucketListId,
-  updates = {}
-) => {
+export const updateSubBucketList = async (subBucketListId, updates = {}) => {
   try {
-    const sublistDocRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketListId
-    );
-    const docSnap = await getDoc(sublistDocRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (!docSnap.exists()) {
-      throw new Error("List not found");
+    const res = await patch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      }
+    );
+
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `Error making request: ${res.status.toString()}: ${data.error}`
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
     }
 
-    await updateDoc(sublistDocRef, updates); // Pass only fields to update
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error updating sub-bucket list:", error);
     throw error;
@@ -304,34 +338,35 @@ export const updateSubBucketList = async (
 };
 
 // returns formatted data for [sublistId] screen
-export const getSubBucketList = async (userId, subBucketListId) => {
+export const getSubBucketList = async (subBucketListId) => {
   try {
-    const sublistDoc = doc(db, "users", userId, "bucketList", subBucketListId);
+    const token = await getIdTokenFromFirebaseUser();
 
-    const docSnap = await getDoc(sublistDoc);
+    const res = await get(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    if (!docSnap.exists()) {
-      throw new Error("List not found");
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `Error making request: ${res.status.toString()}: ${data.error}`
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
     }
 
-    const data = docSnap.data(); // object
-
-    const title = data.title;
-    const description = data.description ?? ""; // default to empty string;
-    const accessLevel = data.accessLevel;
-    const collaborators = data.collaborators; // should be an array
-    const createdAt = data.createdAt.toDate(); // convert Firestore Timestamp to JS Date
-    const createdAtFormatted = formatDisplayDate(createdAt);
-    const completionStatus = data.completionStatus;
-
-    return {
-      title,
-      description,
-      accessLevel,
-      collaborators,
-      createdAtFormatted,
-      completionStatus,
-    };
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error fetching sub-bucket list:", error);
     throw error;
@@ -395,37 +430,34 @@ export async function getAllSubBucketLists(uid) {
   return allSublists;
 }
 
-export const deleteSubBucketList = async (userId, subBucketList) => {
+export const deleteSubBucketList = async (subBucketList) => {
   try {
-    const eventsRef = collection(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketList.id,
-      "events"
-    );
-    const eventsSnap = await getDocs(eventsRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    // Delete all documents in the events collection
-    const deletePromises = eventsSnap.docs.map((docSnap) => {
-      deleteDoc(docSnap.ref);
-    });
-    // wait for all deletions to complete since deleteDoc is async
-    await Promise.all(deletePromises);
+    const res =
+      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketList.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
 
-    // delete subBucketList
-    const subBucketListRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      subBucketList.id
-    );
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `Error making request: ${res.status.toString()}: ${data.error}`
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
+    }
 
-    await deleteDoc(subBucketListRef);
-
-    await updateOverallStats(userId);
+    const data = await res.json();
+    return data; // success message
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
     throw error;
