@@ -421,16 +421,113 @@ const formatSublistData = (data) => {
 };
 
 // for bucketlist screen
-export async function getAllSubBucketLists(uid) {
-  const allSublists = [];
-  const bucketListRef = collection(db, "users", uid, "bucketList");
-  const listSnap = await getDocs(bucketListRef);
-  const sublists = listSnap.docs.map((doc) => ({
-    id: doc.id,
-    ...formatSublistData(doc.data()),
-  }));
-  allSublists.push(...sublists);
-  return allSublists;
+
+// fetch all owned and unowned sub-bucket lists
+export async function getAllSubBucketLists() {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await get(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to fetch all sub-bucket lists"
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
+    }
+
+    const data = await res.json();
+    return data; // array of sub-bucket lists
+  } catch (error) {
+    console.error("Error fetching all sub-bucket lists:", error);
+    throw error;
+  }
+}
+
+// fetch only unowned sub-bucket lists
+export async function getUnownedSubBucketLists() {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await get(
+      `https://nextup-l0e9.onrender.com/api/user/sharedSublists`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to fetch unowned sub-bucket lists"
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
+    }
+
+    const data = await res.json();
+    return data; // array of sub-bucket lists
+  } catch (error) {
+    console.error("Error fetching all unowned sub-bucket lists:", error);
+    throw error;
+  }
+}
+
+// fetch only owned sub-bucket lists
+export async function getOwnedSubBucketLists() {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await get(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/owned`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        const data = await res.json();
+        throw new Error(
+          `${res.status.toString()}: ${data.error}` ||
+            "Failed to fetch owned sub-bucket lists"
+        );
+      } else {
+        throw new Error(`Error making request: ${res.status.toString()}`);
+      }
+    }
+
+    const data = await res.json();
+    return data; // array of sub-bucket lists
+  } catch (error) {
+    console.error("Error fetching all owned sub-bucket lists:", error);
+    throw error;
+  }
 }
 
 export const deleteSubBucketList = async (subBucketList) => {
