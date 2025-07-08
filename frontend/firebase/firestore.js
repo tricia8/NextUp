@@ -27,72 +27,78 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   console.log("Normalized username:", normalizedUsername);
 
   if (normalizedUsername.length >= 1 && normalizedUsername.length <= 15) {
-    const usernameRef = doc(db, "usernames", normalizedUsername);
-    const usernameSnap = await getDoc(usernameRef);
-    console.log("Username exists in DB:", usernameSnap.exists());
-    setAvailable(!usernameSnap.exists());
+    try {
+      const res = await fetch(
+        `https://nextup-l0e9.onrender.com/api/checkUsername?username=${normalizedUsername}`
+      );
+
+      if (!res.ok) {
+        console.error("Server error checking username");
+        setAvailable(null);
+        return;
+      }
+
+      const data = await res.json();
+      setAvailable(data.available);
+    } catch (error) {
+      console.error("Error checking username:", error);
+      setAvailable(null);
+    }
   } else {
     console.log("Invalid username length");
-    setAvailable(null); // invalid length
+    setAvailable(null);
   }
 }, 500);
 
 export const createUser = async (user, username) => {
-  const userRef = doc(db, "users", user.uid);
-  const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = doc(db, "users", user.uid, "bucketList", "stats");
+  const token = await getIdTokenFromFirebaseUser();
 
-  await runTransaction(db, async (transaction) => {
-    const usernameDoc = await transaction.get(usernameRef);
-    if (usernameDoc.exists()) {
-      throw new Error("Username already taken at final step.");
+  try {
+    const res = await fetch(`https://nextup-l0e9.onrender.com/api/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ uid: user.uid, username, email: user.email }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error?.error || "Failed to create user");
     }
 
-    transaction.set(userRef, {
-      uid: user.uid,
-      username: username,
-      email: user.email,
-      photoUrl: user.photoURL ?? null,
-      displayName: user.displayName ?? username,
-      displayName: user.displayName ?? username,
-      bio: "",
-      category: user.category ?? null,
-    });
-
-    transaction.set(usernameRef, { uid: user.uid });
-
-    transaction.set(bucketListStatsRef, {
-      totalEvents: 0,
-      completedEvents: 0,
-    });
-  });
+    return true;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
 };
 
 //profile
 export const updateProfile = async (userId, newData) => {
   try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (!userSnap.exists()) {
-      throw new Error("User does not exist");
-    }
-
-    const existingData = userSnap.data();
-    const updatedFields = {};
-
-    for (const key in newData) {
-      if (newData[key] !== existingData[key]) {
-        updatedFields[key] = newData[key];
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/users/updateProfile",
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newData),
       }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error?.error || "Failed to update profile");
     }
 
-    if (Object.keys(updatedFields).length > 0) {
-      await updateDoc(userRef, updatedFields);
-      console.log("Updated fields:", updatedFields);
-    } else {
-      console.log("No fields were changed. Skipping update.");
-    }
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error updating profile.");
     throw error;
@@ -101,24 +107,33 @@ export const updateProfile = async (userId, newData) => {
 
 export const getUserProfile = async (uid) => {
   try {
-    const docRef = doc(db, "users", uid);
-    const docSnapshot = await getDoc(docRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (docSnapshot.exists()) {
-      const data = docSnapshot.data();
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${uid}/profile`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      return {
-        uid: data.id,
-        username: data.username,
-        email: data.email,
-        photoUrl: data.photoUrl,
-        displayName: data.displayName,
-        bio: data.bio,
-        category: data.category,
-      };
-    } else {
-      return null;
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error?.error || "Failed to fetch user profile");
     }
+
+    const data = await res.json();
+
+    return {
+      uid: data.uid,
+      username: data.username,
+      email: data.email,
+      photoUrl: data.photoUrl,
+      displayName: data.displayName,
+      bio: data.bio,
+      category: data.category,
+    };
   } catch (error) {
     console.error("Error fetching user profile:", error);
     throw error;
@@ -429,6 +444,33 @@ export const deleteSubBucketList = async (userId, subBucketList) => {
     await updateOverallStats(userId);
   } catch (error) {
     console.error("Error deleting sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSublistInvites = async () => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/sublists/invites`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData?.error || "Failed to fetch list invites");
+    }
+
+    const data = await res.json();
+    return data.invites;
+  } catch (error) {
+    console.error("Error fetching list invites:", error);
     throw error;
   }
 };
@@ -805,23 +847,29 @@ export async function getOverdueEvents(uid, now) {
 }
 
 //friends
-export const createRequest = async (userId, friendId) => {
+export const createRequest = async (senderId, receiverId) => {
   try {
-    const friendSnapshot = await getDoc(doc(db, "users", friendId));
-    const friendData = friendSnapshot.data();
-    const currentUserSnapshot = await getDoc(doc(db, "users", userId));
-    const currentUserData = currentUserSnapshot.data();
+    const token = await getIdTokenFromFirebaseUser();
 
-    const requestRef = await addDoc(collection(db, "friendRequests"), {
-      senderId: userId,
-      receiverId: friendId,
-      senderName: currentUserData?.username,
-      receiverName: friendData?.username,
-      sentAt: serverTimestamp(),
-      status: "pending",
-    });
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/friends/request",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ senderId, receiverId }),
+      }
+    );
 
-    return requestRef.id;
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to send friend request");
+    }
+
+    const data = await res.json();
+    return data.requestId;
   } catch (error) {
     console.log("Error sending friend request:", error);
     throw error;
@@ -830,23 +878,24 @@ export const createRequest = async (userId, friendId) => {
 
 export const getRequestInfo = async (requestId) => {
   try {
-    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (!requestSnapshot.exists()) {
-      throw new Error("Friend request not found");
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/request/${requestId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch friend request info");
     }
 
-    const requestData = requestSnapshot.data();
-
-    return {
-      id: requestSnapshot.id,
-      senderId: requestData.senderId,
-      receiverId: requestData.receiverId,
-      senderName: requestData.senderName,
-      receiverName: requestData.receiverName,
-      sentAt: requestData.sentAt,
-      status: requestData.status,
-    };
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.log("Error getting request info:", error);
     throw error;
@@ -855,30 +904,24 @@ export const getRequestInfo = async (requestId) => {
 
 export const getFriendRequests = async (userId) => {
   try {
-    const q = query(
-      collection(db, "friendRequests"),
-      where("receiverId", "==", userId),
-      where("status", "==", "pending")
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/requests/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return [];
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch friend requests");
     }
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        senderId: data.senderId,
-        receiverId: data.receiverId,
-        senderName: data.senderName,
-        receiverName: data.receiverName,
-        sentAt: data.sentAt,
-        status: data.status,
-      };
-    });
+    const { requests } = await res.json();
+    return requests;
   } catch (error) {
     console.log("Error fetching friend requests:", error);
     throw error;
@@ -887,29 +930,24 @@ export const getFriendRequests = async (userId) => {
 
 export const getSentRequests = async (userId) => {
   try {
-    const q = query(
-      collection(db, "friendRequests"),
-      where("senderId", "==", userId)
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/sent/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return [];
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch sent requests");
     }
 
-    return snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        senderId: data.senderId,
-        receiverId: data.receiverId,
-        senderName: data.senderName,
-        receiverName: data.receiverName,
-        sentAt: data.sentAt,
-        status: data.status,
-      };
-    });
+    const { requests } = await res.json();
+    return requests;
   } catch (error) {
     console.log("Error fetching sent requests:", error);
     throw error;
@@ -918,31 +956,28 @@ export const getSentRequests = async (userId) => {
 
 export const hasExistingRequest = async (userAId, userBId) => {
   try {
-    const requestRef = collection(db, "friendRequests");
+    const token = await getIdTokenFromFirebaseUser();
 
-    const incomingQ = query(
-      // Check for request from userB to userA
-      requestRef,
-      where("senderId", "==", userBId),
-      where("receiverId", "==", userAId),
-      where("status", "==", "pending")
+    const queryParams = new URLSearchParams({ userAId, userBId });
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/hasRequest?${queryParams}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    const incomingSnap = await getDocs(incomingQ);
-    if (!incomingSnap.empty) return true;
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(
+        errorData.error || "Failed to check for existing request"
+      );
+    }
 
-    const outgoingQ = query(
-      // Check for request from userA to userB
-      requestRef,
-      where("senderId", "==", userAId),
-      where("receiverId", "==", userBId),
-      where("status", "==", "pending")
-    );
-
-    const outgoingSnap = await getDocs(outgoingQ);
-    if (!outgoingSnap.empty) return true;
-
-    return false;
+    const data = await res.json();
+    return data.exists;
   } catch (error) {
     console.log("Error checking for existing request", error);
   }
@@ -950,44 +985,26 @@ export const hasExistingRequest = async (userAId, userBId) => {
 
 export const addFriend = async (userId, friendId, requestId) => {
   try {
-    await runTransaction(db, async (transaction) => {
-      // Read both user docs inside transaction
-      const friendDocRef = doc(db, "users", friendId);
-      const friendSnapshot = await transaction.get(friendDocRef);
-      if (!friendSnapshot.exists()) {
-        throw new Error("Friend user does not exist");
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friends/add`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId, friendId, requestId }),
       }
-      const friendData = friendSnapshot.data();
+    );
 
-      const currentUserDocRef = doc(db, "users", userId);
-      const currentUserSnapshot = await transaction.get(currentUserDocRef);
-      if (!currentUserSnapshot.exists()) {
-        throw new Error("Current user does not exist");
-      }
-      const currentUserData = currentUserSnapshot.data();
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to add friend");
+    }
 
-      const currentUserFriendRef = doc(
-        db,
-        "users",
-        userId,
-        "friends",
-        friendId
-      );
-      transaction.set(currentUserFriendRef, {
-        username: friendData?.username,
-        photoUrl: friendData?.photoUrl || null,
-      });
-
-      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
-      transaction.set(otherUserFriendRef, {
-        username: currentUserData?.username,
-        photoUrl: currentUserData?.photoUrl || null,
-      });
-
-      // Delete friend request
-      const requestDocRef = doc(db, "friendRequests", requestId);
-      transaction.delete(requestDocRef);
-    });
+    return true;
   } catch (error) {
     console.error("Error adding friend:", error);
     throw error;
@@ -996,15 +1013,24 @@ export const addFriend = async (userId, friendId, requestId) => {
 
 export const rejectFriend = async (requestId) => {
   try {
-    const reqDoc = doc(db, "friendRequests", requestId);
-    //const reqSnapshot = await getDoc(reqDoc);
+    const token = await getIdTokenFromFirebaseUser();
 
-    /*if (!reqSnapshot.exists()) {
-      throw new Error("Request not found");
-    }*/
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/friendRequests/${requestId}/reject`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-    //await updateDoc(reqDoc, { status: "rejected" });
-    await deleteDoc(reqDoc);
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to reject friend request");
+    }
+
+    return true;
   } catch (error) {
     console.error("Error rejecting friend", error);
     throw error;
@@ -1013,19 +1039,24 @@ export const rejectFriend = async (requestId) => {
 
 export const deleteFriend = async (userId, friendId) => {
   try {
-    await runTransaction(db, async (transaction) => {
-      const currentUserFriendRef = doc(
-        db,
-        "users",
-        userId,
-        "friends",
-        friendId
-      );
-      const otherUserFriendRef = doc(db, "users", friendId, "friends", userId);
+    const token = await getIdTokenFromFirebaseUser();
 
-      transaction.delete(currentUserFriendRef);
-      transaction.delete(otherUserFriendRef);
-    });
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${userId}/friends/${friendId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to delete friend");
+    }
+
+    const data = await res.json();
+    return data;
   } catch (error) {
     console.error("Error deleting friend:", error);
     throw error;
@@ -1034,17 +1065,23 @@ export const deleteFriend = async (userId, friendId) => {
 
 export async function getFriends(currentUserId) {
   try {
-    const ref = collection(db, "users", currentUserId, "friends");
-    const snapshot = await getDocs(ref);
-    const data = snapshot.docs.map((doc) => {
-      const docData = doc.data();
-      return {
-        uid: doc.id,
-        username: docData.username ?? "",
-        photoUrl: docData.photoUrl ?? null,
-      };
-    });
-    return data;
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/users/${currentUserId}/friends`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch friends");
+    }
+
+    const data = await res.json();
+    return data.friends;
   } catch (error) {
     console.error("Error fetching friends:", error);
     throw error;
@@ -1053,19 +1090,26 @@ export async function getFriends(currentUserId) {
 
 //miscellaneous
 export const getRelationship = async (currentUserId, targetUserId) => {
-  if (currentUserId === targetUserId) {
-    return "self";
-  }
-
   try {
-    const docRef = doc(db, "users", currentUserId, "friends", targetUserId);
-    const docSnap = await getDoc(docRef);
+    const token = await getIdTokenFromFirebaseUser();
 
-    if (docSnap.exists()) {
-      return "friend";
-    } else {
-      return "none";
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/relationship?targetUserId=${targetUserId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Failed to get relationship");
     }
+
+    const data = await res.json();
+    return data.relationship;
   } catch (error) {
     console.error("Error fetching relationship:", error);
     throw error;
@@ -1074,20 +1118,29 @@ export const getRelationship = async (currentUserId, targetUserId) => {
 
 export async function getAllUsers() {
   try {
-    const snapshot = await getDocs(collection(db, "users"));
-    const data = snapshot.docs.map((doc) => {
-      const docData = doc.data();
-      return {
-        uid: doc.id,
-        username: docData.username,
-        photoUrl: docData.photoUrl,
-        email: docData.email,
-        displayName: docData.displayName,
-        bio: docData.bio,
-        category: docData.category,
-      };
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch("https://nextup-l0e9.onrender.com/api/users", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
-    return data;
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch users");
+    }
+
+    const users = await res.json();
+    return users.map((user) => ({
+      uid: user.uid,
+      username: user.username,
+      photoUrl: user.photoUrl,
+      email: user.email,
+      displayName: user.displayName,
+      bio: user.bio,
+      category: user.category,
+    }));
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;
