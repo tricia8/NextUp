@@ -575,7 +575,7 @@ router.post("/user/bucketList", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Sublist created successfully",
+      message: "New sublist added",
       sublistId: sublistRef.id,
       sublistData,
     });
