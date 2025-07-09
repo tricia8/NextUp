@@ -277,7 +277,7 @@ export const createSubBucketList = async ({
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await post(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList`,
       {
         method: "POST",
@@ -315,7 +315,7 @@ export const updateSubBucketList = async (subBucketListId, updates = {}) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await patch(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
       {
         method: "PATCH",
@@ -514,15 +514,16 @@ export const deleteSubBucketList = async (subBucketList) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res =
-      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketList.id}`,
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketList.id}`,
       {
         method: "DELETE",
         headers: {
           "content-type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
     if (!res.ok) {
       const data = await res.json();
       throw new Error(
@@ -600,7 +601,7 @@ export const addEvent = async (
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await post(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events`,
       {
         method: "POST",
@@ -637,14 +638,15 @@ export const deleteEvent = async (subBucketListId, eventId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res =
-      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
       {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
 
     if (!res.ok) {
       const errorData = await res.json();
@@ -772,7 +774,7 @@ export const updateEvent = async (subBucketListId, eventId, updates = {}) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await patch(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
       {
         method: "PATCH",
@@ -933,14 +935,15 @@ export const removeCollaboratorByOwner = async (
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res =
-      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
       {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
 
     if (!res.ok) {
       const errorData = await res.json();
@@ -963,7 +966,7 @@ export const removeCollaboratorBySelf = async (subBucketListId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await patch(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
       {
         method: "PATCH",
