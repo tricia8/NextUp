@@ -7,7 +7,7 @@ import MenuDrawer from 'react-native-side-drawer';
 import { useContext } from 'react';
 import { AuthContext } from "@/context/AuthContext";
 import { router } from 'expo-router';
-
+import { debouncePress } from '@/utils/debouncePress';
 
 
 
@@ -27,7 +27,7 @@ export default function SideMenu(
             <ThemedView style={styles.sidebarContainer}>
                 <Text style={styles.sidebarTitle}>NextUp</Text>
 
-                <TouchableOpacity style={styles.textContainer} onPress={logOut}>
+                <TouchableOpacity style={styles.textContainer} onPress={() => debouncePress(logOut)}>
                     <ThemedText style={styles.sidebarText}>Log out</ThemedText>
                 </TouchableOpacity>
             </ThemedView>
