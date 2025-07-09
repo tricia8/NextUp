@@ -6,7 +6,7 @@ import { ThemedView } from "@/components/ThemedView";
 import Modal from "react-native-modal";
 import { ScrollView } from "react-native-gesture-handler";
 import { Activity } from "@/types/activity";
-import { addFriend, rejectFriend } from "@/firebase/firestore";
+import { addFriend, rejectFriend, deleteInvite } from "@/firebase/firestore";
 import { FlashList } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -68,7 +68,10 @@ export default function Notifications({
 
   const handleDismiss = async (id: string) => {
     try {
-      setActivities((prev) => prev?.filter((item) => item.id !== id) || []);
+      await deleteInvite(id);
+      setActivities(
+        (prev) => prev?.filter((item) => item.id !== id) || []
+      );
     } catch (error) {
       Alert.alert("Error", "Failed to dismiss notification.");
     }
@@ -105,6 +108,7 @@ export default function Notifications({
                   handleDismiss={handleDismiss}
                 />
               )}
+              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             />
           </ThemedView>
         </ScrollView>
@@ -134,7 +138,11 @@ function NotificationItem({
     <View style={styles.notifContainer}>
       {item.type === "friend" && (
         <View style={styles.notifItem}>
-          <ThemedText>{item.senderName} sent you a friend request.</ThemedText>
+          <View style={styles.textContainer}>
+            <ThemedText>
+              {item.senderName} sent you a friend request.
+            </ThemedText>
+          </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -158,12 +166,12 @@ function NotificationItem({
 
       {item.type === "sublist" && (
         <View style={styles.notifItem}>
-          <ThemedText>
+          <ThemedText style={styles.textContainer}>
             {item.senderName} added you to {item.sublistTitle}.
           </ThemedText>
 
           <TouchableOpacity onPress={() => handleDismiss(item.id)}>
-            <Ionicons name="close-circle" size={ms(20)} color="#6a5acd" />
+            <Ionicons name="close-circle" size={ms(22)} color="#6a5acd" />
           </TouchableOpacity>
         </View>
       )}
@@ -185,8 +193,12 @@ const styles = StyleSheet.create({
   },
   notifItem: {
     justifyContent: "space-between",
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  textContainer: {
+    flexWrap: "wrap",
+    flex: 1,
   },
   buttonContainer: {
     gap: s(4),
