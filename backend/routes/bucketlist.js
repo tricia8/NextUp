@@ -30,6 +30,31 @@ router.get("/sublists/invites", async (req, res) => {
   }
 });
 
+// Delete sublist invite
+router.delete("/listInvites/:requestId/delete", async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
+    return res.status(400).json({ error: "Missing request ID" });
+  }
+
+  try {
+    const inviteRef = db.collection("listInvites").doc(requestId);
+    const inviteSnap = await inviteRef.get();
+
+    if (!inviteSnap.exists) {
+      return res.status(200).json({ message: "Invite already deleted or not found" });
+    }
+
+    await inviteRef.delete();
+
+    return res.status(200).json({ message: "Invite deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting invite:", error);
+    return res.status(500).json({ error: "Failed to delete invite" });
+  }
+});
+
 // Invite collaborators as an owner
 router.post(
   "/user/bucketList/:sublistId/collaborators/:collaboratorId",
