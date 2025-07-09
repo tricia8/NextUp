@@ -25,9 +25,12 @@ type CustomModalProps = {
   setCollaborators: React.Dispatch<React.SetStateAction<User[]>>;
   sharedUids: string[]; // array of user IDs
   setSharedUids: React.Dispatch<React.SetStateAction<string[]>>;
+  invitedUids: string[];
+  setInvitedUids: React.Dispatch<React.SetStateAction<string[]>>;
   visible: boolean;
   setModalVisible: (visible: boolean) => void;
   onClose: () => void;
+  onRemoveCollaborator: (uid: string) => void;
 };
 
 export default function ShareListModal({
@@ -37,9 +40,12 @@ export default function ShareListModal({
   setCollaborators,
   sharedUids,
   setSharedUids,
+  invitedUids,
+  setInvitedUids,
   visible,
   setModalVisible,
   onClose,
+  onRemoveCollaborator,
 }: CustomModalProps) {
   console.log("Modal collaborators:", collaborators);
   const router = useRouter();
@@ -47,7 +53,16 @@ export default function ShareListModal({
 
   // const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [invitedUsers, setInvitedUsers] = useState<string[]>([]);
+  const hasInvitees = invitedUids.length > 0;
+
+  // add invited users to collaborators and sharedUids
+  const inviteUserIds = () => {
+    setSharedUids((prev) => [...prev, ...invitedUids]);
+    setCollaborators((prev) => [
+      ...prev,
+      ...allUsers.filter((user) => invitedUids.includes(user.uid)),
+    ]);
+  };
 
   const renderFlatlistItem = ({ item }: { item: User }) => {
     // render all collaborators
@@ -101,24 +116,30 @@ export default function ShareListModal({
             onBlur={() => setIsFocused(false)}
             style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
           /> */}
-          {/* <UserSearch
-            users={allUsers}
-            placeholder="Add people..."
-            userId={currentUid}
-            sharedUids={sharedUids}
-            handleAddUser={(user) => {
-              setCollaborators((prev) => [...prev, user]);
-              setSharedUids((prev) => [...prev, user.uid]);
-            }}
-          /> */}
 
-          <UserSearchPicker
-            colorScheme={colorScheme}
-            allUsers={allUsers}
-            invitedUsers={invitedUsers}
-            setInvitedUsers={setInvitedUsers}
-            collaboratorUids={sharedUids}
-          />
+          <View style={{ flexDirection: "row", flexShrink: 0.7, gap: 5 }}>
+            <UserSearchPicker
+              colorScheme={colorScheme}
+              allUsers={allUsers}
+              invitedUsers={invitedUids}
+              setInvitedUsers={setInvitedUids}
+              collaboratorUids={sharedUids}
+            />
+
+            <TouchableOpacity
+              style={{
+                borderRadius: 15,
+                padding: 5,
+                backgroundColor: "#c6e1dc",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              disabled={!hasInvitees}
+              onPress={inviteUserIds}
+            >
+              <Text>Invite</Text>
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.withAcessText}>People with access</Text>
           <FlatList
@@ -130,7 +151,7 @@ export default function ShareListModal({
           />
           <View style={{ alignItems: "flex-end" }}>
             <TouchableOpacity
-              style={styles.button}
+              style={styles.closeButton}
               onPress={() => {
                 onClose();
                 setIsFocused(false);
@@ -153,7 +174,7 @@ const styles = StyleSheet.create({
     // backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   card: {
-    width: "90%",
+    width: "95%",
     padding: 20,
     backgroundColor: "white",
     borderRadius: 8,
@@ -162,9 +183,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  button: {
+  closeButton: {
     alignItems: "center",
-    borderRadius: 20,
+    borderRadius: 16,
     width: "40%",
     backgroundColor: "#c6e1dc",
     padding: 8,
