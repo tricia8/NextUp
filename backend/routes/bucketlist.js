@@ -105,6 +105,7 @@ router.post(
           receiverId: collaboratorId,
           senderName: ownerDataSnap.data()?.username,
           receiverName: inviteeDataSnap.data()?.username,
+          sublistId,
           sentAt: FieldValue.serverTimestamp(),
           status: "unread",
         });
@@ -180,6 +181,17 @@ router.delete(
         if (shareSublistDocRef.exists) {
           transaction.delete(shareSublistDocRef.ref);
         }
+
+        // Remove invitations for this collaborator
+        const invitesSnap = await db
+          .collection("listInvites")
+          .where("receiverId", "==", collaboratorId)
+          .where("sublistId", "==", sublistId)
+          .get();
+
+        invitesSnap.forEach((inviteDoc) => {
+          transaction.delete(inviteDoc.ref);
+        });
       });
 
       // Update overall stats for removed collaborator
@@ -260,6 +272,17 @@ router.patch(
         if (shareSublistDocRef.exists) {
           transaction.delete(shareSublistDocRef.ref);
         }
+
+        // Remove invitations for this collaborator
+        const invitesSnap = await db
+          .collection("listInvites")
+          .where("receiverId", "==", collaboratorId)
+          .where("sublistId", "==", sublistId)
+          .get();
+
+        invitesSnap.forEach((inviteDoc) => {
+          transaction.delete(inviteDoc.ref);
+        });
       });
 
       // Update overall stats for removed collaborator
