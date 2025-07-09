@@ -7,14 +7,13 @@ import {
   useColorScheme,
 } from "react-native";
 import Modal from "react-native-modal";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import React, { use, useState } from "react";
+import React, { useState } from "react";
 import { RFValue } from "react-native-responsive-fontsize";
 import { User } from "@/types/user";
 import { ms } from "react-native-size-matters";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import UserSearchPicker from "./UserSearchPicker";
+import ProfilePic from "./ProfilePic";
 
 const PROFILEPICSIZE = ms(38);
 
@@ -30,7 +29,8 @@ type CustomModalProps = {
   visible: boolean;
   setModalVisible: (visible: boolean) => void;
   onClose: () => void;
-  onRemoveCollaborator: (uid: string) => void;
+  onInviteUser?: (userId: string) => void;
+  onRemoveCollaborator: (userId: string) => void;
 };
 
 export default function ShareListModal({
@@ -45,6 +45,7 @@ export default function ShareListModal({
   visible,
   setModalVisible,
   onClose,
+  onInviteUser,
   onRemoveCollaborator,
 }: CustomModalProps) {
   console.log("Modal collaborators:", collaborators);
@@ -57,27 +58,29 @@ export default function ShareListModal({
 
   // add invited users to collaborators and sharedUids
   const inviteUserIds = () => {
-    setSharedUids((prev) => [...prev, ...invitedUids]);
+    setSharedUids((prev) => [...new Set([...prev, ...invitedUids])]);
     setCollaborators((prev) => [
-      ...prev,
-      ...allUsers.filter((user) => invitedUids.includes(user.uid)),
+      ...new Set([
+        ...prev,
+        ...allUsers.filter((user) => invitedUids.includes(user.uid)),
+      ]),
     ]);
+    setInvitedUids([]); // clear invited users after inviting
   };
+
+  const onInvitation = onInviteUser
+    ? async () => {
+        const uidsToInvite = [...invitedUids]; // copy before clearing
+        inviteUserIds();
+        await Promise.all(uidsToInvite.map((uid) => onInviteUser?.(uid))); // update db
+      }
+    : () => inviteUserIds(); // only update UI
 
   const renderFlatlistItem = ({ item }: { item: User }) => {
     // render all collaborators
     return (
       <View style={styles.profile}>
-        {item.photoUrl ? (
-          <Image
-            style={styles.profilePic}
-            source={{ uri: item.photoUrl }}
-            contentFit="cover"
-            transition={500}
-          />
-        ) : (
-          <FontAwesome name="user-circle" size={PROFILEPICSIZE} color="black" />
-        )}
+        <ProfilePic imageUrl={item?.photoUrl} size={30} />
 
         <TouchableOpacity
           onPress={() =>
@@ -86,10 +89,32 @@ export default function ShareListModal({
               params: { uid: item.uid },
             })
           }
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+            flexShrink: 1,
+          }}
         >
           <Text key={item.uid} style={{ fontSize: RFValue(12) }}>
             {item.username} {item.uid == currentUid ? "(you)" : ""}
           </Text>
+          {item.uid !== currentUid && (
+            <TouchableOpacity
+              onPress={() => {
+                onRemoveCollaborator(item.uid);
+              }}
+              style={{
+                backgroundColor: "#f8d7da",
+                borderRadius: 10,
+                padding: 4,
+                marginTop: 4,
+              }}
+            >
+              <Text>Remove</Text>
+            </TouchableOpacity>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -135,7 +160,7 @@ export default function ShareListModal({
                 alignItems: "center",
               }}
               disabled={!hasInvitees}
-              onPress={inviteUserIds}
+              onPress={onInvitation}
             >
               <Text>Invite</Text>
             </TouchableOpacity>
