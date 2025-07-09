@@ -19,7 +19,12 @@ import ShareListModal from "@/components/ShareListModal";
 import { Dimensions } from "react-native";
 import SublistField from "@/components/forms/SublistField";
 import AccessDropdownPicker from "@/components/forms/AccessDropdownPicker";
-import { createSubBucketList, getOwnerProfile } from "@/firebase/firestore";
+import {
+  addCollaborator,
+  createSubBucketList,
+  getAllUsers,
+  getOwnerProfile,
+} from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { User } from "@/types/user";
 import LoadingScreen from "@/components/Loading";
@@ -44,8 +49,17 @@ export default function newSubList() {
   const [accessLevel, setAccessLevel] = useState("");
 
   // Invite collaborators
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [sharedUids, setSharedUids] = useState<string[]>([]);
   const [collaborators, setCollaborators] = useState<User[]>([]);
+  const [invitedUsers, setInvitedUsers] = useState<string[]>([]);
+
+  // Remove collaborator
+  const onRemoveCollaborator = (uid: string) => {
+    setCollaborators((prev) => prev.filter((user) => user.uid !== uid));
+    setSharedUids((prev) => prev.filter((id) => id !== uid));
+    setInvitedUsers((prev) => prev.filter((id) => id !== uid));
+  };
 
   // Validate required fields
   const [errors, setErrors] = useState<{
@@ -78,6 +92,7 @@ export default function newSubList() {
 
   useFocusEffect(
     useCallback(() => {
+      let isActive = true; // to prevent state updates if the component is unmounted
       console.log("useFocusEffect triggered");
 
       const fetchOwner = async () => {
@@ -89,17 +104,24 @@ export default function newSubList() {
           const profile = (await getOwnerProfile(user.uid)) as User;
           console.log("Owner profile:", profile);
 
-          if (profile) {
+          const allUsers = (await getAllUsers()) as User[];
+          console.log("All users:", allUsers);
+
+          if (isActive) {
             setCollaborators([profile]);
             setSharedUids([profile.uid]);
+            setAllUsers(allUsers);
           }
-          console.log("collaborators", collaborators);
         } catch (error) {
           console.error("Failed to fetch owner profile:", error);
         }
       };
 
       fetchOwner();
+
+      return () => {
+        isActive = false; // cleanup function to prevent state updates if component is unmounted
+      };
     }, [user?.uid])
   );
 
@@ -108,19 +130,31 @@ export default function newSubList() {
 
   const submit = async () => {
     try {
-      const sublistId = await createSubBucketList(user?.uid, {
+      const response = await createSubBucketList({
         title,
         description,
         accessLevel,
         collaborators: sharedUids,
-      });
+      }); // success, message, sublistId, sublistData
+
+      await Promise.all(
+        invitedUsers.map((uid) => {
+          addCollaborator(response.sublistId, uid);
+        })
+      ); // add invited users to collaborators
+
       // Delay to allow Firestore to propagate the new document
       await new Promise((res) => setTimeout(res, 300));
 
-      router.push({ pathname: "/(main)/[sublistId]", params: { sublistId } });
+      router.push({
+        pathname: "/(main)/[sublistId]",
+        params: {
+          sublistId: response.sublistId,
+        },
+      });
       showMessage({
         message: "Success!",
-        description: "New sublist added",
+        description: response.message,
         type: "success",
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
@@ -225,10 +259,17 @@ export default function newSubList() {
         <View style={{ flex: 1 }}>
           <ShareListModal
             currentUid={user?.uid}
-            data={collaborators} // User[]
+            collaborators={collaborators} // User[]
+            setCollaborators={setCollaborators}
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
             setModalVisible={setModalVisible}
+            allUsers={allUsers}
+            sharedUids={sharedUids} // string[]
+            setSharedUids={setSharedUids}
+            invitedUids={invitedUsers} // string[]
+            setInvitedUids={setInvitedUsers}
+            onRemoveCollaborator={onRemoveCollaborator}
           />
         </View>
       </ThemedView>
