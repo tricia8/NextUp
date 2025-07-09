@@ -11,10 +11,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "dayjs": "^1.11.13",
     "cloudinary": "^2.7.0",
+    "dayjs": "^1.11.13",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
+    "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
     "morgan": "^1.10.0",
     "uuid": "^11.1.0"
