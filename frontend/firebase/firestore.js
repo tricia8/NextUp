@@ -566,6 +566,32 @@ export const getSublistInvites = async () => {
   }
 };
 
+export const deleteInvite = async (requestId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/listInvites/${requestId}/delete`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to delete list invite");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error deleting invite", error);
+    throw error;
+  }
+};
+
 //events
 export const addEvent = async (
   subBucketListId,
