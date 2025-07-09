@@ -1,9 +1,5 @@
 import { Router } from "express";
 import db from "../app.js";
-import {
-  doc,
-  getDoc,
-} from "firebase/firestore";
 
 const router = Router();
 
@@ -22,11 +18,11 @@ router.get("/checkUsername", async (req, res) => {
   }
 
   try {
-    const usernameRef = doc(db, "usernames", normalizedUsername);
-    const usernameSnap = await getDoc(usernameRef);
+    const usernameRef = db.doc(`usernames/${normalizedUsername}`);
+    const usernameSnap = await usernameRef.get();
 
     return res.status(200).json({
-      available: !usernameSnap.exists(),
+      available: !usernameSnap.exists,
     });
   } catch (error) {
     console.error("Error checking username:", error);

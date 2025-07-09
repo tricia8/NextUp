@@ -3,16 +3,6 @@ import db from "../app.js";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime.js";
-import {
-  collection,
-  doc,
-  getDoc,
-  runTransaction,
-  query,
-  where,
-  collectionGroup,
-  getDocs,
-} from "firebase/firestore";
 
 dayjs.extend(relativeTime);
 
@@ -23,11 +13,10 @@ router.get("/sublists/invites", async (req, res) => {
   const authUserId = req.user;
 
   try {
-    const q = query(
-      collection(db, "listInvites"),
-      where("receiverId", "==", authUserId)
-    );
-    const snapshot = await getDocs(q);
+    const listInvitesRef = db.collection("listInvites");
+    const snapshot = await listInvitesRef
+      .where("receiverId", "==", authUserId)
+      .get();
 
     const invites = snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -397,10 +386,14 @@ router.get("/user/:userId/bucketList/stats", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const statsRef = doc(db, "users", userId, "bucketList", "stats");
-    const docSnapshot = getDoc(statsRef);
+    const statsRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc("stats");
+    const docSnapshot = await statsRef.get();
 
-    if (docSnapshot.exists()) {
+    if (docSnapshot.exists) {
       const data = docSnapshot.data();
       return res.json({
         totalEvents: data.totalEvents,
@@ -601,11 +594,12 @@ router.get("/filteredSublists", async (req, res) => {
       ? accessLevels
       : accessLevels.split(",");
 
-    const q = query(
-      collectionGroup(db, "bucketList"),
-      where("collaborators", "array-contains", userId),
-      where("accessLevel", "in", accessLevelArray)
-    );
+    const q = db
+      .collectionGroup("bucketList")
+      .where("collaborators", "array-contains", userId)
+      .where("accessLevel", "in", accessLevelArray);
+
+    const snapshot = await q.get();
 
     const sublists = snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -791,15 +785,14 @@ router.post("/sublists/allEvents", async (req, res) => {
     const allEvents = [];
 
     for (const sub of subBucketLists) {
-      const eventsRef = collection(
-        db,
-        "users",
-        uid,
-        "bucketList",
-        sub.id,
-        "events"
-      );
-      const eventsSnap = await getDocs(eventsRef);
+      const eventsRef = db
+        .collection("users")
+        .doc(uid)
+        .collection("bucketList")
+        .doc(sub.id)
+        .collection("events");
+
+      const eventsSnap = await eventsRef.get();
 
       const events = eventsSnap.docs.map((doc) => {
         const data = doc.data();
@@ -841,16 +834,16 @@ router.post("/events/upcoming", async (req, res) => {
   }
 
   try {
-    const q = query(
-      collectionGroup(db, "events"),
-      where("collaborators", "array-contains", authUserId),
-      where("deadline", ">=", Timestamp.fromDate(new Date(now))),
-      where("isCompleted", "==", false),
-      orderBy("deadline"),
-      limit(3)
-    );
+    const q = db
+      .collectionGroup("events")
+      .where("collaborators", "array-contains", authUserId)
+      .where("deadline", ">=", Timestamp.fromDate(new Date(now)))
+      .where("isCompleted", "==", false)
+      .orderBy("deadline")
+      .limit(3);
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
+
     const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     return res.json({ events });
@@ -876,14 +869,13 @@ router.post("/events/overdue", async (req, res) => {
   }
 
   try {
-    const q = query(
-      collectionGroup(db, "events"),
-      where("collaborators", "array-contains", authUserId),
-      where("deadline", "<", Timestamp.fromDate(new Date(now))),
-      where("isCompleted", "==", false)
-    );
+    const q = db
+      .collectionGroup("events")
+      .where("collaborators", "array-contains", authUserId)
+      .where("deadline", "<", Timestamp.fromDate(new Date(now)))
+      .where("isCompleted", "==", false);
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -1174,28 +1166,30 @@ router.post(
   async (req, res) => {
     const { userId, sublistId, eventId } = req.params;
 
-    const eventDocRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      sublistId,
-      "events",
-      eventId
-    );
+    const eventDocRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc(sublistId)
+      .collection("events")
+      .doc(eventId);
 
-    const subBucketListRef = doc(db, "users", userId, "bucketList", sublistId);
+    const subBucketListRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc(sublistId);
 
     try {
-      await runTransaction(db, async (transaction) => {
+      await db.runTransaction(async (transaction) => {
         const eventSnap = await transaction.get(eventDocRef);
 
-        if (!eventSnap.exists()) {
+        if (!eventSnap.exists) {
           throw new Error("Event not found");
         }
 
         const subBucketListSnap = await transaction.get(subBucketListRef);
-        if (!subBucketListSnap.exists()) {
+        if (!subBucketListSnap.exists) {
           throw new Error("Sub-bucket list not found.");
         }
 
