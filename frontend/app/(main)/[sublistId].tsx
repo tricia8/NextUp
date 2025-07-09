@@ -41,12 +41,20 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useLocalSearchParams } from "expo-router";
-import { addEvent, getSubBucketList } from "@/firebase/firestore";
+import {
+  addEvent,
+  getAllUsers,
+  getSubBucketList,
+  removeCollaboratorByOwner,
+} from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
 import { User } from "@/types/user";
 
 export default function currentSublist() {
+  const { user } = useContext(AuthContext);
+  const { sublistId } = useLocalSearchParams();
+
   // Sublist fields
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -60,11 +68,12 @@ export default function currentSublist() {
   const [completionStatus, setCompletionStatus] = useState<number[]>([0, 0]); // [completed, total]
   const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
   const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
+  const [invitedUids, setInvitedUids] = useState<string[]>([]); // Array of uids for invited users
   const [createdAt, setCreatedAt] = useState("");
 
+  const [allUsers, setAllUsers] = useState<User[]>([]); // All users in the system
+
   // Fetching sublist data from firestore
-  const { user } = useContext(AuthContext);
-  const { sublistId } = useLocalSearchParams();
 
   useFocusEffect(
     useCallback(() => {
@@ -74,7 +83,8 @@ export default function currentSublist() {
       const fetchData = async () => {
         try {
           if (user?.id && sublistId) {
-            const data = await getSubBucketList(user.id, sublistId);
+            const data = await getSubBucketList(sublistId);
+            const allUsers = (await getAllUsers()) as User[];
 
             if (isActive) {
               setTitle(data.title);
@@ -83,6 +93,7 @@ export default function currentSublist() {
               setSharedUids(data.collaborators); // array of uids
               setCreatedAt(data.createdAtFormatted);
               setCompletionStatus(data.completionStatus);
+              setAllUsers(allUsers);
 
               // Cache initial values
               setInitialTitle(data.title);
@@ -166,7 +177,7 @@ export default function currentSublist() {
   // Goal submission
   const onSave = async () => {
     try {
-      await addEvent(user?.uid, sublistId, {
+      await addEvent(sublistId, {
         // POST — send new goal to Firestore
         title: title,
         description: description,
@@ -249,10 +260,23 @@ export default function currentSublist() {
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <ShareListModal
           currentUid={user?.id}
-          data={collaborators}
+          collaborators={collaborators}
+          setCollaborators={setCollaborators}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
           setModalVisible={setModalVisible}
+          allUsers={allUsers}
+          sharedUids={sharedUids} // string[]
+          setSharedUids={setSharedUids}
+          invitedUids={invitedUids}
+          setInvitedUids={setInvitedUids}
+          onRemoveCollaborator={async (userId: string) => {
+            setCollaborators((prev) =>
+              prev.filter((collaborator) => collaborator.uid !== userId)
+            );
+            setSharedUids((prev) => prev.filter((uid) => uid !== userId));
+            await removeCollaboratorByOwner(sublistId, userId);
+          }}
         />
         {!isEditing && (
           <View style={{ gap: 10 }}>
