@@ -1,13 +1,5 @@
 import { Router } from "express";
 import db from "../app.js";
-import {
-  collection,
-  doc,
-  getDoc,
-  updateDoc,
-  runTransaction,
-  getDocs,
-} from "firebase/firestore";
 
 const router = Router();
 
@@ -24,14 +16,14 @@ router.post("/users", async (req, res) => {
     return res.status(403).json({ error: "Unauthorized action" });
   }
 
-  const userRef = doc(db, "users", uid);
-  const usernameRef = doc(db, "usernames", username);
-  const bucketListStatsRef = doc(db, "users", uid, "bucketList", "stats");
+  const userRef = db.doc(`users/${uid}`);
+  const usernameRef = db.doc(`usernames/${username}`);
+  const bucketListStatsRef = db.doc(`users/${uid}/bucketList/stats`);
 
   try {
-    await runTransaction(db, async (transaction) => {
+    await db.runTransaction(async (transaction) => {
       const usernameDoc = await transaction.get(usernameRef);
-      if (usernameDoc.exists()) {
+      if (usernameDoc.exists) {
         throw new Error("Username already taken.");
       }
 
@@ -66,10 +58,10 @@ router.patch("/users/updateProfile", async (req, res) => {
   const newData = req.body;
 
   try {
-    const userRef = doc(db, "users", userId);
-    const userSnap = await getDoc(userRef);
+    const userRef = db.doc(`users/${userId}`);
+    const userSnap = await userRef.get();
 
-    if (!userSnap.exists()) {
+    if (!userSnap.exists) {
       return res.status(404).json({ error: "User does not exist" });
     }
 
@@ -83,7 +75,7 @@ router.patch("/users/updateProfile", async (req, res) => {
     }
 
     if (Object.keys(updatedFields).length > 0) {
-      await updateDoc(userRef, updatedFields);
+      await userRef.update(updatedFields);
       console.log("Updated fields:", updatedFields);
       return res
         .status(200)
@@ -103,10 +95,10 @@ router.get("/users/:uid/profile", async (req, res) => {
   const { uid } = req.params;
 
   try {
-    const docRef = doc(db, "users", uid);
-    const docSnapshot = await getDoc(docRef);
+    const docRef = db.doc(`users/${uid}`);
+    const docSnapshot = await docRef.get();
 
-    if (!docSnapshot.exists()) {
+    if (!docSnapshot.exists) {
       return res.status(404).json({ error: "User not found" });
     }
 
@@ -130,7 +122,9 @@ router.get("/users/:uid/profile", async (req, res) => {
 // Get all users
 router.get("/users", async (req, res) => {
   try {
-    const snapshot = await getDocs(collection(db, "users"));
+    const usersRef = db.collection("users");
+    const snapshot = await usersRef.get();
+
     const users = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {

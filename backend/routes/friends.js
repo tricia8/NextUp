@@ -1,17 +1,6 @@
 import { Router } from "express";
 import db from "../app.js";
-import {
-  collection,
-  addDoc,
-  doc,
-  getDoc,
-  deleteDoc,
-  runTransaction,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 
 const router = Router();
 
@@ -32,25 +21,25 @@ router.post("/friends/request", async (req, res) => {
 
   if (authUserId !== senderId) {
     return res.status(403).json({ error: "Unauthorized action" });
-  } 
+  }
 
   try {
-    const friendSnapshot = await getDoc(doc(db, "users", receiverId));
-    const currentUserSnapshot = await getDoc(doc(db, "users", senderId));
+    const friendSnapshot = await db.doc(`users/${receiverId}`).get();
+    const currentUserSnapshot = await db.doc(`users/${senderId}`).get();
 
-    if (!friendSnapshot.exists() || !currentUserSnapshot.exists()) {
+    if (!friendSnapshot.exists || !currentUserSnapshot.exists) {
       return res.status(404).json({ error: "User not found" });
     }
 
     const friendData = friendSnapshot.data();
     const currentUserData = currentUserSnapshot.data();
 
-    const requestRef = await addDoc(collection(db, "friendRequests"), {
+    const requestRef = await db.collection("friendRequests").add({
       senderId,
       receiverId,
       senderName: currentUserData?.username,
       receiverName: friendData?.username,
-      sentAt: serverTimestamp(),
+      sentAt: FieldValue.serverTimestamp(),
       status: "pending",
     });
 
@@ -67,9 +56,9 @@ router.get("/friends/request/:requestId", async (req, res) => {
   const authUserId = req.user;
 
   try {
-    const requestSnapshot = await getDoc(doc(db, "friendRequests", requestId));
+    const requestSnapshot = await db.doc(`friendRequests/${requestId}`).get();
 
-    if (!requestSnapshot.exists()) {
+    if (!requestSnapshot.exists) {
       return res.status(404).json({ error: "Friend request not found" });
     }
 
@@ -104,13 +93,12 @@ router.get("/friends/requests/:userId", async (req, res) => {
   }
 
   try {
-    const q = query(
-      collection(db, "friendRequests"),
-      where("receiverId", "==", userId),
-      where("status", "==", "pending")
-    );
+    const q = db
+      .collection("friendRequests")
+      .where("receiverId", "==", userId)
+      .where("status", "==", "pending");
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
 
     if (snapshot.empty) {
       return res.status(200).json({ requests: [] });
@@ -146,12 +134,9 @@ router.get("/friends/sent/:userId", async (req, res) => {
   }
 
   try {
-    const q = query(
-      collection(db, "friendRequests"),
-      where("senderId", "==", userId)
-    );
+    const q = db.collection("friendRequests").where("senderId", "==", userId);
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
 
     if (snapshot.empty) {
       return res.status(200).json({ requests: [] });
@@ -191,24 +176,22 @@ router.get("/friends/hasRequest", async (req, res) => {
   }
 
   try {
-    const requestRef = collection(db, "friendRequests");
+    const requestRef = db.collection("friendRequests");
 
-    const incomingQ = query(
-      requestRef,
-      where("senderId", "==", userBId),
-      where("receiverId", "==", userAId),
-      where("status", "==", "pending")
-    );
-    const incomingSnap = await getDocs(incomingQ);
+    const incomingSnap = await requestRef
+      .where("senderId", "==", userBId)
+      .where("receiverId", "==", userAId)
+      .where("status", "==", "pending")
+      .get();
+
     if (!incomingSnap.empty) return res.json({ exists: true });
 
-    const outgoingQ = query(
-      requestRef,
-      where("senderId", "==", userAId),
-      where("receiverId", "==", userBId),
-      where("status", "==", "pending")
-    );
-    const outgoingSnap = await getDocs(outgoingQ);
+    const outgoingSnap = await requestRef
+      .where("senderId", "==", userAId)
+      .where("receiverId", "==", userBId)
+      .where("status", "==", "pending")
+      .get();
+
     if (!outgoingSnap.empty) return res.json({ exists: true });
 
     return res.json({ exists: false });
@@ -232,34 +215,34 @@ router.post("/friends/add", async (req, res) => {
   }
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const friendDocRef = doc(db, "users", friendId);
+    await db.runTransaction(async (transaction) => {
+      const friendDocRef = db.doc(`users/${friendId}`);
       const friendSnap = await transaction.get(friendDocRef);
-      if (!friendSnap.exists()) {
+      if (!friendSnap.exists) {
         throw new Error("Friend user does not exist");
       }
       const friendData = friendSnap.data();
 
-      const userDocRef = doc(db, "users", authUserId);
+      const userDocRef = db.doc(`users/${authUserId}`);
       const userSnap = await transaction.get(userDocRef);
-      if (!userSnap.exists()) {
+      if (!userSnap.exists) {
         throw new Error("Current user does not exist");
       }
       const userData = userSnap.data();
 
       // Add each other as friends
-      transaction.set(doc(db, "users", authUserId, "friends", friendId), {
+      transaction.set(db.doc(`users/${authUserId}/friends/${friendId}`), {
         username: friendData?.username,
         photoUrl: friendData?.photoUrl || null,
       });
 
-      transaction.set(doc(db, "users", friendId, "friends", authUserId), {
+      transaction.set(db.doc(`users/${friendId}/friends/${authUserId}`), {
         username: userData?.username,
         photoUrl: userData?.photoUrl || null,
       });
 
       // Delete friend request
-      transaction.delete(doc(db, "friendRequests", requestId));
+      transaction.delete(db.doc(`friendRequests/${requestId}`));
     });
 
     return res.status(200).json({ success: true, message: "Friend added" });
@@ -279,10 +262,10 @@ router.delete("/friendRequests/:requestId/reject", async (req, res) => {
   }
 
   try {
-    const reqDocRef = doc(db, "friendRequests", requestId);
-    const reqDocSnap = await getDoc(reqDocRef);
+    const reqDocRef = db.doc(`friendRequests/${requestId}`);
+    const reqDocSnap = await reqDocRef.get();
 
-    if (!reqDocSnap.exists()) {
+    if (!reqDocSnap.exists) {
       return res.status(404).json({ error: "Friend request not found" });
     }
 
@@ -292,7 +275,7 @@ router.delete("/friendRequests/:requestId/reject", async (req, res) => {
       return res.status(403).json({ error: "Unauthorized action" });
     }
 
-    await deleteDoc(reqDocRef);
+    await reqDocRef.delete();
     return res
       .status(200)
       .json({ success: true, message: "Friend request rejected" });
@@ -312,20 +295,12 @@ router.delete("/users/:userId/friends/:friendId", async (req, res) => {
   }
 
   try {
-    await runTransaction(db, async (transaction) => {
-      const currentUserFriendRef = doc(
-        db,
-        "users",
-        authUserId,
-        "friends",
-        friendId
+    await db.runTransaction(async (transaction) => {
+      const currentUserFriendRef = db.doc(
+        `users/${authUserId}/friends/${friendId}`
       );
-      const otherUserFriendRef = doc(
-        db,
-        "users",
-        friendId,
-        "friends",
-        authUserId
+      const otherUserFriendRef = db.doc(
+        `users/${friendId}/friends/${authUserId}`
       );
 
       transaction.delete(currentUserFriendRef);
@@ -344,8 +319,8 @@ router.get("/users/:userId/friends", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const friendsRef = collection(db, "users", userId, "friends");
-    const snapshot = await getDocs(friendsRef);
+    const friendsRef = db.collection(`users/${userId}/friends`);
+    const snapshot = await friendsRef.get();
 
     const friends = snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -377,10 +352,10 @@ router.get("/relationship", async (req, res) => {
   }
 
   try {
-    const docRef = doc(db, "users", authUserId, "friends", targetUserId);
-    const docSnap = await getDoc(docRef);
+    const docRef = db.doc(`users/${authUserId}/friends/${targetUserId}`);
+    const docSnap = await docRef.get();
 
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       return res.json({ relationship: "friend" });
     } else {
       return res.json({ relationship: "none" });
