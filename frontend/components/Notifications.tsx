@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { StyleSheet, View, TouchableOpacity, Text, Alert } from "react-native";
-import { s, vs } from "react-native-size-matters";
+import { ms, s, vs } from "react-native-size-matters";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import Modal from "react-native-modal";
 import { ScrollView } from "react-native-gesture-handler";
 import { Activity } from "@/types/activity";
-import { addFriend, rejectFriend } from "@/firebase/firestore";
+import { addFriend, rejectFriend, deleteInvite } from "@/firebase/firestore";
 import { FlashList } from "@shopify/flash-list";
-import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import Animated, { SharedValue } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
 
 type NotifProps = {
   visible: boolean;
@@ -67,9 +66,12 @@ export default function Notifications({
     }
   };
 
-  const handleSwipe = async (id: string) => {
+  const handleDismiss = async (id: string) => {
     try {
-      setActivities((prev) => prev?.filter((item) => item.id !== id) || []);
+      await deleteInvite(id);
+      setActivities(
+        (prev) => prev?.filter((item) => item.id !== id) || []
+      );
     } catch (error) {
       Alert.alert("Error", "Failed to dismiss notification.");
     }
@@ -103,9 +105,10 @@ export default function Notifications({
                   isProcessing={isProcessing}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
-                  handleSwipe={handleSwipe}
+                  handleDismiss={handleDismiss}
                 />
               )}
+              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             />
           </ThemedView>
         </ScrollView>
@@ -120,7 +123,7 @@ type NotifItemProps = {
   isProcessing: boolean;
   handleAccept: (userId: string, senderId: string, requestId: string) => void;
   handleReject: (requestId: string) => void;
-  handleSwipe: (id: string) => void;
+  handleDismiss: (id: string) => void;
 };
 
 function NotificationItem({
@@ -129,24 +132,17 @@ function NotificationItem({
   isProcessing,
   handleAccept,
   handleReject,
-  handleSwipe,
+  handleDismiss,
 }: NotifItemProps) {
-  const renderRightActions = (
-    progress: SharedValue<number>,
-    dragX: SharedValue<number>
-  ) => {
-    return (
-      <Animated.View style={{ justifyContent: "center" }}>
-        <ThemedText>Dismiss</ThemedText>
-      </Animated.View>
-    );
-  };
-
   return (
     <View style={styles.notifContainer}>
       {item.type === "friend" && (
         <View style={styles.notifItem}>
-          <ThemedText>{item.senderName} sent you a friend request.</ThemedText>
+          <View style={styles.textContainer}>
+            <ThemedText>
+              {item.senderName} sent you a friend request.
+            </ThemedText>
+          </View>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -169,23 +165,15 @@ function NotificationItem({
       )}
 
       {item.type === "sublist" && (
-        <ReanimatedSwipeable
-          renderRightActions={renderRightActions}
-          onSwipeableOpen={(direction) => {
-            if (direction === "right") {
-              handleSwipe(item.id);
-            }
-          }}
-          rightThreshold={100}
-          friction={2}
-          overshootRight={false}
-        >
-          <View style={styles.notifItem}>
-            <ThemedText>
-              {item.senderName} added you to {item.sublistTitle}.
-            </ThemedText>
-          </View>
-        </ReanimatedSwipeable>
+        <View style={styles.notifItem}>
+          <ThemedText style={styles.textContainer}>
+            {item.senderName} added you to {item.sublistTitle}.
+          </ThemedText>
+
+          <TouchableOpacity onPress={() => handleDismiss(item.id)}>
+            <Ionicons name="close-circle" size={ms(22)} color="#6a5acd" />
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -205,6 +193,12 @@ const styles = StyleSheet.create({
   },
   notifItem: {
     justifyContent: "space-between",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  textContainer: {
+    flexWrap: "wrap",
+    flex: 1,
   },
   buttonContainer: {
     gap: s(4),

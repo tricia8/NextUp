@@ -8,6 +8,53 @@ dayjs.extend(relativeTime);
 
 const router = Router();
 
+// Get sublist invites
+router.get("/sublists/invites", async (req, res) => {
+  const authUserId = req.user;
+
+  try {
+    const listInvitesRef = db.collection("listInvites");
+    const snapshot = await listInvitesRef
+      .where("receiverId", "==", authUserId)
+      .get();
+
+    const invites = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return res.status(200).json({ invites });
+  } catch (error) {
+    console.error("Error fetching invites:", error);
+    return res.status(500).json({ error: "Failed to fetch list invites" });
+  }
+});
+
+// Delete sublist invite
+router.delete("/listInvites/:requestId/delete", async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
+    return res.status(400).json({ error: "Missing request ID" });
+  }
+
+  try {
+    const inviteRef = db.collection("listInvites").doc(requestId);
+    const inviteSnap = await inviteRef.get();
+
+    if (!inviteSnap.exists) {
+      return res.status(200).json({ message: "Invite already deleted or not found" });
+    }
+
+    await inviteRef.delete();
+
+    return res.status(200).json({ message: "Invite deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting invite:", error);
+    return res.status(500).json({ error: "Failed to delete invite" });
+  }
+});
+
 // Invite collaborators as an owner
 router.post(
   "/user/bucketList/:sublistId/collaborators/:collaboratorId",
@@ -359,14 +406,19 @@ const updateOverallStats = async (userId) => {
   }
 };
 
+// Get user stats
 router.get("/user/:userId/bucketList/stats", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const statsRef = doc(db, "users", userId, "bucketList", "stats");
-    const docSnapshot = getDoc(statsRef);
+    const statsRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc("stats");
+    const docSnapshot = await statsRef.get();
 
-    if (docSnapshot.exists()) {
+    if (docSnapshot.exists) {
       const data = docSnapshot.data();
       return res.json({
         totalEvents: data.totalEvents,
@@ -549,8 +601,12 @@ router.get("/user/bucketList/:sublistId", async (req, res) => {
 
 // Get sublists filtered by access levels
 router.get("/filteredSublists", async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.query;
   const { accessLevels } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ error: "Missing 'userId' query parameter" });
+  }
 
   if (!accessLevels) {
     return res
@@ -563,11 +619,12 @@ router.get("/filteredSublists", async (req, res) => {
       ? accessLevels
       : accessLevels.split(",");
 
-    const q = query(
-      collectionGroup(db, "bucketList"),
-      where("collaborators", "array-contains", userId),
-      where("accessLevel", "in", accessLevelArray)
-    );
+    const q = db
+      .collectionGroup("bucketList")
+      .where("collaborators", "array-contains", userId)
+      .where("accessLevel", "in", accessLevelArray);
+
+    const snapshot = await q.get();
 
     const sublists = snapshot.docs.map((doc) => {
       const data = doc.data();
@@ -737,8 +794,11 @@ async function getAllEventsFormatted(userId, sublistId) {
 
 // Get all events of given sublists
 router.post("/sublists/allEvents", async (req, res) => {
-  const { userId } = req.params;
-  const { subBucketLists } = req.body;
+  const { uid, subBucketLists } = req.body;
+
+  if (!uid) {
+    return res.status(400).json({ error: "Missing 'uid' in request body" });
+  }
 
   if (!Array.isArray(subBucketLists)) {
     return res
@@ -750,15 +810,14 @@ router.post("/sublists/allEvents", async (req, res) => {
     const allEvents = [];
 
     for (const sub of subBucketLists) {
-      const eventsRef = collection(
-        db,
-        "users",
-        userId,
-        "bucketList",
-        sub.id,
-        "events"
-      );
-      const eventsSnap = await getDocs(eventsRef);
+      const eventsRef = db
+        .collection("users")
+        .doc(uid)
+        .collection("bucketList")
+        .doc(sub.id)
+        .collection("events");
+
+      const eventsSnap = await eventsRef.get();
 
       const events = eventsSnap.docs.map((doc) => {
         const data = doc.data();
@@ -786,49 +845,62 @@ router.post("/sublists/allEvents", async (req, res) => {
 
 // Get upcoming events
 router.post("/events/upcoming", async (req, res) => {
+  const authUserId = req.user;
   const { uid, now } = req.body;
 
   if (!uid || !now) {
-    return res.status(400).json({ error: "'uid' and 'now' are required in request body" });
+    return res
+      .status(400)
+      .json({ error: "'uid' and 'now' are required in request body" });
+  }
+
+  if (authUserId !== uid) {
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
   try {
-    const q = query(
-      collectionGroup(db, "events"),
-      where("collaborators", "array-contains", uid),
-      where("deadline", ">=", Timestamp.fromDate(new Date(now))),
-      where("isCompleted", "==", false),
-      orderBy("deadline"),
-      limit(3)
-    );
+    const q = db
+      .collectionGroup("events")
+      .where("collaborators", "array-contains", authUserId)
+      .where("deadline", ">=", Timestamp.fromDate(new Date(now)))
+      .where("isCompleted", "==", false)
+      .orderBy("deadline")
+      .limit(3);
 
-    const snapshot = await getDocs(q);
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await q.get();
+
+    const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
     return res.json({ events });
   } catch (error) {
-    console.error('Error fetching upcoming events:', err);
-    return res.status(500).json({ error: 'Failed to fetch upcoming events' });
+    console.error("Error fetching upcoming events:", error);
+    return res.status(500).json({ error: "Failed to fetch upcoming events" });
   }
-})
+});
 
 // Get overdue events
 router.post("/events/overdue", async (req, res) => {
+  const authUserId = req.user;
   const { uid, now } = req.body;
 
   if (!uid || !now) {
-    return res.status(400).json({ error: "'uid' and 'now' are required in request body"})
+    return res
+      .status(400)
+      .json({ error: "'uid' and 'now' are required in request body" });
+  }
+
+  if (authUserId !== uid) {
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
   try {
-    const q = query(
-      collectionGroup(db, "events"),
-      where("collaborators", "array-contains", uid),
-      where("deadline", "<", Timestamp.fromDate(new Date(now))),
-      where("isCompleted", "==", false)
-    );
+    const q = db
+      .collectionGroup("events")
+      .where("collaborators", "array-contains", authUserId)
+      .where("deadline", "<", Timestamp.fromDate(new Date(now)))
+      .where("isCompleted", "==", false);
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -838,9 +910,9 @@ router.post("/events/overdue", async (req, res) => {
     return res.json({ events });
   } catch (err) {
     console.error("Error fetching overdue events:", err);
-    return res.status(500).json({ error: 'Failed to fetch overdue events' });
+    return res.status(500).json({ error: "Failed to fetch overdue events" });
   }
-})
+});
 
 // Add a goal (owners and collaborators only)
 router.post("/user/bucketList/:sublistId/events", async (req, res) => {
@@ -1119,28 +1191,30 @@ router.post(
   async (req, res) => {
     const { userId, sublistId, eventId } = req.params;
 
-    const eventDocRef = doc(
-      db,
-      "users",
-      userId,
-      "bucketList",
-      sublistId,
-      "events",
-      eventId
-    );
+    const eventDocRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc(sublistId)
+      .collection("events")
+      .doc(eventId);
 
-    const subBucketListRef = doc(db, "users", userId, "bucketList", sublistId);
+    const subBucketListRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("bucketList")
+      .doc(sublistId);
 
     try {
-      await runTransaction(db, async (transaction) => {
+      await db.runTransaction(async (transaction) => {
         const eventSnap = await transaction.get(eventDocRef);
 
-        if (!eventSnap.exists()) {
+        if (!eventSnap.exists) {
           throw new Error("Event not found");
         }
 
         const subBucketListSnap = await transaction.get(subBucketListRef);
-        if (!subBucketListSnap.exists()) {
+        if (!subBucketListSnap.exists) {
           throw new Error("Sub-bucket list not found.");
         }
 
