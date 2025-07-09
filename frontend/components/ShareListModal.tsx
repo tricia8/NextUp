@@ -4,22 +4,27 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  TextInput,
+  useColorScheme,
 } from "react-native";
 import Modal from "react-native-modal";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useState } from "react";
+import React, { use, useState } from "react";
 import { RFValue } from "react-native-responsive-fontsize";
 import { User } from "@/types/user";
 import { ms } from "react-native-size-matters";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import UserSearchPicker from "./UserSearchPicker";
 
 const PROFILEPICSIZE = ms(38);
 
 type CustomModalProps = {
   currentUid: string;
-  data: User[];
+  allUsers: User[];
+  collaborators: User[]; // collaborators array
+  setCollaborators: React.Dispatch<React.SetStateAction<User[]>>;
+  sharedUids: string[]; // array of user IDs
+  setSharedUids: React.Dispatch<React.SetStateAction<string[]>>;
   visible: boolean;
   setModalVisible: (visible: boolean) => void;
   onClose: () => void;
@@ -27,18 +32,25 @@ type CustomModalProps = {
 
 export default function ShareListModal({
   currentUid,
-  data,
+  allUsers,
+  collaborators,
+  setCollaborators,
+  sharedUids,
+  setSharedUids,
   visible,
   setModalVisible,
   onClose,
 }: CustomModalProps) {
-  console.log("Modal data:", data);
+  console.log("Modal collaborators:", collaborators);
   const router = useRouter();
+  const colorScheme = useColorScheme();
 
-  const [username, setUsername] = useState("");
+  // const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [invitedUsers, setInvitedUsers] = useState<string[]>([]);
 
   const renderFlatlistItem = ({ item }: { item: User }) => {
+    // render all collaborators
     return (
       <View style={styles.profile}>
         {item.photoUrl ? (
@@ -80,7 +92,7 @@ export default function ShareListModal({
       <View style={styles.modalContent}>
         <View style={styles.card}>
           <Text style={styles.listShareText}>Share This List</Text>
-          <TextInput
+          {/* <TextInput
             placeholder="Add people..."
             value={username}
             onChangeText={setUsername}
@@ -88,10 +100,29 @@ export default function ShareListModal({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
+          /> */}
+          {/* <UserSearch
+            users={allUsers}
+            placeholder="Add people..."
+            userId={currentUid}
+            sharedUids={sharedUids}
+            handleAddUser={(user) => {
+              setCollaborators((prev) => [...prev, user]);
+              setSharedUids((prev) => [...prev, user.uid]);
+            }}
+          /> */}
+
+          <UserSearchPicker
+            colorScheme={colorScheme}
+            allUsers={allUsers}
+            invitedUsers={invitedUsers}
+            setInvitedUsers={setInvitedUsers}
+            collaboratorUids={sharedUids}
           />
+
           <Text style={styles.withAcessText}>People with access</Text>
           <FlatList
-            data={data}
+            data={collaborators}
             renderItem={renderFlatlistItem}
             keyExtractor={(item) => item.username}
             style={{ flexGrow: 1, width: "100%" }}
