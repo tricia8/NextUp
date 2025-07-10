@@ -72,7 +72,7 @@ export default function TabLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color }) => (
-            <FontAwesome5 size={28} name="user-alt" color={color} />
+            <FontAwesome5 size={25} name="user-alt" color={color} />
           ),
           headerShown: false,
         }}

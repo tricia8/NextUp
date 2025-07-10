@@ -27,7 +27,7 @@ export default function SideMenu(
             <ThemedView style={styles.sidebarContainer}>
                 <Text style={styles.sidebarTitle}>NextUp</Text>
 
-                <TouchableOpacity style={styles.textContainer} onPress={() => debouncePress(logOut)}>
+                <TouchableOpacity style={styles.textContainer} onPress={debouncePress(() => logOut())}>
                     <ThemedText style={styles.sidebarText}>Log out</ThemedText>
                 </TouchableOpacity>
             </ThemedView>
