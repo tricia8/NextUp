@@ -9,11 +9,7 @@ import { Redirect, useRootNavigationState } from "expo-router";
 import { AuthContext } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFonts } from "expo-font";
-import { StatusBar } from "expo-status-bar";
 import { RFValue } from "react-native-responsive-fontsize";
-import { TouchableOpacity, View } from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { ThemedText } from "@/components/ThemedText";
 
 export default function MainLayout() {
   const { user, loading } = useContext(AuthContext);
