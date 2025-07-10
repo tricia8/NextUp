@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint"
   },
+  "type": "module",
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "@gorhom/bottom-sheet": "^5.1.6",
