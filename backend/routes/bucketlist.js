@@ -347,6 +347,43 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+// lightweight function to get ownerId for frontend onSnapshot setup
+const getSublistOwnerOrThrow = async (userId, sublistId) => {
+  const sublistRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("bucketList")
+    .doc(sublistId);
+
+  const sublistSnap = await sublistRef.get();
+  if (sublistSnap.exists) {
+    return userId; // user is owner
+  }
+
+  // check shared sublist reference
+  const sharedSublistRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("sharedSublists")
+    .doc(sublistId);
+
+  const sharedSnap = await sharedSublistRef.get();
+  if (!sharedSnap.exists) {
+    const err = new Error("Access denied");
+    err.status = 403;
+    throw err;
+  }
+
+  const { ownerId } = sharedSnap.data() || {};
+  if (!ownerId) {
+    const err = new Error("Malformed sharedSublist entry: missing ownerId");
+    err.status = 500;
+    throw err;
+  }
+
+  return ownerId;
+};
+
 const getSublistDocOrThrow = async (userId, sublistId) => {
   // Check if userId matches the sublist owner or is a collaborator
   const sublistDocRef = db
@@ -604,6 +641,19 @@ router.post("/user/bucketList", async (req, res) => {
       sublistId: sublistRef.id,
       sublistData,
     });
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
+// Get sublist ownerId (for frontend onSnapshot setup)
+router.get("/user/bucketList/:sublistId/owner", async (req, res) => {
+  const userId = req.user; // Verified from auth middleware
+  const { sublistId } = req.params;
+
+  try {
+    const ownerId = await getSublistOwnerOrThrow(userId, sublistId);
+    return res.json({ ownerId });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
   }
