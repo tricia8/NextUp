@@ -139,7 +139,7 @@ function NotificationItem({
       {item.type === "friend" && (
         <View style={styles.notifItem}>
           <View style={styles.textContainer}>
-            <ThemedText>
+            <ThemedText style={styles.textContainer}>
               {item.senderName} sent you a friend request.
             </ThemedText>
           </View>
@@ -150,7 +150,7 @@ function NotificationItem({
               onPress={() => handleAccept(userId, item.senderId, item.id)}
               disabled={isProcessing}
             >
-              <Text>Accept</Text>
+              <Text style={styles.buttonText}>Accept</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -158,7 +158,7 @@ function NotificationItem({
               onPress={() => handleReject(item.id)}
               disabled={isProcessing}
             >
-              <Text>Reject</Text>
+              <Text style={styles.buttonText}>Reject</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -199,12 +199,21 @@ const styles = StyleSheet.create({
   textContainer: {
     flexWrap: "wrap",
     flex: 1,
+    alignItems: 'center',
+    fontSize: 14,
   },
   buttonContainer: {
-    gap: s(4),
+    gap: s(8),
+    flexDirection: 'row',
   },
   button: {
-    color: "#66cdaa",
-    borderRadius: 10,
+    backgroundColor: "#6a5acd",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 13,
   },
 });
