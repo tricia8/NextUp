@@ -348,7 +348,7 @@ export const getSubBucketList = async (subBucketListId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
       {
         method: "GET",
@@ -370,6 +370,36 @@ export const getSubBucketList = async (subBucketListId) => {
     return data;
   } catch (error) {
     console.error("Error fetching sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSubBucketListOwnerId = async (subBucketListId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/owner`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch sub-bucket list owner ID"
+      );
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching sub-bucket list owner ID:", error);
     throw error;
   }
 };
@@ -404,7 +434,7 @@ export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   }
 };
 
-const formatSublistData = (data) => {
+export const formatSublistData = (data) => {
   // data type: Sublist object
   const createdAt = data.createdAt?.toDate?.();
 
