@@ -44,8 +44,11 @@ import {
   addEvent,
   getAllEventsFormatted,
   getOwnerProfile,
+  getAllUsers,
   getSubBucketList,
   updateSubBucketList,
+  removeCollaboratorByOwner,
+  getSubBucketListOwnerId,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
@@ -54,6 +57,10 @@ import { Goal } from "@/types/goal";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
 import GoalList from "@/components/GoalList";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/firebase/firebaseConfig";
+import { useSublistStore } from "@/stores/sublistStore";
+import { formatSublistData } from "@/firebase/firestore";
 
 export default function currentSublist() {
   // Fetching sublist data from firestore
@@ -61,7 +68,23 @@ export default function currentSublist() {
   const uid = user?.uid;
   const { sublistId } = useLocalSearchParams();
   console.log("sublistId param:", sublistId);
-  const [isFetching, setIsFetching] = useState(true);
+
+  // Zustand store
+  const {
+    setSublist,
+    sublist,
+    updateSublistField,
+    setGoalsForSublist,
+    goalsBySublist,
+  } = useSublistStore((state) => ({
+    setSublist: state.setSublist,
+    sublist: state.sublistData[sublistId as string],
+    updateSublistField: state.updateSublistField,
+    setGoalsForSublist: state.setGoalsForSublist,
+    goalsBySublist: state.goalsBySublist[sublistId as string] || ([] as Goal[]),
+  }));
+
+  const [isFetching, setIsFetching] = useState(false);
 
   if (loading || !uid || !sublistId) {
     return <LoadingScreen />;
@@ -75,11 +98,15 @@ export default function currentSublist() {
   // Cache original values
   const [initialTitle, setInitialTitle] = useState("");
   const [initialDescription, setInitialDescription] = useState("");
+  const [initialAccessLevel, setInitialAccessLevel] = useState("");
 
   const [accessLevel, setAccessLevel] = useState("");
   const [completionStatus, setCompletionStatus] = useState<number[]>([0, 0]); // [completed, total]
   const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
-  const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
+  const [collaboratorProfiles, setCollaboratorProfiles] = useState<User[]>([]); // Add owner first?
+  const [invitedUids, setInvitedUids] = useState<string[]>([]); // Array of uids for invited users
+  const [allUsers, setAllUsers] = useState<User[]>([]); // All users in the system
+
   const [createdAt, setCreatedAt] = useState("");
 
   // boolean toggle to trigger re-render
@@ -91,7 +118,7 @@ export default function currentSublist() {
   // Fetched goals
   const [existingGoals, setExistingGoals] = useState<Goal[]>([]);
 
-  useFocusEffect(
+  /* useFocusEffect(
     useCallback(() => {
       // Async logic only runs when the required values exist
       let isActive = true;
@@ -101,14 +128,13 @@ export default function currentSublist() {
           if (user?.uid && sublistId) {
             console.log("Fetching sublist for path:", user.uid, sublistId);
 
-            const sublistData = await getSubBucketList(user.uid, sublistId);
+            const sublistData = await getSubBucketList(sublistId);
 
             const goalData = await getAllEventsFormatted(user.uid, sublistId);
             // returns array of events
             // event object: { id, title, description, categories, isCompleted, createdAt, deadline }
 
             console.log("fetched goals: ", goalData);
-            setExistingGoals(goalData);
 
             if (isActive) {
               setTitle(sublistData.title);
@@ -131,7 +157,7 @@ export default function currentSublist() {
                 sublistData.collaborators
                   .filter(
                     (uid: string | undefined) =>
-                      /* uid && uid !== user.uid */ typeof uid === "string" &&
+                      typeof uid === "string" &&
                       uid.length > 0 &&
                       uid !== user.uid
                   )
@@ -165,6 +191,102 @@ export default function currentSublist() {
         isActive = false; // Avoids setting state after unmount
       };
     }, [uid, sublistId, isUpdated])
+  ); */
+
+  useFocusEffect(
+    useCallback(() => {
+      // Async logic only runs when the required values exist
+      let isActive = true;
+      let unsubscribe: (() => void) | undefined;
+
+      const fetchData = async () => {
+        try {
+          if (user?.uid && sublistId) {
+            let ownerId = sublist?.ownerId;
+
+            if (!sublist) {
+              // store doesn't have sublist data yet
+              setIsFetching(true);
+              console.log("Fetching sublist:", sublistId);
+
+              const { ownerId, sublistData, goalData } = await getSubBucketList(
+                sublistId
+              ); // need ownerId for conditional onSnapshot listener
+
+              if (isActive) {
+                setSublist(sublistId as string, sublistData, ownerId);
+                setGoalsForSublist(sublistId as string, goalData);
+
+                // event object: { id, title, description, categories, isCompleted, updatedAt, deadline }
+
+                console.log("fetched goals: ", goalData);
+
+                // Cache initial values for editing
+                setInitialTitle(sublistData.title);
+                setInitialDescription(sublistData.description);
+                setInitialAccessLevel(sublistData.accessLevel);
+
+                setIsFetching(false);
+                // Fetch owner + collaborators
+                const owner = await getOwnerProfile(ownerId);
+                const otherProfiles = await Promise.all(
+                  // Fetches all collaborator profiles in parallel
+                  sublistData.collaborators
+                    .filter(
+                      (uid: string | undefined) =>
+                        typeof uid === "string" &&
+                        uid.length > 0 &&
+                        uid !== ownerId
+                    )
+                    .map((uid: string) => getOwnerProfile(uid))
+                );
+
+                setCollaboratorProfiles([owner, ...otherProfiles]);
+              }
+            }
+
+            if (!ownerId) {
+              ownerId = await getSubBucketListOwnerId(sublistId); // lightweight fetch
+              updateSublistField(sublistId as string, "ownerId", ownerId);
+            }
+
+            // onSnapshot listener
+            unsubscribe = onSnapshot(
+              doc(db, "users", ownerId, "bucketList", sublistId as string),
+              (docSnap) => {
+                const data = formatSublistData(docSnap.data());
+                if (sublist.collaborators !== data.collaborators) {
+                  // update collaboratorProfiles
+                }
+                setSublist(sublistId as string, data, ownerId);
+              }
+            );
+          }
+        } catch (error) {
+          // Handle error
+          showMessage({
+            message: "Error",
+            description:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch sublist data",
+            type: "danger",
+            statusBarHeight: StatusBar.currentHeight,
+            floating: true,
+            icon: "danger",
+            duration: 5000,
+          });
+        }
+      };
+
+      fetchData();
+
+      // Do something when the screen is unfocused
+      return () => {
+        isActive = false;
+        if (unsubscribe) unsubscribe(); // Avoids setting state after unmount
+      };
+    }, [uid, sublistId])
   );
 
   // Share modal
@@ -267,7 +389,7 @@ export default function currentSublist() {
     try {
       setIsEditing(false);
       // Save changes to Firestore
-      await updateSubBucketList(uid, sublistId, {
+      await updateSubBucketList(sublistId, {
         title,
         description,
         accessLevel,
@@ -318,7 +440,7 @@ export default function currentSublist() {
   // Add goal to db
   const onSave = async () => {
     try {
-      await addEvent(uid, sublistId, {
+      await addEvent(sublistId, {
         // POST — send new goal to Firestore
         title: goalTitle,
         description: goalDesc,
@@ -330,7 +452,7 @@ export default function currentSublist() {
 
       // GET — fetch updated list from Firestore
       const updatedGoals = await getAllEventsFormatted(uid, sublistId);
-      const updatedSublist = await getSubBucketList(uid, sublistId);
+      const updatedSublist = await getSubBucketList(sublistId);
       setExistingGoals(updatedGoals); // update state/UI with fresh data
       setCompletionStatus(updatedSublist.completionStatus); // update completion status
 
@@ -478,6 +600,7 @@ export default function currentSublist() {
                   onPress={() => {
                     setTitle(initialTitle);
                     setDesc(initialDescription);
+                    setAccessLevel(initialAccessLevel);
                     setIsEditing(false);
                   }}
                 >
@@ -525,11 +648,24 @@ export default function currentSublist() {
       {modalVisible && (
         <View style={{ flex: 1 }}>
           <ShareListModal
-            currentUid={user?.uid}
-            data={collaborators}
+            currentUid={user?.id}
+            collaborators={collaboratorProfiles}
+            setCollaborators={setCollaboratorProfiles}
             visible={modalVisible}
-            setModalVisible={setModalVisible}
             onClose={() => setModalVisible(false)}
+            setModalVisible={setModalVisible}
+            allUsers={allUsers}
+            sharedUids={sharedUids} // string[]
+            setSharedUids={setSharedUids}
+            invitedUids={invitedUids}
+            setInvitedUids={setInvitedUids}
+            onRemoveCollaborator={async (userId: string) => {
+              setCollaboratorProfiles((prev) =>
+                prev.filter((collaborator) => collaborator.uid !== userId)
+              );
+              setSharedUids((prev) => prev.filter((uid) => uid !== userId));
+              await removeCollaboratorByOwner(sublistId, userId);
+            }}
           />
         </View>
       )}
