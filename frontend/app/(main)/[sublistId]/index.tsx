@@ -63,6 +63,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import { useSublistStore } from "@/stores/sublistStore";
 import { formatSublistData } from "@/firebase/firestore";
+import { useShallow } from "zustand/react/shallow";
 
 export default function currentSublist() {
   // Fetching sublist data from firestore
@@ -72,19 +73,18 @@ export default function currentSublist() {
   console.log("sublistId param:", sublistId);
 
   // Zustand store
-  const {
-    setSublist,
-    sublist,
-    updateSublistField,
-    setGoalsForSublist,
-    goalsBySublist,
-  } = useSublistStore((state) => ({
-    setSublist: state.setSublist,
-    sublist: state.sublistData[sublistId as string],
-    updateSublistField: state.updateSublistField,
-    setGoalsForSublist: state.setGoalsForSublist,
-    goalsBySublist: state.goalsBySublist[sublistId as string] || ([] as Goal[]),
-  }));
+  const { setSublist, updateSublistField, setGoalsForSublist } =
+    useSublistStore();
+
+  const sublist = useSublistStore(
+    useShallow((state) => state.sublistData[sublistId as string])
+  );
+
+  const goalsBySublist = useSublistStore(
+    useShallow(
+      (state) => state.goalsBySublist[sublistId as string] || ([] as Goal[])
+    )
+  );
 
   const [isFetching, setIsFetching] = useState(false);
 
@@ -230,6 +230,12 @@ export default function currentSublist() {
 
               console.log("fetched goals: ", fetched.goalData);
 
+              setTitle(sublistData.title ?? "");
+              setDesc(sublistData.description ?? "");
+              setAccessLevel(sublistData.accessLevel);
+              setCreatedAt(sublistData.updatedAt ?? "");
+              setCompletionStatus(sublistData.completionStatus ?? [0, 0]);
+
               // Cache initial values for editing
               setInitialTitle(sublistData.title);
               setInitialDescription(sublistData.description);
@@ -244,6 +250,7 @@ export default function currentSublist() {
           }
 
           // Fetch owner + collaborators
+          console.log("Owner ID:", ownerId);
           const ownerProfile = await getOwnerProfile(ownerId);
           const otherProfiles = await getCollaborators(
             collaborators.filter(
@@ -347,13 +354,25 @@ export default function currentSublist() {
     }, [uid, sublistId])
   );
 
+  // Set sublist metadata with cached data
   useEffect(() => {
-    setTitle(sublist?.title ?? "");
-    setDesc(sublist?.description ?? "");
-    setAccessLevel(sublist?.accessLevel ?? "");
-    setCreatedAt(sublist?.updatedAt ?? "");
-    setCompletionStatus(sublist?.completionStatus ?? [0, 0]);
+    if (sublist) {
+      setTitle(sublist.title ?? "");
+      setInitialTitle(sublist.title ?? "");
+      setDesc(sublist.description ?? "");
+      setInitialDescription(sublist.description ?? "");
+      setAccessLevel(sublist.accessLevel ?? "");
+      setInitialAccessLevel(sublist.accessLevel);
+      setCreatedAt(sublist.updatedAt ?? "");
+      setCompletionStatus(sublist.completionStatus ?? [0, 0]);
+    }
   }, [sublist]);
+
+  useEffect(() => {
+    if (sublistId && uid) {
+      // Fetch all users only once when sublistId and uid are available
+    }
+  }, [uid, sublistId]);
 
   // Share modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -425,7 +444,7 @@ export default function currentSublist() {
   };
 
   const handleAccessChange = (access: string) => {
-    setAccessLevel(access);
+    // setAccessLevel(access);
     if (access && sublistErrors.accessLevel) {
       setSublistErrors((prev) => ({ ...prev, accessLevel: "" })); // remove error message when user selects an access level
     }
