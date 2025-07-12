@@ -436,14 +436,14 @@ export const getFilteredSubBucketLists = async (uid, accessLevels) => {
 
 export const formatSublistData = (data) => {
   // data type: Sublist object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
 
   return {
     title: data.title,
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
     completionStatus: data.completionStatus,
   };
 };
@@ -1317,6 +1317,36 @@ export async function getAllUsers() {
       bio: user.bio,
       category: user.category,
     }));
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+}
+
+export async function getCollaborators(collaboratorIds) {
+  // collaboratorIds is an array of userIds
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/users/profiles",
+      {
+        headers: {
+          method: "POST",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uids: collaboratorIds }),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch users");
+    }
+
+    const users = await res.json();
+    return users;
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;
