@@ -120,7 +120,7 @@ router.get("/users/:uid/profile", async (req, res) => {
 });
 
 // Batch fetching user profiles
-router.post("/users/profiles", async (req, res) => {
+router.post("/users/batch", async (req, res) => {
   const { uids } = req.body;
 
   if (!Array.isArray(uids) || uids.length === 0) {
