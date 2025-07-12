@@ -49,6 +49,7 @@ import {
   updateSubBucketList,
   removeCollaboratorByOwner,
   getSubBucketListOwnerId,
+  getCollaborators,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
@@ -201,67 +202,123 @@ export default function currentSublist() {
 
       const fetchData = async () => {
         try {
-          if (user?.uid && sublistId) {
-            let ownerId = sublist?.ownerId;
+          if (!user?.uid || !sublistId) return;
 
-            if (!sublist) {
-              // store doesn't have sublist data yet
-              setIsFetching(true);
-              console.log("Fetching sublist:", sublistId);
+          let ownerId: string | undefined;
+          let collaborators: string[] = [];
 
-              const { ownerId, sublistData, goalData } = await getSubBucketList(
-                sublistId
-              ); // need ownerId for conditional onSnapshot listener
+          const cachedSublist =
+            useSublistStore.getState().sublistData[sublistId as string];
+          let sublistData;
 
-              if (isActive) {
-                setSublist(sublistId as string, sublistData, ownerId);
-                setGoalsForSublist(sublistId as string, goalData);
+          if (!cachedSublist) {
+            // store doesn't have sublist data yet
+            setIsFetching(true);
+            console.log("Fetching sublist:", sublistId);
 
-                // event object: { id, title, description, categories, isCompleted, updatedAt, deadline }
+            const fetched = await getSubBucketList(sublistId); // need ownerId for conditional onSnapshot listener
+            ownerId = fetched.ownerId as string;
+            sublistData = fetched.sublistData;
+            collaborators = fetched.sublistData.collaborators;
 
-                console.log("fetched goals: ", goalData);
+            if (isActive) {
+              setSublist(sublistId as string, sublistData, ownerId);
+              setGoalsForSublist(sublistId as string, fetched.goalData);
 
-                // Cache initial values for editing
-                setInitialTitle(sublistData.title);
-                setInitialDescription(sublistData.description);
-                setInitialAccessLevel(sublistData.accessLevel);
+              // event object: { id, title, description, categories, isCompleted, updatedAt, deadline }
 
-                setIsFetching(false);
-                // Fetch owner + collaborators
-                const owner = await getOwnerProfile(ownerId);
-                const otherProfiles = await Promise.all(
-                  // Fetches all collaborator profiles in parallel
-                  sublistData.collaborators
-                    .filter(
-                      (uid: string | undefined) =>
-                        typeof uid === "string" &&
-                        uid.length > 0 &&
-                        uid !== ownerId
-                    )
-                    .map((uid: string) => getOwnerProfile(uid))
+              console.log("fetched goals: ", fetched.goalData);
+
+              // Cache initial values for editing
+              setInitialTitle(sublistData.title);
+              setInitialDescription(sublistData.description);
+              setInitialAccessLevel(sublistData.accessLevel);
+
+              setIsFetching(false);
+            }
+          } else {
+            ownerId = cachedSublist.ownerId;
+            collaborators = cachedSublist.collaborators;
+            sublistData = cachedSublist;
+          }
+
+          // Fetch owner + collaborators
+          const ownerProfile = await getOwnerProfile(ownerId);
+          const otherProfiles = await getCollaborators(
+            collaborators.filter(
+              (uid: string | undefined) =>
+                typeof uid === "string" && uid.length > 0 && uid !== ownerId
+            )
+          );
+
+          if (isActive) {
+            setCollaboratorProfiles([ownerProfile, ...otherProfiles]);
+          }
+
+          // onSnapshot listener
+          unsubscribe = onSnapshot(
+            doc(
+              db,
+              "users",
+              ownerId as string,
+              "bucketList",
+              sublistId as string
+            ),
+            async (docSnap) => {
+              if (!isActive) return; // prevent state update after unmount
+
+              const updatedData = formatSublistData(docSnap.data());
+
+              const current =
+                useSublistStore.getState().sublistData[sublistId as string];
+              const currentUids = current?.collaborators ?? [];
+
+              function arraysEqual(a: string[], b: string[]) {
+                return (
+                  a.length === b.length && a.every((val) => b.includes(val))
+                );
+              }
+
+              if (!arraysEqual(currentUids, updatedData.collaborators)) {
+                // update collaboratorProfiles
+                const newUids = updatedData.collaborators;
+
+                const uidsToAdd = newUids.filter(
+                  (uid: string) => !currentUids.includes(uid)
                 );
 
-                setCollaboratorProfiles([owner, ...otherProfiles]);
-              }
-            }
+                const uidsToRemove = currentUids.filter(
+                  (uid) => !newUids.includes(uid)
+                );
 
-            if (!ownerId) {
-              ownerId = await getSubBucketListOwnerId(sublistId); // lightweight fetch
-              updateSublistField(sublistId as string, "ownerId", ownerId);
-            }
+                if (uidsToAdd.length > 0 || uidsToRemove.length > 0) {
+                  // delete removed collaborators
+                  const existingProfiles = collaboratorProfiles.filter((user) =>
+                    newUids.includes(user.uid)
+                  );
 
-            // onSnapshot listener
-            unsubscribe = onSnapshot(
-              doc(db, "users", ownerId, "bucketList", sublistId as string),
-              (docSnap) => {
-                const data = formatSublistData(docSnap.data());
-                if (sublist.collaborators !== data.collaborators) {
-                  // update collaboratorProfiles
+                  // get profiles for new collaborators
+                  const newProfiles = await getCollaborators(
+                    uidsToAdd.filter(
+                      (uid: string | undefined) =>
+                        typeof uid === "string" && uid.length > 0
+                    )
+                  );
+
+                  if (isActive) {
+                    setCollaboratorProfiles([
+                      ...existingProfiles,
+                      ...newProfiles,
+                    ]);
+                  }
                 }
-                setSublist(sublistId as string, data, ownerId);
               }
-            );
-          }
+
+              if (isActive) {
+                setSublist(sublistId as string, updatedData, ownerId as string);
+              }
+            }
+          );
         } catch (error) {
           // Handle error
           showMessage({
