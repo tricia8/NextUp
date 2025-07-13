@@ -643,6 +643,7 @@ router.post("/user/bucketList", async (req, res) => {
       message: "New sublist added",
       sublistId: sublistRef.id,
       sublistData,
+      ownerId: userId,
     });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
