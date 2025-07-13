@@ -59,10 +59,10 @@ import { Goal } from "@/types/goal";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
 import GoalList from "@/components/GoalList";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, collection } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import { useSublistStore } from "@/stores/sublistStore";
-import { formatSublistData } from "@/firebase/firestore";
+import { formatSublistData, formatEventData } from "@/firebase/firestore";
 import { useShallow } from "zustand/react/shallow";
 
 export default function currentSublist() {
@@ -109,7 +109,7 @@ export default function currentSublist() {
   const [invitedUids, setInvitedUids] = useState<string[]>([]); // Array of uids for invited users
   const [allUsers, setAllUsers] = useState<User[]>([]); // All users in the system
 
-  const [createdAt, setCreatedAt] = useState("");
+  const [updatedAt, setUpdatedAt] = useState("");
 
   // boolean toggle to trigger re-render
   const [isUpdated, setIsUpdated] = useState(false);
@@ -120,86 +120,12 @@ export default function currentSublist() {
   // Fetched goals
   const [existingGoals, setExistingGoals] = useState<Goal[]>([]);
 
-  /* useFocusEffect(
-    useCallback(() => {
-      // Async logic only runs when the required values exist
-      let isActive = true;
-
-      const fetchData = async () => {
-        try {
-          if (user?.uid && sublistId) {
-            console.log("Fetching sublist for path:", user.uid, sublistId);
-
-            const sublistData = await getSubBucketList(sublistId);
-
-            const goalData = await getAllEventsFormatted(user.uid, sublistId);
-            // returns array of events
-            // event object: { id, title, description, categories, isCompleted, createdAt, deadline }
-
-            console.log("fetched goals: ", goalData);
-
-            if (isActive) {
-              setTitle(sublistData.title);
-              setDesc(sublistData.description);
-              setAccessLevel(sublistData.accessLevel);
-              setSharedUids(sublistData.collaborators); // array of uids
-              setCreatedAt(sublistData.createdAtFormatted);
-              setCompletionStatus(sublistData.completionStatus);
-              setExistingGoals(goalData);
-
-              // Cache initial values
-              setInitialTitle(sublistData.title);
-              setInitialDescription(sublistData.description);
-
-              setIsFetching(false);
-              // Fetch owner + collaborators
-              const owner = await getOwnerProfile(user.uid);
-              const otherProfiles = await Promise.all(
-                // Fetches all collaborator profiles in parallel
-                sublistData.collaborators
-                  .filter(
-                    (uid: string | undefined) =>
-                      typeof uid === "string" &&
-                      uid.length > 0 &&
-                      uid !== user.uid
-                  )
-                  .map((uid: string) => getOwnerProfile(uid))
-              );
-
-              setCollaborators([owner, ...otherProfiles]);
-            }
-          }
-        } catch (error) {
-          // Handle error
-          showMessage({
-            message: "Error",
-            description:
-              error instanceof Error
-                ? error.message
-                : "Failed to fetch sublist data",
-            type: "danger",
-            statusBarHeight: StatusBar.currentHeight,
-            floating: true,
-            icon: "danger",
-            duration: 5000,
-          });
-        }
-      };
-
-      fetchData();
-
-      // Do something when the screen is unfocused
-      return () => {
-        isActive = false; // Avoids setting state after unmount
-      };
-    }, [uid, sublistId, isUpdated])
-  ); */
-
   useFocusEffect(
     useCallback(() => {
       // Async logic only runs when the required values exist
       let isActive = true;
-      let unsubscribe: (() => void) | undefined;
+      let unsubSublist: (() => void) | undefined;
+      let unsubGoals: (() => void) | undefined;
 
       const fetchData = async () => {
         try {
@@ -211,13 +137,15 @@ export default function currentSublist() {
           const cachedSublist =
             useSublistStore.getState().sublistData[sublistId as string];
           let sublistData;
+          console.log("cachedSublist:", cachedSublist);
 
           if (!cachedSublist) {
             // store doesn't have sublist data yet
             setIsFetching(true);
             console.log("Fetching sublist:", sublistId);
 
-            const fetched = await getSubBucketList(sublistId); // need ownerId for conditional onSnapshot listener
+            const fetched = await getSubBucketList(sublistId);
+            console.log("fetched:", fetched.ownerId);
             ownerId = fetched.ownerId as string;
             sublistData = fetched.sublistData;
             collaborators = fetched.sublistData.collaborators;
@@ -233,7 +161,7 @@ export default function currentSublist() {
               setTitle(sublistData.title ?? "");
               setDesc(sublistData.description ?? "");
               setAccessLevel(sublistData.accessLevel);
-              setCreatedAt(sublistData.updatedAt ?? "");
+              setUpdatedAt(sublistData.updatedAt ?? "");
               setCompletionStatus(sublistData.completionStatus ?? [0, 0]);
 
               // Cache initial values for editing
@@ -249,6 +177,16 @@ export default function currentSublist() {
             sublistData = cachedSublist;
           }
 
+          // Last fallback if ownerId is still undefined
+          if (!ownerId) {
+            ownerId = await getSubBucketListOwnerId(sublistId as string);
+            if (!ownerId) {
+              throw new Error("Owner ID not found for sublist");
+            }
+          }
+
+          console.log("Owner ID from sublist:", ownerId);
+
           // Fetch owner + collaborators
           console.log("Owner ID:", ownerId);
           const ownerProfile = await getOwnerProfile(ownerId);
@@ -259,12 +197,16 @@ export default function currentSublist() {
             )
           );
 
+          // Fetch all users
+          const allUsers = (await getAllUsers()) as User[];
+
           if (isActive) {
             setCollaboratorProfiles([ownerProfile, ...otherProfiles]);
+            setAllUsers(allUsers);
           }
 
           // onSnapshot listener
-          unsubscribe = onSnapshot(
+          unsubSublist = onSnapshot(
             doc(
               db,
               "users",
@@ -327,6 +269,26 @@ export default function currentSublist() {
               }
             }
           );
+
+          unsubGoals = onSnapshot(
+            collection(
+              db,
+              "users",
+              ownerId as string,
+              "bucketList",
+              sublistId as string,
+              "events"
+            ),
+            (snapshot) => {
+              if (!isActive) return; // prevent state update after unmount
+
+              const goals: Goal[] = [];
+              snapshot.forEach((doc) => {
+                goals.push({ id: doc.id, ...formatEventData(doc.data()) });
+              });
+              setGoalsForSublist(sublistId as string, goals);
+            }
+          );
         } catch (error) {
           // Handle error
           showMessage({
@@ -349,7 +311,7 @@ export default function currentSublist() {
       // Do something when the screen is unfocused
       return () => {
         isActive = false;
-        if (unsubscribe) unsubscribe(); // Avoids setting state after unmount
+        if (unsubSublist) unsubSublist(); // Avoids setting state after unmount
       };
     }, [uid, sublistId])
   );
@@ -363,7 +325,7 @@ export default function currentSublist() {
       setInitialDescription(sublist.description ?? "");
       setAccessLevel(sublist.accessLevel ?? "");
       setInitialAccessLevel(sublist.accessLevel);
-      setCreatedAt(sublist.updatedAt ?? "");
+      setUpdatedAt(sublist.updatedAt ?? "");
       setCompletionStatus(sublist.completionStatus ?? [0, 0]);
     }
   }, [sublist]);
@@ -536,10 +498,10 @@ export default function currentSublist() {
       console.log("goal added!");
 
       // GET — fetch updated list from Firestore
-      const updatedGoals = await getAllEventsFormatted(uid, sublistId);
-      const updatedSublist = await getSubBucketList(sublistId);
-      setExistingGoals(updatedGoals); // update state/UI with fresh data
-      setCompletionStatus(updatedSublist.completionStatus); // update completion status
+      // const updatedGoals = await getAllEventsFormatted(uid, sublistId);
+      // const updatedSublist = await getSubBucketList(sublistId);
+      // setExistingGoals(updatedGoals); // update state/UI with fresh data
+      // setCompletionStatus(updatedSublist.completionStatus); // update completion status
 
       showMessage({
         message: "Success",
@@ -703,7 +665,7 @@ export default function currentSublist() {
           )}
 
           <View style={{ marginVertical: 10, gap: 8 }}>
-            <ThemedText style={styles.metadata}>Created {createdAt}</ThemedText>
+            <ThemedText style={styles.metadata}>Updated {updatedAt}</ThemedText>
             <ThemedText style={styles.metadata}>
               {completionStatus[0]} of {completionStatus[1]} complete
             </ThemedText>
@@ -724,8 +686,13 @@ export default function currentSublist() {
         <GoalList
           uid={uid}
           sublistId={sublistId as string}
-          data={existingGoals}
-          updateData={setExistingGoals}
+          data={goalsBySublist}
+          /* updateData={
+            /* setExistingGoals 
+            (data: Goal[]) => {
+              setGoalsForSublist(sublistId as string, data);
+            }
+          } */
           colorScheme={colorScheme}
         />
       </ThemedView>
