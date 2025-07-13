@@ -1329,10 +1329,10 @@ export async function getCollaborators(collaboratorIds) {
     const token = await getIdTokenFromFirebaseUser();
 
     const res = await fetch(
-      "https://nextup-l0e9.onrender.com/api/users/profiles",
+      "https://nextup-l0e9.onrender.com/api/users/batch",
       {
+        method: "POST",
         headers: {
-          method: "POST",
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
