@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function RingingBell({ isRinging }: { isRinging: boolean }) {
+export default function RingingBell({ isRinging, testID }: { isRinging: boolean, testID?: string }) {
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function RingingBell({ isRinging }: { isRinging: boolean }) {
 
   return (
     <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-      <Ionicons name="notifications" size={30} color="#66cdaa" />
+      <Ionicons testID="ringing-bell" name="notifications" size={30} color="#66cdaa" />
     </Animated.View>
   );
 }

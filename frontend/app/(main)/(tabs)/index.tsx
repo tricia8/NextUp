@@ -51,8 +51,6 @@ export default function HomeScreen() {
   const [isModalVisible, setModalVisible] = useState<boolean>(false);
   const [suggestion, setSuggestion] = useState<string>("");
 
-  const colorScheme = useColorScheme();
-
   const toggleOpen = () => {
     setOpen(!open);
   };
@@ -158,7 +156,7 @@ export default function HomeScreen() {
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={{ flex: 1 }}>
-          <SideMenu open={open} setOpen={setOpen} />
+          <SideMenu testID="side-menu" open={open} setOpen={setOpen} />
 
           <View style={styles.mainContainer}>
             <View style={styles.titleContainer}>
@@ -169,14 +167,18 @@ export default function HomeScreen() {
                   onPress={debouncePress(() => setModalVisible(true))}
                 >
                   {activities.length != 0 ? (
-                    <RingingBell isRinging={true} />
+                    <RingingBell testID="ringing-bell" isRinging={true} />
                   ) : (
-                    <RingingBell isRinging={false} />
+                    <RingingBell testID="ringing-bell" isRinging={false} />
                   )}
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={debouncePress(toggleOpen)}>
-                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
+                  <ProfilePic
+                    testID="profile-pic"
+                    imageUrl={photoUrl}
+                    size={PROFILEPICSIZE}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -187,6 +189,7 @@ export default function HomeScreen() {
               <View style={styles.progressStats}>
                 <View style={styles.donutContainer}>
                   <DonutChart
+                    testID="donut-chart"
                     value={completedEvents}
                     max={!totalEvents ? 1 : totalEvents}
                     radius={ms(60)}
@@ -196,12 +199,14 @@ export default function HomeScreen() {
 
                 <View style={styles.progressTextContainer}>
                   <AnimatedTextInput
+                    testID="animated-text"
                     value={completedEvents}
                     textColor="white"
                     size={RFValue(25)}
                   />
                   <Text style={styles.progressText}>OUT OF</Text>
                   <AnimatedTextInput
+                    testID="animated-text"
                     value={totalEvents}
                     textColor="white"
                     size={RFValue(25)}
@@ -214,7 +219,10 @@ export default function HomeScreen() {
             <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
               <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 {overdueCount && (
-                  <View style={styles.overdueContainer}>
+                  <View
+                    testID="overdue-container"
+                    style={styles.overdueContainer}
+                  >
                     <Text style={[styles.smallText, { fontWeight: "bold" }]}>
                       You have {overdueCount} overdue goal(s).
                     </Text>
@@ -250,7 +258,10 @@ export default function HomeScreen() {
               </ScrollView>
             </View>
 
-            <View style={styles.suggestionsContainer}>
+            <View
+              testID="suggestion-container"
+              style={styles.suggestionsContainer}
+            >
               <Text style={{ fontSize: RFValue(13), fontWeight: "bold" }}>
                 Bucket List Inspiration 🪄
               </Text>
@@ -271,6 +282,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Notifications
+        testID="notifications-modal"
         visible={isModalVisible}
         onClose={() => setModalVisible(false)}
         items={activities}

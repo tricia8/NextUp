@@ -5,13 +5,15 @@ import { ms } from "react-native-size-matters";
 type Props = {
   imageUrl: string | null;
   size: number;
+  testID?: string;
 };
 
-export default function ProfilePic({ imageUrl, size }: Props) {
+export default function ProfilePic({ imageUrl, size, testID }: Props) {
   return (
     <View>
       {imageUrl ? (
         <Image
+          testID={testID}
           source={{ uri: imageUrl }}
           style={{
             width: ms(size),

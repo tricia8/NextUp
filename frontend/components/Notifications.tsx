@@ -16,6 +16,7 @@ type NotifProps = {
   items: Activity[];
   userId: string;
   setActivities: React.Dispatch<React.SetStateAction<Activity[] | null>>;
+  testID?: string;
 };
 
 export default function Notifications({
@@ -24,6 +25,7 @@ export default function Notifications({
   items,
   userId,
   setActivities,
+  testID,
 }: NotifProps) {
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -69,9 +71,7 @@ export default function Notifications({
   const handleDismiss = async (id: string) => {
     try {
       await deleteInvite(id);
-      setActivities(
-        (prev) => prev?.filter((item) => item.id !== id) || []
-      );
+      setActivities((prev) => prev?.filter((item) => item.id !== id) || []);
     } catch (error) {
       Alert.alert("Error", "Failed to dismiss notification.");
     }
@@ -79,6 +79,7 @@ export default function Notifications({
 
   return (
     <Modal
+      testID={testID}
       isVisible={visible}
       backdropOpacity={0.4}
       onBackdropPress={onClose}
@@ -199,12 +200,12 @@ const styles = StyleSheet.create({
   textContainer: {
     flexWrap: "wrap",
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     fontSize: 14,
   },
   buttonContainer: {
     gap: s(8),
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   button: {
     backgroundColor: "#6a5acd",
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 13,
   },
 });
