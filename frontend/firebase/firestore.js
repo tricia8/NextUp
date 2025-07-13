@@ -701,7 +701,7 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
-const formatEventData = (data) => {
+export const formatEventData = (data) => {
   // data type: Event object
   const updatedAt = data.updatedAt?.toDate?.();
   const deadline = data.deadline?.toDate?.();
@@ -1325,6 +1325,9 @@ export async function getAllUsers() {
 
 export async function getCollaborators(collaboratorIds) {
   // collaboratorIds is an array of userIds
+  if (!Array.isArray(collaboratorIds) || collaboratorIds.length === 0) {
+    return [];
+  }
   try {
     const token = await getIdTokenFromFirebaseUser();
 
