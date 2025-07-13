@@ -7,7 +7,7 @@ Include:
 1. A short title (1 sentence max)
 2. A brief summary (1-2 sentences) describing the goal and why it is worth doing.
 Make sure it is achievable, safe, culturally appropriate, and not fictional.
-Avoid hallucination. Use only real places and events.`;
+Avoid hallucination. Use only real places and events. Try to generate a different suggestion each time.`;
 
 router.post("/generate", async (req, res) => {
   try {
@@ -20,6 +20,12 @@ router.post("/generate", async (req, res) => {
         },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 128,
+          },
         }),
       }
     );
