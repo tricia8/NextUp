@@ -348,7 +348,7 @@ export const getSubBucketList = async (subBucketListId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
       {
         method: "GET",
@@ -370,6 +370,36 @@ export const getSubBucketList = async (subBucketListId) => {
     return data;
   } catch (error) {
     console.error("Error fetching sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSubBucketListOwnerId = async (subBucketListId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/owner`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch sub-bucket list owner ID"
+      );
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching sub-bucket list owner ID:", error);
     throw error;
   }
 };
@@ -404,16 +434,16 @@ export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   }
 };
 
-const formatSublistData = (data) => {
+export const formatSublistData = (data) => {
   // data type: Sublist object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
 
   return {
     title: data.title,
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAtFormatted: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
     completionStatus: data.completionStatus,
   };
 };
@@ -425,7 +455,7 @@ export async function getAllSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList`,
       {
         method: "GET",
@@ -455,7 +485,7 @@ export async function getUnownedSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/sharedSublists`,
       {
         method: "GET",
@@ -485,7 +515,7 @@ export async function getOwnedSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/owned`,
       {
         method: "GET",
@@ -563,6 +593,32 @@ export const getSublistInvites = async () => {
     return data.invites;
   } catch (error) {
     console.error("Error fetching list invites:", error);
+    throw error;
+  }
+};
+
+export const deleteInvite = async (requestId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/listInvites/${requestId}/delete`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to delete list invite");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error deleting invite", error);
     throw error;
   }
 };
@@ -645,9 +701,9 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
-const formatEventData = (data) => {
+export const formatEventData = (data) => {
   // data type: Event object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
   const deadline = data.deadline?.toDate?.();
 
   return {
@@ -656,7 +712,7 @@ const formatEventData = (data) => {
     categories: data.categories ?? [], // default to empty array
     deadline: deadline ? formatDisplayDate(deadline) : "",
     isCompleted: data.isCompleted,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
   };
 };
 
@@ -1261,6 +1317,39 @@ export async function getAllUsers() {
       bio: user.bio,
       category: user.category,
     }));
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+}
+
+export async function getCollaborators(collaboratorIds) {
+  // collaboratorIds is an array of userIds
+  if (!Array.isArray(collaboratorIds) || collaboratorIds.length === 0) {
+    return [];
+  }
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/users/batch",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uids: collaboratorIds }),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch users");
+    }
+
+    const users = await res.json();
+    return users;
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;

@@ -30,6 +30,33 @@ router.get("/sublists/invites", async (req, res) => {
   }
 });
 
+// Delete sublist invite
+router.delete("/listInvites/:requestId/delete", async (req, res) => {
+  const { requestId } = req.params;
+
+  if (!requestId) {
+    return res.status(400).json({ error: "Missing request ID" });
+  }
+
+  try {
+    const inviteRef = db.collection("listInvites").doc(requestId);
+    const inviteSnap = await inviteRef.get();
+
+    if (!inviteSnap.exists) {
+      return res
+        .status(200)
+        .json({ message: "Invite already deleted or not found" });
+    }
+
+    await inviteRef.delete();
+
+    return res.status(200).json({ message: "Invite deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting invite:", error);
+    return res.status(500).json({ error: "Failed to delete invite" });
+  }
+});
+
 // Invite collaborators as an owner
 router.post(
   "/user/bucketList/:sublistId/collaborators/:collaboratorId",
@@ -320,6 +347,43 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+// lightweight function to get ownerId for frontend onSnapshot setup
+const getSublistOwnerOrThrow = async (userId, sublistId) => {
+  const sublistRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("bucketList")
+    .doc(sublistId);
+
+  const sublistSnap = await sublistRef.get();
+  if (sublistSnap.exists) {
+    return userId; // user is owner
+  }
+
+  // check shared sublist reference
+  const sharedSublistRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("sharedSublists")
+    .doc(sublistId);
+
+  const sharedSnap = await sharedSublistRef.get();
+  if (!sharedSnap.exists) {
+    const err = new Error("Access denied");
+    err.status = 403;
+    throw err;
+  }
+
+  const { ownerId } = sharedSnap.data() || {};
+  if (!ownerId) {
+    const err = new Error("Malformed sharedSublist entry: missing ownerId");
+    err.status = 500;
+    throw err;
+  }
+
+  return ownerId;
+};
+
 const getSublistDocOrThrow = async (userId, sublistId) => {
   // Check if userId matches the sublist owner or is a collaborator
   const sublistDocRef = db
@@ -331,6 +395,7 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
 
   if (docSnap.exists) {
     // User is the owner
+    console.log("Found as owner:", userId);
     return { docSnap, ownerId: userId };
   }
 
@@ -350,6 +415,8 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
 
   // Fetch actual sublist data from owner's bucketList
   const { ownerId } = sharedDocSnap.data();
+  console.log("Shared doc found. ownerId from sharedDocSnap:", ownerId);
+
   const ownerSublistSnap = await db
     .collection("users")
     .doc(ownerId)
@@ -576,7 +643,21 @@ router.post("/user/bucketList", async (req, res) => {
       message: "New sublist added",
       sublistId: sublistRef.id,
       sublistData,
+      ownerId: userId,
     });
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
+// Get sublist ownerId (for frontend onSnapshot setup)
+router.get("/user/bucketList/:sublistId/owner", async (req, res) => {
+  const userId = req.user; // Verified from auth middleware
+  const { sublistId } = req.params;
+
+  try {
+    const ownerId = await getSublistOwnerOrThrow(userId, sublistId);
+    return res.json({ ownerId });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
   }
@@ -588,10 +669,15 @@ router.get("/user/bucketList/:sublistId", async (req, res) => {
   const userId = req.user; // Verified from middleware
 
   try {
-    const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+    const { docSnap, ownerId } = await getSublistDocOrThrow(userId, sublistId);
     const events = await getAllEventsFormatted(userId, sublistId); // Returns array of event objects
     const formatted = formatSublistData(docSnap.data());
-    return res.json({ sublistData: formatted, goalData: events });
+    console.log("Owner ID: ", ownerId);
+    return res.json({
+      ownerId,
+      sublistData: formatted,
+      goalData: events,
+    });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
   }
