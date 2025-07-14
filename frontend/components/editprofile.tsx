@@ -99,7 +99,7 @@ export default function EditProfile({
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
             <TouchableOpacity onPress={debouncePress(handlePickImage)}>
-              <ProfilePic imageUrl={image} size={PROFILEPICSIZE} />
+              <ProfilePic testID="profile-pic" imageUrl={image} size={PROFILEPICSIZE} />
             </TouchableOpacity>
 
             <ThemedText type="defaultSemiBold">{userData.username}</ThemedText>

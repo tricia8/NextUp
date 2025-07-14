@@ -185,6 +185,7 @@ describe("ProfileScreen", () => {
       </AuthContext.Provider>
     );
 
+    expect(getByTestId("profile-pic")).toBeTruthy();
     expect(getByText("Test User")).toBeTruthy();
     expect(getByDisplayValue("hi")).toBeTruthy();
     expect(getByTestId("save-button")).toBeTruthy();
