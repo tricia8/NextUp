@@ -119,6 +119,42 @@ router.get("/users/:uid/profile", async (req, res) => {
   }
 });
 
+// Batch fetching user profiles
+router.post("/users/batch", async (req, res) => {
+  const { uids } = req.body;
+
+  if (!Array.isArray(uids) || uids.length === 0) {
+    return res.status(400).json({ error: "Invalid or empty user IDs array" });
+  }
+
+  try {
+    const userRefs = uids.map((uid) => db.doc(`users/${uid}`));
+    const userSnapshots = await db.getAll(...userRefs); // getAll accepts up to 100 document references
+
+    const users = userSnapshots
+      .map((doc) => {
+        if (!doc.exists) {
+          return null; // Skip non-existent users
+        }
+        const data = doc.data();
+        return {
+          uid: doc.id,
+          username: data.username,
+          email: data.email,
+          photoUrl: data.photoUrl,
+          displayName: data.displayName,
+          bio: data.bio,
+        };
+      })
+      .filter((user) => user !== null); // Filter out nulls
+
+    return res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching user profiles:", error);
+    return res.status(500).json({ error: "Failed to fetch user profiles" });
+  }
+});
+
 // Get all users
 router.get("/users", async (req, res) => {
   try {
