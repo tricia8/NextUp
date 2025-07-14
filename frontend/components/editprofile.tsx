@@ -30,6 +30,7 @@ type editProfileProps = {
   userData: User;
   setUserData: (user: User | null) => void;
   setCategory: (category: string) => void;
+  testID?: string;
 };
 
 export default function EditProfile({
@@ -38,6 +39,7 @@ export default function EditProfile({
   userData,
   setUserData,
   setCategory,
+  testID,
 }: editProfileProps) {
   const [bioText, setBioText] = useState(userData.bio);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -86,6 +88,7 @@ export default function EditProfile({
 
   return (
     <Modal
+      testID={testID}
       isVisible={visible}
       backdropOpacity={0.4}
       onBackdropPress={handleClose}
@@ -113,6 +116,7 @@ export default function EditProfile({
             <View style={styles.bioContainer}>
               <ThemedText>Bio:</ThemedText>
               <TextInput
+                testID="bio-input"
                 style={styles.input}
                 placeholder="Add your bio"
                 placeholderTextColor="gray"
@@ -133,6 +137,7 @@ export default function EditProfile({
             />
 
             <TouchableOpacity
+              testID="save-button"
               style={styles.button}
               onPress={debouncePress(() =>
                 handleSave(userData.uid, {

@@ -22,7 +22,7 @@ export default function ProfilePic({ imageUrl, size, testID }: Props) {
           }}
         />
       ) : (
-        <FontAwesome name="user-circle-o" size={ms(size)} color="#7b68ee" />
+        <FontAwesome testID={testID} name="user-circle-o" size={ms(size)} color="#7b68ee" />
       )}
     </View>
   );

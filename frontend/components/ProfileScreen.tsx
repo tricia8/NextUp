@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Image,
   StyleSheet,
   ScrollView,
   View,
@@ -15,7 +14,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { auth } from "@/firebase/firebaseConfig";
 import JourneyScreen from "@/components/JourneyScreen";
 import EditProfile from "@/components/editprofile";
@@ -46,6 +45,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
   const [category, setCategory] = useState<string>("--");
   const [isFriend, setIsFriend] = useState<boolean>(false);
 
+  const router = useRouter();
   const finalUid = uid ?? auth.currentUser?.uid;
 
   useFocusEffect(
@@ -132,7 +132,11 @@ export default function ProfileScreen({ uid }: ProfileProps) {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
-            <ProfilePic imageUrl={userData?.photoUrl} size={PROFILEPICSIZE} />
+            <ProfilePic
+              testID="profile-pic"
+              imageUrl={userData?.photoUrl}
+              size={PROFILEPICSIZE}
+            />
 
             <View style={styles.profileDetails}>
               <View style={styles.username}>
@@ -147,6 +151,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
 
                 {finalUid === auth.currentUser?.uid && (
                   <TouchableOpacity
+                    testID="edit-button"
                     style={styles.button}
                     onPress={debouncePress(() => {
                       setModalVisible(true);
@@ -211,6 +216,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
 
             {finalUid === auth.currentUser?.uid && (
               <TouchableOpacity
+                testID="add-friends"
                 style={styles.button}
                 onPress={debouncePress(() => {
                   router.push("../addfriends");
@@ -244,6 +250,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
                 color="rgba(26, 230, 186, 0.5)"
                 component={<JourneyScreen />}
                 uid={finalUid}
+                router={router}
               />
             </View>
           </View>
@@ -252,6 +259,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
 
       {userData && (
         <EditProfile
+          testID="edit-modal"
           visible={isModalVisible}
           onClose={() => setModalVisible(false)}
           userData={userData}
@@ -269,11 +277,13 @@ type Props = {
   color: string;
   component: React.ReactNode;
   uid: string;
+  router: ReturnType<typeof useRouter>;
 };
 
-function Preview({ route, title, color, component, uid }: Props) {
+function Preview({ route, title, color, component, uid, router }: Props) {
   return (
     <TouchableOpacity
+      testID="preview"
       onPress={debouncePress(() => {
         router.push({
           pathname: "../journey/[uid]",
