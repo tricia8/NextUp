@@ -51,6 +51,7 @@ import {
   removeCollaboratorByOwner,
   getSubBucketListOwnerId,
   getCollaborators,
+  addCollaborator,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
@@ -80,12 +81,28 @@ export default function currentSublist() {
     useShallow((state) => state.sublistData[sublistId as string])
   );
 
+  const sharedUids = sublist?.collaborators ?? [];
+
+  // wrapper setter for sharedUids that matches React state setter signature
+  const setSharedUids: React.Dispatch<React.SetStateAction<string[]>> = (
+    value
+  ) => {
+    // value can be a string[] or a function
+    const newUids = typeof value === "function" ? value(sharedUids) : value;
+    updateSublistField(sublistId as string, "collaborators", newUids);
+  };
+
+  const onInviteUser = async (userId: string) => {
+    await addCollaborator(sublistId as string, userId);
+  };
+
   const goalsBySublist = useSublistStore(
     useShallow(
       (state) => state.goalsBySublist[sublistId as string] || ([] as Goal[])
     )
   );
 
+  // loading state for sublist data
   const [isFetching, setIsFetching] = useState(false);
 
   if (loading || !uid || !sublistId) {
@@ -104,7 +121,6 @@ export default function currentSublist() {
 
   const [accessLevel, setAccessLevel] = useState("");
   const [completionStatus, setCompletionStatus] = useState<number[]>([0, 0]); // [completed, total]
-  const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
   const [collaboratorProfiles, setCollaboratorProfiles] = useState<User[]>([]); // Add owner first?
   const [invitedUids, setInvitedUids] = useState<string[]>([]); // Array of uids for invited users
   const [allUsers, setAllUsers] = useState<User[]>([]); // All users in the system
@@ -232,8 +248,9 @@ export default function currentSublist() {
               if (!arraysEqual(currentUids, updatedData.collaborators)) {
                 // update collaboratorProfiles
                 const newUids = updatedData.collaborators;
+                console.log("New UIDs:", newUids);
 
-                const uidsToAdd = newUids.filter(
+                /* const uidsToAdd = newUids.filter(
                   (uid: string) => !currentUids.includes(uid)
                 );
 
@@ -243,8 +260,8 @@ export default function currentSublist() {
 
                 if (uidsToAdd.length > 0 || uidsToRemove.length > 0) {
                   // delete removed collaborators
-                  const existingProfiles = collaboratorProfiles.filter((user) =>
-                    newUids.includes(user.uid)
+                  const existingProfiles = collaboratorProfiles.filter(
+                    (user) => newUids.includes(user.uid) || user.uid === ownerId
                   );
 
                   // get profiles for new collaborators
@@ -253,14 +270,21 @@ export default function currentSublist() {
                       (uid: string | undefined) =>
                         typeof uid === "string" && uid.length > 0
                     )
-                  );
+                  ); */
 
-                  if (isActive) {
-                    setCollaboratorProfiles([
+                const newProfiles = await getCollaborators(
+                  newUids.filter(
+                    (uid: string | undefined) =>
+                      typeof uid === "string" && uid.length > 0
+                  )
+                );
+
+                if (isActive) {
+                  /* setCollaboratorProfiles([
                       ...existingProfiles,
                       ...newProfiles,
-                    ]);
-                  }
+                    ]); */
+                  setCollaboratorProfiles(newProfiles);
                 }
               }
 
@@ -312,6 +336,7 @@ export default function currentSublist() {
       return () => {
         isActive = false;
         if (unsubSublist) unsubSublist(); // Avoids setting state after unmount
+        if (unsubGoals) unsubGoals();
       };
     }, [uid, sublistId])
   );
@@ -583,46 +608,49 @@ export default function currentSublist() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View>
-          {!isEditing && (
-            <View style={{ gap: 10 }}>
-              <View style={styles.titleEditBar}>
-                <ThemedText
-                  type="title"
-                  style={{
-                    flexShrink: 1, // shrink if needed so no overflowing occurs
-                  }}
-                >
-                  {title}
+          {!isEditing &&
+            (isFetching ? (
+              <LoadingScreen />
+            ) : (
+              <View style={{ gap: 10 }}>
+                <View style={styles.titleEditBar}>
+                  <ThemedText
+                    type="title"
+                    style={{
+                      flexShrink: 1, // shrink if needed so no overflowing occurs
+                    }}
+                  >
+                    {title}
+                  </ThemedText>
+                  <TouchableOpacity
+                    onPress={() => setIsEditing(true)}
+                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                  >
+                    <Feather
+                      name="edit-2"
+                      size={24}
+                      color={isDark ? "white" : "black"}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
+                  {description}
                 </ThemedText>
-                <TouchableOpacity
-                  onPress={() => setIsEditing(true)}
-                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                >
-                  <Feather
-                    name="edit-2"
-                    size={24}
-                    color={isDark ? "white" : "black"}
+
+                <View style={{ marginVertical: 10 }}>
+                  <AccessDropdownPicker
+                    accessLevel={accessLevel}
+                    onChange={setAccessLevel}
+                    theme={isDark ? "DARK" : "LIGHT"}
+                    isDisabled={true}
+                    onChangeValue={(value) => {
+                      if (typeof value === "string") handleAccessChange(value);
+                    }}
                   />
-                </TouchableOpacity>
+                </View>
               </View>
-
-              <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
-                {description}
-              </ThemedText>
-
-              <View style={{ marginVertical: 10 }}>
-                <AccessDropdownPicker
-                  accessLevel={accessLevel}
-                  onChange={setAccessLevel}
-                  theme={isDark ? "DARK" : "LIGHT"}
-                  isDisabled={true}
-                  onChangeValue={(value) => {
-                    if (typeof value === "string") handleAccessChange(value);
-                  }}
-                />
-              </View>
-            </View>
-          )}
+            ))}
 
           {isEditing && (
             <View style={{ gap: 10 }}>
@@ -687,12 +715,6 @@ export default function currentSublist() {
           uid={uid}
           sublistId={sublistId as string}
           data={goalsBySublist}
-          /* updateData={
-            /* setExistingGoals 
-            (data: Goal[]) => {
-              setGoalsForSublist(sublistId as string, data);
-            }
-          } */
           colorScheme={colorScheme}
         />
       </ThemedView>
@@ -700,7 +722,8 @@ export default function currentSublist() {
       {modalVisible && (
         <View style={{ flex: 1 }}>
           <ShareListModal
-            currentUid={user?.id}
+            currentUid={user?.uid}
+            ownerId={sublist?.ownerId}
             collaborators={collaboratorProfiles}
             setCollaborators={setCollaboratorProfiles}
             visible={modalVisible}
@@ -711,12 +734,31 @@ export default function currentSublist() {
             setSharedUids={setSharedUids}
             invitedUids={invitedUids}
             setInvitedUids={setInvitedUids}
+            onInviteUser={onInviteUser}
             onRemoveCollaborator={async (userId: string) => {
-              setCollaboratorProfiles((prev) =>
-                prev.filter((collaborator) => collaborator.uid !== userId)
-              );
-              setSharedUids((prev) => prev.filter((uid) => uid !== userId));
-              await removeCollaboratorByOwner(sublistId, userId);
+              try {
+                const response = await removeCollaboratorByOwner(
+                  sublistId,
+                  userId
+                );
+                /* setCollaboratorProfiles((prev) =>
+                  prev.filter((collaborator) => collaborator.uid !== userId)
+                ); */
+                setSharedUids((prev) => prev.filter((uid) => uid !== userId));
+              } catch (error) {
+                showMessage({
+                  message: "Error",
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to remove collaborator",
+                  type: "danger",
+                  statusBarHeight: StatusBar.currentHeight,
+                  floating: true,
+                  icon: "danger",
+                  duration: 5000,
+                });
+              }
             }}
           />
         </View>
