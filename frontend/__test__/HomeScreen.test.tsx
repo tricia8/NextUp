@@ -234,7 +234,9 @@ describe("HomeScreen", () => {
         <SideMenu open={true} setOpen={() => {}} />
       </AuthContext.Provider>
     );
-    fireEvent.press(getByTestId("logout-button"));
-    expect(mockLogout).toHaveBeenCalled();
+    await waitFor(() => {
+      fireEvent.press(getByTestId("logout-button"));
+      expect(mockLogout).toHaveBeenCalled();
+    });
   });
 });
