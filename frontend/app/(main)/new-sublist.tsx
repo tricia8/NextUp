@@ -257,6 +257,7 @@ export default function newSubList() {
         <View style={{ flex: 1 }}>
           <ShareListModal
             currentUid={user?.uid}
+            ownerId={user?.uid} // ownerId is the current user's UID
             collaborators={collaborators} // User[]
             setCollaborators={setCollaborators}
             visible={modalVisible}

@@ -19,6 +19,7 @@ const PROFILEPICSIZE = ms(38);
 
 type CustomModalProps = {
   currentUid: string;
+  ownerId: string;
   allUsers: User[];
   collaborators: User[]; // collaborators array
   setCollaborators: React.Dispatch<React.SetStateAction<User[]>>;
@@ -35,6 +36,7 @@ type CustomModalProps = {
 
 export default function ShareListModal({
   currentUid,
+  ownerId,
   allUsers,
   collaborators,
   setCollaborators,
@@ -65,14 +67,16 @@ export default function ShareListModal({
         ...allUsers.filter((user) => invitedUids.includes(user.uid)),
       ]),
     ]);
+    console.log("Collaborators: ", collaborators);
     setInvitedUids([]); // clear invited users after inviting
   };
 
   const onInvitation = onInviteUser
     ? async () => {
         const uidsToInvite = [...invitedUids]; // copy before clearing
-        inviteUserIds();
         await Promise.all(uidsToInvite.map((uid) => onInviteUser?.(uid))); // update db
+        // inviteUserIds();
+        setInvitedUids([]);
       }
     : () => inviteUserIds(); // only update UI
 
@@ -100,7 +104,8 @@ export default function ShareListModal({
           <Text key={item.uid} style={{ fontSize: RFValue(12) }}>
             {item.username} {item.uid == currentUid ? "(you)" : ""}
           </Text>
-          {item.uid !== currentUid && (
+          {item.uid === ownerId && <Text style={styles.owner}>Owner</Text>}
+          {item.uid !== ownerId && (
             <TouchableOpacity
               onPress={() => {
                 onRemoveCollaborator(item.uid);
@@ -170,7 +175,7 @@ export default function ShareListModal({
           <FlatList
             data={collaborators}
             renderItem={renderFlatlistItem}
-            keyExtractor={(item) => item.username}
+            keyExtractor={(item) => item.uid}
             style={{ flexGrow: 1, width: "100%" }}
             contentContainerStyle={{ paddingBottom: 10 }}
           />
@@ -246,5 +251,10 @@ const styles = StyleSheet.create({
     height: PROFILEPICSIZE,
     width: PROFILEPICSIZE,
     borderRadius: PROFILEPICSIZE / 2,
+  },
+  owner: {
+    fontSize: RFValue(12),
+    color: "#888",
+    marginLeft: 5,
   },
 });
