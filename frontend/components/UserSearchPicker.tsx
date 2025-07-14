@@ -17,7 +17,7 @@ type Props = {
   handleAddUser?: (invitee: User) => void;
 };
 
-export default function UserSearch({
+export default function UserSearchPicker({
   colorScheme,
   allUsers,
   placeholder = "Add users",
@@ -48,7 +48,7 @@ export default function UserSearch({
       setUserItems([]);
       setUserItemsLoading(false);
     }
-  }, [allUsers]);
+  }, [allUsers, collaboratorUids]);
 
   return (
     <DropDownPicker
