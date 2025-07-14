@@ -7,11 +7,9 @@ import {
   TouchableOpacity,
   useColorScheme,
   Alert,
-  Image,
 } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
 import { s, ms, vs } from "react-native-size-matters";
-import { FontAwesome } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import Modal from "react-native-modal";
@@ -21,6 +19,7 @@ import CategoryPicker from "./forms/CategoryPicker";
 import { pickImage } from "@/cloudinary/pickimage";
 import { uploadToCloudinary } from "@/cloudinary/upload";
 import { debouncePress } from "@/utils/debouncePress";
+import ProfilePic from "./ProfilePic";
 
 const PROFILEPICSIZE = ms(100);
 
@@ -100,15 +99,7 @@ export default function EditProfile({
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
             <TouchableOpacity onPress={debouncePress(handlePickImage)}>
-              {image ? (
-                <Image source={{ uri: image }} style={styles.profilePic} />
-              ) : (
-                <FontAwesome
-                  name="user-circle-o"
-                  size={PROFILEPICSIZE}
-                  color="#7b68ee"
-                />
-              )}
+              <ProfilePic imageUrl={image} size={PROFILEPICSIZE} />
             </TouchableOpacity>
 
             <ThemedText type="defaultSemiBold">{userData.username}</ThemedText>
