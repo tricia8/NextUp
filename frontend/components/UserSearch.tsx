@@ -86,10 +86,13 @@ export default function UserSearch({
             userId !== item.uid &&
             (isRequested(item.uid) ? (
               <View style={styles.pendingContainer}>
-                <ThemedText style={{fontSize: RFValue(12)}}>Requested</ThemedText>
+                <ThemedText style={{ fontSize: RFValue(12) }}>
+                  Requested
+                </ThemedText>
               </View>
             ) : (
               <TouchableOpacity
+                testID="add-friend"
                 onPress={debouncePress(() => handleAddFriend?.(item.uid))}
               >
                 <MaterialIcons
@@ -106,7 +109,7 @@ export default function UserSearch({
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={styles.searchContainer}>
+      <View testID="search-bar" style={styles.searchContainer}>
         <TextInput
           style={styles.input}
           placeholder={placeholder}
