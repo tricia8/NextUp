@@ -395,6 +395,7 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
 
   if (docSnap.exists) {
     // User is the owner
+    console.log("Found as owner:", userId);
     return { docSnap, ownerId: userId };
   }
 
@@ -414,6 +415,8 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
 
   // Fetch actual sublist data from owner's bucketList
   const { ownerId } = sharedDocSnap.data();
+  console.log("Shared doc found. ownerId from sharedDocSnap:", ownerId);
+
   const ownerSublistSnap = await db
     .collection("users")
     .doc(ownerId)
@@ -640,6 +643,7 @@ router.post("/user/bucketList", async (req, res) => {
       message: "New sublist added",
       sublistId: sublistRef.id,
       sublistData,
+      ownerId: userId,
     });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
@@ -668,7 +672,12 @@ router.get("/user/bucketList/:sublistId", async (req, res) => {
     const { docSnap, ownerId } = await getSublistDocOrThrow(userId, sublistId);
     const events = await getAllEventsFormatted(userId, sublistId); // Returns array of event objects
     const formatted = formatSublistData(docSnap.data());
-    return res.json({ ownerId, sublistData: formatted, goalData: events });
+    console.log("Owner ID: ", ownerId);
+    return res.json({
+      ownerId,
+      sublistData: formatted,
+      goalData: events,
+    });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
   }
