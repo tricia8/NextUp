@@ -339,7 +339,7 @@ export default function currentSublist() {
               goalList.push({
                 id: doc.id,
                 ...formatEventData(data),
-                updatedAtRaw: data.updatedAt, // raw Timestamp
+                updatedAtRaw: data.updatedAt ?? data.createdAt, // raw Timestamp
               });
             });
 
@@ -429,7 +429,7 @@ export default function currentSublist() {
 
   //Date-Time Picker
   const [deadlineString, setDeadlineString] = useState(""); // string
-  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date()); // deadline in
+  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date());
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
 
   const onCategoryOpen = useCallback(() => {
