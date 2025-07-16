@@ -832,18 +832,14 @@ export const updateEvent = async (subBucketListId, eventId, updates = {}) => {
   }
 };
 
-export const toggleEventCompletion = async (
-  userId,
-  subBucketListId,
-  eventId
-) => {
+export const toggleEventCompletion = async (subBucketListId, eventId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
     const res = await fetch(
-      `https://nextup-l0e9.onrender.com/api/users/${userId}/bucketList/${subBucketListId}/events/${eventId}/toggleCompletion`,
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}/toggleCompletion`,
       {
-        method: "POST",
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
         },
