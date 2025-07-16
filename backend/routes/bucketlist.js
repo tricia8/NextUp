@@ -1270,10 +1270,11 @@ router.delete(
 );
 
 // Toggle event completion
-router.post(
-  "/users/:userId/bucketList/:sublistId/events/:eventId/toggleCompletion",
+router.patch(
+  "/user/bucketList/:sublistId/events/:eventId/toggleCompletion",
   async (req, res) => {
-    const { userId, sublistId, eventId } = req.params;
+    const { sublistId, eventId } = req.params;
+    const userId = req.user;
 
     const eventDocRef = db
       .collection("users")
@@ -1308,10 +1309,6 @@ router.post(
         const updatedStatus = !currentCompleted
           ? [completed + 1, total]
           : [Math.max(0, completed - 1), total]; // avoid negative values
-
-        /* await updateDoc(eventDocRef, {
-      isCompleted: !currentCompleted,
-    }); */
 
         // update event
         transaction.update(eventDocRef, { isCompleted: !currentCompleted });
