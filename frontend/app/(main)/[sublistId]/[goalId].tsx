@@ -8,6 +8,8 @@ import {
   useColorScheme,
   Keyboard,
   StatusBar,
+  Pressable,
+  Switch,
 } from "react-native";
 import { useEffect, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
@@ -16,10 +18,23 @@ import TitleDescFields from "@/components/forms/TitleDescFields";
 import LoadingScreen from "@/components/Loading";
 import { RFValue } from "react-native-responsive-fontsize";
 import { showMessage } from "react-native-flash-message";
-import { getEvent, updateEvent } from "@/firebase/firestore";
+import {
+  getEvent,
+  toggleEventCompletion,
+  updateEvent,
+} from "@/firebase/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { useSublistStore } from "@/stores/sublistStore";
 import { useShallow } from "zustand/react/shallow";
+import { Post } from "@/types/post";
+import CategoryPicker from "@/components/forms/CategoryPicker";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
+import { debouncePress } from "@/utils/debouncePress";
+import { FloatingLabelInput } from "react-native-floating-label-input";
+import CategoryChips from "@/components/CategoryChips";
+import Toggle from "react-native-toggle-element";
 
 export default function GoalPage() {
   const { sublistId, goalId } = useLocalSearchParams();
@@ -30,7 +45,7 @@ export default function GoalPage() {
     )
   );
 
-  const { addGoalToSublist } = useSublistStore();
+  const { addGoalToSublist, setPostsForGoal } = useSublistStore();
 
   useEffect(() => {
     const fetchGoal = async () => {
@@ -39,6 +54,15 @@ export default function GoalPage() {
         if (!goal && sublistId && goalId) {
           const { goalData, posts } = await getEvent(sublistId, goalId); // goal and array of posts
           addGoalToSublist(sublistId as string, goalData);
+          const postsRecord: Record<string, Post> = {};
+          const postOrder: string[] = [];
+
+          posts.forEach((post: Post) => {
+            postsRecord[post.id] = post;
+            postOrder.push(post.id);
+          });
+
+          setPostsForGoal(goalId as string, postsRecord, postOrder);
         }
       } catch (error) {
         showMessage({
@@ -67,7 +91,60 @@ export default function GoalPage() {
   const [goalDescription, setDesc] = useState(
     goal?.description || "Dummy Description"
   );
+
+  // Date Time picker
+  const [deadlineString, setDeadlineString] = useState(""); // string
+  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date());
+  const [dateTimeOpen, setDateTimeOpen] = useState(false);
+
   const [categories, setCategories] = useState(goal?.categories || []);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+
+  const onCategoryOpen = () => {
+    Keyboard.dismiss();
+  };
+
+  const toggleDatePicker = () => {
+    setDateTimeOpen(!dateTimeOpen);
+  };
+
+  const onChange = (
+    event: DateTimePickerEvent,
+    selectedDate: Date | undefined
+  ) => {
+    // type refers to event type
+    if (event.type === "set" && selectedDate) {
+      setDeadlineDate(selectedDate);
+      toggleDatePicker(); // hide picker after selection
+      setDeadlineString(selectedDate.toDateString());
+    } else {
+      toggleDatePicker();
+    }
+  };
+
+  // Toggle goal completion
+  const [isDone, setIsDone] = useState(goal.isCompleted ?? false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const handleToggle = debouncePress(async () => {
+    setIsUpdating(true);
+    try {
+      setIsDone((previousState) => !previousState);
+      await toggleEventCompletion(sublistId, goalId);
+    } catch (error) {
+      showMessage({
+        message: "Error",
+        description:
+          error instanceof Error ? error.message : "Something went wrong",
+        type: "danger",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "danger",
+        duration: 5000,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  });
 
   // Cache original values
   const [initialTitle, setInitialTitle] = useState(
@@ -178,6 +255,20 @@ export default function GoalPage() {
                 <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
                   {goalDescription}
                 </ThemedText>
+
+                <CategoryChips
+                  selectedTags={goal.categories}
+                  style={{ elevation: 5 }}
+                />
+                {goal.deadline && (
+                  <ThemedText
+                    style={styles.metadata}
+                    lightColor="#b72222"
+                    darkColor="#fb6e6e"
+                  >
+                    Due {goal.deadline}
+                  </ThemedText>
+                )}
               </View>
             ))}
 
@@ -191,12 +282,50 @@ export default function GoalPage() {
                 lightLabelBg="#a2e6ff"
                 darkLabelBg="#141515"
               />
+              <CategoryPicker
+                open={categoryOpen}
+                setOpen={setCategoryOpen}
+                onOpen={onCategoryOpen}
+                selectedTags={categories}
+                setSelectedTags={setCategories}
+                max={3}
+                noun="categories"
+              />
+              <View>
+                {dateTimeOpen && (
+                  <DateTimePicker
+                    mode="date"
+                    display="spinner"
+                    value={deadlineDate}
+                    onChange={onChange}
+                    minimumDate={new Date()}
+                    themeVariant={isDark ? "dark" : "light"}
+                  />
+                )}
+
+                {!dateTimeOpen && (
+                  <Pressable
+                    onPress={toggleDatePicker}
+                    style={{ paddingHorizontal: 10 }}
+                  >
+                    <View pointerEvents="none">
+                      <FloatingLabelInput
+                        value={deadlineString}
+                        style={styles.input}
+                        label={"End Date (Optional)"}
+                      />
+                    </View>
+                  </Pressable>
+                )}
+              </View>
               <View style={styles.editHandler}>
                 <TouchableOpacity
                   style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
                   onPress={() => {
                     setTitle(initialTitle);
                     setDesc(initialDescription);
+                    setCategories(initialCategories);
+                    setDeadlineString(initialDeadline);
                     setIsEditing(false);
                   }}
                 >
@@ -220,6 +349,64 @@ export default function GoalPage() {
             <ThemedText style={styles.metadata}>
               Status: {goal.isCompleted ? "Completed" : "Pending"}
             </ThemedText>
+            {/* <Toggle
+              value={toggleValue}
+              onPress={(val) => {
+                setToggleValue(val as boolean);
+                handleToggle();
+              }}
+              thumbActiveComponent={
+                <Feather
+                  name="check-circle"
+                  width={40}
+                  height={40}
+                  color="#fff"
+                />
+              }
+              thumbInActiveComponent={
+                <Feather name="circle" width={40} height={40} color="#fff" />
+              }
+              trackBar={{
+                activeBackgroundColor: "#4caf50",
+                inActiveBackgroundColor: "#9e9e9e",
+                borderActiveColor: "#388e3c",
+                borderInActiveColor: "#616161",
+                borderWidth: 2,
+                width: 90,
+              }}
+            />
+            <Toggle
+              value={toggleValue}
+              onPress={(newState) => {
+                typeof newState === "boolean" && setToggleValue(newState);
+                handleToggle();
+              }}
+              leftComponent={
+                <Feather
+                  name="check-circle"
+                  size={25}
+                  color="#fff"
+                  fill={"#03452C"}
+                />
+              }
+              rightComponent={
+                <Feather
+                  name="circle"
+                  size={25}
+                  color="#fff"
+                  fill={"#3BD2B5"}
+                />
+              }
+              trackBar={{
+                width: 120,
+              }}
+            /> */}
+            <Switch
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={isDone ? "#f5dd4b" : "#f4f3f4"}
+              onValueChange={handleToggle}
+              value={isDone}
+            />
           </View>
         </View>
       </ThemedView>
@@ -252,5 +439,14 @@ const styles = StyleSheet.create({
   metadata: {
     fontStyle: "italic",
     fontSize: RFValue(11),
+  },
+  input: {
+    marginTop: 8,
+    marginBottom: 10,
+    borderRadius: 10,
+    fontSize: 16,
+    lineHeight: 20,
+    padding: 13,
+    backgroundColor: "rgba(151, 151, 151, 0.98)",
   },
 });
