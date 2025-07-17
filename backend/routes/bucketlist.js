@@ -1065,6 +1065,8 @@ const formatPostData = (data) => {
   const updatedAt = data.updatedAt?.toDate?.();
 
   return {
+    id: data.id,
+    userId: data.userId,
     username: data.username,
     profilePhotoUrl: data.profilePhotoUrl,
     createdAt: createdAt ? formatPostDate(createdAt) : "",
