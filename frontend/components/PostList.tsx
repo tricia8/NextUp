@@ -8,14 +8,20 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
 import { RFValue } from "react-native-responsive-fontsize";
 import ViewMoreContent from "./ViewMoreContent";
+import { PostWithPending } from "@/types/postWithPending";
 
 type PostListProps = {
   userId: string;
+  posts: PostWithPending[];
   isDark?: boolean;
 };
 
-export default function PostList({ userId, isDark = false }: PostListProps) {
-  const DATA: Post[] = [
+export default function PostList({
+  userId,
+  posts,
+  isDark = false,
+}: PostListProps) {
+  const DATA: PostWithPending[] = [
     {
       id: "109384",
       userId: userId,
@@ -23,6 +29,7 @@ export default function PostList({ userId, isDark = false }: PostListProps) {
       profilePhotoUrl: "",
       createdAt: "3 June 2025, 3:59pm ",
       updatedAt: "3 June 2025, 4:59pm ",
+      isPending: false,
       comment:
         "This is a sample post. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
       imageUrl: "https://picsum.photos/200/300",
@@ -66,10 +73,12 @@ export default function PostList({ userId, isDark = false }: PostListProps) {
             <ThemedText style={styles.text}>{item?.createdAt}</ThemedText>
           </View>
         </View>
-        <Image
-          source={{ uri: item?.imageUrl }}
-          style={{ width: "100%", height: 200, borderRadius: 10 }}
-        />
+        {item?.imageUrl && (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={{ width: "100%", height: 200, borderRadius: 10 }}
+          />
+        )}
         <ViewMoreContent content={item?.comment} />
         <TouchableOpacity
           onPress={() => console.log("Edit Post Pressed")}
@@ -84,7 +93,7 @@ export default function PostList({ userId, isDark = false }: PostListProps) {
 
   return (
     <LegendList
-      data={DATA}
+      data={posts}
       renderItem={renderItem}
       keyExtractor={(item) => item.id}
       contentContainerStyle={{ paddingBottom: 80 }}
