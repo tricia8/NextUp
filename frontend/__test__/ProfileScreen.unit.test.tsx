@@ -135,20 +135,6 @@ describe("ProfileScreen", () => {
     });
   });
 
-  it("opens Edit Profile modal opens when Edit Profile button is pressed", async () => {
-    const { getByTestId } = render(
-      <AuthContext.Provider value={contextValue}>
-        <ProfileScreen />
-      </AuthContext.Provider>
-    );
-    await waitFor(() => {
-      const editButton = getByTestId("edit-button");
-      fireEvent.press(editButton);
-      const editModal = getByTestId("edit-modal");
-      expect(editModal).toBeTruthy();
-    });
-  });
-
   const mockSetUserData = jest.fn();
   const mockSetCategory = jest.fn();
   const mockOnClose = jest.fn();

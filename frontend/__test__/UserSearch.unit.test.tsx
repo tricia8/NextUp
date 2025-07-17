@@ -1,6 +1,5 @@
 import React from "react";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
-import { AuthContext } from "@/context/AuthContext";
 import UserSearch from "@/components/UserSearch";
 import { Timestamp } from "firebase/firestore";
 
@@ -45,9 +44,7 @@ jest.mock("@/firebase/firestore", () => ({
 describe("UserSearch", () => {
   it("renders search bar", async () => {
     const { getByTestId } = render(
-      <AuthContext.Provider value={contextValue}>
-        <UserSearch users={[]} friendUids={[]} sentRequests={[]} />
-      </AuthContext.Provider>
+      <UserSearch users={[]} friendUids={[]} sentRequests={[]} />
     );
 
     await waitFor(() => {
@@ -59,9 +56,7 @@ describe("UserSearch", () => {
     const users = [{ uid: "1", username: "User1", photoUrl: null }];
 
     const { getByText } = render(
-      <AuthContext.Provider value={contextValue}>
-        <UserSearch users={users} friendUids={[]} sentRequests={[]} />
-      </AuthContext.Provider>
+      <UserSearch users={users} friendUids={[]} sentRequests={[]} />
     );
 
     await waitFor(() => {
