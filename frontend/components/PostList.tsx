@@ -7,6 +7,7 @@ import { ThemedText } from "./ThemedText";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
 import { RFValue } from "react-native-responsive-fontsize";
+import ViewMoreContent from "./ViewMoreContent";
 
 type PostListProps = {
   userId: string;
@@ -22,7 +23,8 @@ export default function PostList({ userId, isDark = false }: PostListProps) {
       profilePhotoUrl: "",
       createdAt: "3 June 2025, 3:59pm ",
       updatedAt: "3 June 2025, 4:59pm ",
-      comment: "This is a sample post",
+      comment:
+        "This is a sample post. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
       imageUrl: "https://picsum.photos/200/300",
     },
   ];
@@ -30,7 +32,7 @@ export default function PostList({ userId, isDark = false }: PostListProps) {
   const renderItem = ({ item }: { item: Post }) => {
     return (
       <LinearGradient
-        colors={isDark ? ["#0f2027", "#664791"] : ["#a9cce3", "#a8b4ff"]}
+        colors={isDark ? ["#0f2027", "#664791"] : ["#77c4ff", "#a8b4ff"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.postContainer}
@@ -45,22 +47,34 @@ export default function PostList({ userId, isDark = false }: PostListProps) {
           }}
         >
           <ProfilePic imageUrl={item?.profilePhotoUrl} size={30} />
-          <ThemedText>
+          <ThemedText style={styles.text}>
             {item?.username} {userId === item?.userId ? "(You)" : ""}
           </ThemedText>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Ionicons name="time-outline" size={24} color="black" />
-            <ThemedText>{item?.createdAt}</ThemedText>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            <Ionicons
+              name="time-outline"
+              size={24}
+              color={isDark ? "white" : "black"}
+            />
+            <ThemedText style={styles.text}>{item?.createdAt}</ThemedText>
           </View>
         </View>
         <Image
           source={{ uri: item?.imageUrl }}
           style={{ width: "100%", height: 200, borderRadius: 10 }}
         />
-        <ThemedText style={{ marginTop: 8 }}>{item?.comment}</ThemedText>
+        <ViewMoreContent content={item?.comment} />
         <TouchableOpacity
           onPress={() => console.log("Edit Post Pressed")}
           hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+          style={{ alignSelf: "flex-end" }}
         >
           <Feather name="edit-2" size={24} color={isDark ? "white" : "black"} />
         </TouchableOpacity>
