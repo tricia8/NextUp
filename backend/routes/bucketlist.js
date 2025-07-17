@@ -1055,9 +1055,8 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
 
 // convert Timestamp to string e.g. "4 June 2025, 10:12am"
 const formatPostDate = (fetchedDate) => {
-  return `${dayjs(fetchedDate).format("DD MMM YYYY")}, ${dayjs(
-    fetchedDate
-  ).format("h:mma")}`;
+  const date = dayjs(fetchedDate);
+  return `${date.format("DD MMM YYYY")}, ${date.format("h:mma")}`;
 };
 
 const formatPostData = (data) => {
@@ -1065,7 +1064,6 @@ const formatPostData = (data) => {
   const updatedAt = data.updatedAt?.toDate?.();
 
   return {
-    id: data.id,
     userId: data.userId,
     username: data.username,
     profilePhotoUrl: data.profilePhotoUrl,
@@ -1328,6 +1326,48 @@ router.patch(
     } catch (error) {
       console.error("Error toggling event completion:", error);
       return res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// Create a post under a goal
+router.post(
+  "/user/bucketList/:sublistId/events/:eventId/posts",
+  async (req, res) => {
+    const { sublistId, eventId } = req.params;
+    const userId = req.user; // Verified from middleware
+    const { username, profilePhotoUrl, comment, imageUrl } = req.body;
+
+    try {
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+
+      const newPostRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc();
+
+      const timestamp = FieldValue.serverTimestamp();
+      const postData = {
+        userId,
+        username,
+        profilePhotoUrl,
+        comment,
+        imageUrl,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      await newPostRef.set(postData);
+      const postSnap = await newPostRef.get();
+
+      return res.json({
+        success: true,
+        message: "New post added",
+        postData: { id: newPostRef.id, ...formatPostData(postSnap.data()) },
+      });
+    } catch (error) {
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
