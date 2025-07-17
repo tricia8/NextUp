@@ -922,6 +922,57 @@ export async function getOverdueEvents(uid, now) {
   }
 }
 
+// posts
+// convert Timestamp to string e.g. "4 June 2025, 10:12am"
+export const formatPostDate = (fetchedDate) => {
+  const date = dayjs(fetchedDate);
+  return `${date.format("DD MMM YYYY")}, ${date.format("h:mma")}`;
+};
+
+export const formatPostData = (data) => {
+  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
+
+  return {
+    userId: data.userId,
+    username: data.username,
+    profilePhotoUrl: data.profilePhotoUrl,
+    createdAt: createdAt ? formatPostDate(createdAt) : "",
+    updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
+    comment: data.comment ?? "", // default to empty string
+    imageUrl: data.imageUrl ?? "", // default to empty string
+  };
+};
+
+export async function addPost(subBucketListId, goalId, postData) {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/goals/${goalId}/posts`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(postData),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to add post");
+    }
+
+    const data = await res.json();
+    return data; // success boolean, message, postData
+  } catch (error) {
+    console.error("Error adding post:", error);
+    throw error;
+  }
+}
+
 // collaborators
 export const addCollaborator = async (subBucketListId, collaboratorId) => {
   try {
