@@ -11,7 +11,7 @@ import {
   Pressable,
   Switch,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { ThemedText } from "@/components/ThemedText";
 import TitleDescFields from "@/components/forms/TitleDescFields";
@@ -34,9 +34,15 @@ import DateTimePicker, {
 import { debouncePress } from "@/utils/debouncePress";
 import { FloatingLabelInput } from "react-native-floating-label-input";
 import CategoryChips from "@/components/CategoryChips";
-import Toggle from "react-native-toggle-element";
+import PostForm from "@/components/PostForm";
+import AddPostButton from "@/components/AddPostButton";
+import PostList from "@/components/PostList";
+import { AuthContext } from "@/context/AuthContext";
+import { ScrollView } from "react-native-gesture-handler";
 
 export default function GoalPage() {
+  const { user } = useContext(AuthContext);
+  const uid = user?.uid;
   const { sublistId, goalId } = useLocalSearchParams();
 
   const goal = useSublistStore(
@@ -222,194 +228,178 @@ export default function GoalPage() {
     }
   };
 
+  // Add new post
+  const [isPostFormVisible, setIsPostFormVisible] = useState(false);
+
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
-      <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
-        <View>
-          {!isEditing &&
-            (isFetching ? (
-              <LoadingScreen />
-            ) : (
-              <View style={{ gap: 10 }}>
-                <View style={styles.titleEditBar}>
+      <ScrollView>
+        <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
+          <View>
+            {!isEditing &&
+              (isFetching ? (
+                <LoadingScreen />
+              ) : (
+                <View style={{ gap: 10 }}>
+                  <View style={styles.titleEditBar}>
+                    <ThemedText
+                      type="title"
+                      style={{
+                        flexShrink: 1, // shrink if needed so no overflowing occurs
+                      }}
+                    >
+                      {goalTitle}
+                    </ThemedText>
+                    <TouchableOpacity
+                      onPress={() => setIsEditing(true)}
+                      hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                    >
+                      <Feather
+                        name="edit-2"
+                        size={24}
+                        color={isDark ? "white" : "black"}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
                   <ThemedText
-                    type="title"
-                    style={{
-                      flexShrink: 1, // shrink if needed so no overflowing occurs
+                    type="defaultSemiBold"
+                    style={{ flexWrap: "wrap" }}
+                  >
+                    {goalDescription}
+                  </ThemedText>
+
+                  <CategoryChips
+                    selectedTags={goal.categories}
+                    style={{ elevation: 5 }}
+                  />
+                  {goal.deadline && (
+                    <ThemedText
+                      style={styles.metadata}
+                      lightColor="#b72222"
+                      darkColor="#fb6e6e"
+                    >
+                      Due {goal.deadline}
+                    </ThemedText>
+                  )}
+                </View>
+              ))}
+
+            {isEditing && (
+              <View style={{ gap: 10 }}>
+                <TitleDescFields
+                  title={goalTitle}
+                  description={goalDescription}
+                  setTitle={handleGoalTitleChange}
+                  setDescription={setDesc}
+                  lightLabelBg="#a2e6ff"
+                  darkLabelBg="#141515"
+                />
+                <CategoryPicker
+                  open={categoryOpen}
+                  setOpen={setCategoryOpen}
+                  onOpen={onCategoryOpen}
+                  selectedTags={categories}
+                  setSelectedTags={setCategories}
+                  max={3}
+                  noun="categories"
+                />
+                <View>
+                  {dateTimeOpen && (
+                    <DateTimePicker
+                      mode="date"
+                      display="spinner"
+                      value={deadlineDate}
+                      onChange={onChange}
+                      minimumDate={new Date()}
+                      themeVariant={isDark ? "dark" : "light"}
+                    />
+                  )}
+
+                  {!dateTimeOpen && (
+                    <Pressable
+                      onPress={toggleDatePicker}
+                      style={{ paddingHorizontal: 10 }}
+                    >
+                      <View pointerEvents="none">
+                        <FloatingLabelInput
+                          value={deadlineString}
+                          style={styles.input}
+                          label={"End Date (Optional)"}
+                        />
+                      </View>
+                    </Pressable>
+                  )}
+                </View>
+                <View style={styles.editHandler}>
+                  <TouchableOpacity
+                    style={[
+                      styles.editingButton,
+                      { backgroundColor: "#f4f1f0" },
+                    ]}
+                    onPress={() => {
+                      setTitle(initialTitle);
+                      setDesc(initialDescription);
+                      setCategories(initialCategories);
+                      setDeadlineString(initialDeadline);
+                      setIsEditing(false);
                     }}
                   >
-                    {goalTitle}
-                  </ThemedText>
+                    <Text style={{ color: "#618ce0" }}>Cancel</Text>
+                  </TouchableOpacity>
+
                   <TouchableOpacity
-                    onPress={() => setIsEditing(true)}
-                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                    style={[
+                      styles.editingButton,
+                      { backgroundColor: "#618ce0" },
+                    ]}
+                    onPress={handleUpdate}
                   >
-                    <Feather
-                      name="edit-2"
-                      size={24}
-                      color={isDark ? "white" : "black"}
-                    />
+                    <Text>Save</Text>
                   </TouchableOpacity>
                 </View>
-
-                <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
-                  {goalDescription}
-                </ThemedText>
-
-                <CategoryChips
-                  selectedTags={goal.categories}
-                  style={{ elevation: 5 }}
-                />
-                {goal.deadline && (
-                  <ThemedText
-                    style={styles.metadata}
-                    lightColor="#b72222"
-                    darkColor="#fb6e6e"
-                  >
-                    Due {goal.deadline}
-                  </ThemedText>
-                )}
               </View>
-            ))}
+            )}
 
-          {isEditing && (
-            <View style={{ gap: 10 }}>
-              <TitleDescFields
-                title={goalTitle}
-                description={goalDescription}
-                setTitle={handleGoalTitleChange}
-                setDescription={setDesc}
-                lightLabelBg="#a2e6ff"
-                darkLabelBg="#141515"
-              />
-              <CategoryPicker
-                open={categoryOpen}
-                setOpen={setCategoryOpen}
-                onOpen={onCategoryOpen}
-                selectedTags={categories}
-                setSelectedTags={setCategories}
-                max={3}
-                noun="categories"
-              />
-              <View>
-                {dateTimeOpen && (
-                  <DateTimePicker
-                    mode="date"
-                    display="spinner"
-                    value={deadlineDate}
-                    onChange={onChange}
-                    minimumDate={new Date()}
-                    themeVariant={isDark ? "dark" : "light"}
-                  />
-                )}
+            <View style={{ marginVertical: 8, gap: 8 }}>
+              <ThemedText style={styles.metadata}>
+                Updated {goal.updatedAt}
+              </ThemedText>
 
-                {!dateTimeOpen && (
-                  <Pressable
-                    onPress={toggleDatePicker}
-                    style={{ paddingHorizontal: 10 }}
-                  >
-                    <View pointerEvents="none">
-                      <FloatingLabelInput
-                        value={deadlineString}
-                        style={styles.input}
-                        label={"End Date (Optional)"}
-                      />
-                    </View>
-                  </Pressable>
-                )}
-              </View>
-              <View style={styles.editHandler}>
-                <TouchableOpacity
-                  style={[styles.editingButton, { backgroundColor: "#f4f1f0" }]}
-                  onPress={() => {
-                    setTitle(initialTitle);
-                    setDesc(initialDescription);
-                    setCategories(initialCategories);
-                    setDeadlineString(initialDeadline);
-                    setIsEditing(false);
+              <ThemedText style={styles.metadata}>
+                Status: {goal.isCompleted ? "Completed" : "Pending"}
+              </ThemedText>
+              <View
+                style={[styles.titleEditBar, { justifyContent: "flex-start" }]}
+              >
+                <ThemedText style={styles.metadata}>Done?</ThemedText>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={isDone ? "#caffbf" : "#ffe5b5"}
+                  onValueChange={handleToggle}
+                  value={isDone}
+                  style={{
+                    top: -11,
+                    marginVertical: 0,
+                    alignSelf: "flex-start",
                   }}
-                >
-                  <Text style={{ color: "#618ce0" }}>Cancel</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.editingButton, { backgroundColor: "#618ce0" }]}
-                  onPress={handleUpdate}
-                >
-                  <Text>Save</Text>
-                </TouchableOpacity>
+                />
               </View>
             </View>
-          )}
 
-          <View style={{ marginVertical: 10, gap: 8 }}>
-            <ThemedText style={styles.metadata}>
-              Updated {goal.updatedAt}
-            </ThemedText>
-            <ThemedText style={styles.metadata}>
-              Status: {goal.isCompleted ? "Completed" : "Pending"}
-            </ThemedText>
-            {/* <Toggle
-              value={toggleValue}
-              onPress={(val) => {
-                setToggleValue(val as boolean);
-                handleToggle();
-              }}
-              thumbActiveComponent={
-                <Feather
-                  name="check-circle"
-                  width={40}
-                  height={40}
-                  color="#fff"
-                />
-              }
-              thumbInActiveComponent={
-                <Feather name="circle" width={40} height={40} color="#fff" />
-              }
-              trackBar={{
-                activeBackgroundColor: "#4caf50",
-                inActiveBackgroundColor: "#9e9e9e",
-                borderActiveColor: "#388e3c",
-                borderInActiveColor: "#616161",
-                borderWidth: 2,
-                width: 90,
-              }}
+            <AddPostButton
+              isVisible={!isPostFormVisible}
+              setIsPostFormVisible={setIsPostFormVisible}
+              isDark={isDark}
             />
-            <Toggle
-              value={toggleValue}
-              onPress={(newState) => {
-                typeof newState === "boolean" && setToggleValue(newState);
-                handleToggle();
-              }}
-              leftComponent={
-                <Feather
-                  name="check-circle"
-                  size={25}
-                  color="#fff"
-                  fill={"#03452C"}
-                />
-              }
-              rightComponent={
-                <Feather
-                  name="circle"
-                  size={25}
-                  color="#fff"
-                  fill={"#3BD2B5"}
-                />
-              }
-              trackBar={{
-                width: 120,
-              }}
-            /> */}
-            <Switch
-              trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={isDone ? "#f5dd4b" : "#f4f3f4"}
-              onValueChange={handleToggle}
-              value={isDone}
+            <PostForm
+              isVisible={isPostFormVisible}
+              setIsVisible={setIsPostFormVisible}
             />
+            <PostList userId={uid} isDark={isDark} />
           </View>
-        </View>
-      </ThemedView>
+        </ThemedView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
