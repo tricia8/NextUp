@@ -57,7 +57,7 @@ const getStyles = (colorScheme: ColorSchemeName) =>
       alignSelf: "flex-start",
     },
     buttonText: {
-      color: colorScheme === "dark" ? "#b9ffa8" : "blue",
+      color: colorScheme === "dark" ? "#7bb6fa" : "blue",
       fontWeight: "bold",
       fontSize: RFValue(10),
     },
