@@ -11,7 +11,7 @@ import {
   Pressable,
   Switch,
 } from "react-native";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { ThemedText } from "@/components/ThemedText";
 import TitleDescFields from "@/components/forms/TitleDescFields";
@@ -19,6 +19,8 @@ import LoadingScreen from "@/components/Loading";
 import { RFValue } from "react-native-responsive-fontsize";
 import { showMessage } from "react-native-flash-message";
 import {
+  formatEventData,
+  formatPostData,
   getEvent,
   toggleEventCompletion,
   updateEvent,
@@ -39,6 +41,17 @@ import AddPostButton from "@/components/AddPostButton";
 import PostList from "@/components/PostList";
 import { AuthContext } from "@/context/AuthContext";
 import { ScrollView } from "react-native-gesture-handler";
+import { useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+import { db } from "@/firebase/firebaseConfig";
+import { PostWithPending } from "@/types/postWithPending";
 
 export default function GoalPage() {
   const { user } = useContext(AuthContext);
@@ -51,7 +64,28 @@ export default function GoalPage() {
     )
   );
 
-  const { addGoalToSublist, setPostsForGoal } = useSublistStore();
+  const ownerId = useSublistStore(
+    useShallow((state) => state.sublistData[sublistId as string]?.ownerId)
+  );
+
+  const { addGoalToSublist, updateGoalForSublist, setPostsForGoal } =
+    useSublistStore();
+
+  const posts = useSublistStore(
+    useShallow(
+      (state) =>
+        state.postsByGoal[goalId as string] ||
+        ({} as Record<string, PostWithPending>)
+    )
+  );
+
+  const postOrderByGoal = useSublistStore(
+    useShallow((state) => state.postOrderByGoal[goalId as string] || [])
+  );
+
+  const postList = useMemo(() => {
+    return postOrderByGoal?.map((id) => posts?.[id]) ?? [];
+  }, [posts, postOrderByGoal]);
 
   useEffect(() => {
     const fetchGoal = async () => {
@@ -60,11 +94,11 @@ export default function GoalPage() {
         if (!goal && sublistId && goalId) {
           const { goalData, posts } = await getEvent(sublistId, goalId); // goal and array of posts
           addGoalToSublist(sublistId as string, goalData);
-          const postsRecord: Record<string, Post> = {};
+          const postsRecord: Record<string, PostWithPending> = {};
           const postOrder: string[] = [];
 
           posts.forEach((post: Post) => {
-            postsRecord[post.id] = post;
+            postsRecord[post.id] = { ...post, isPending: false }; // add isPending flag
             postOrder.push(post.id);
           });
 
@@ -86,6 +120,65 @@ export default function GoalPage() {
 
     fetchGoal();
   }, [goal, sublistId, goalId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const goalRef = doc(
+        db,
+        "users",
+        ownerId,
+        "bucketList",
+        sublistId as string,
+        "events",
+        goalId as string
+      );
+
+      const postsRef = collection(
+        db,
+        "users",
+        ownerId,
+        "bucketList",
+        sublistId as string,
+        "events",
+        goalId as string,
+        "posts"
+      );
+      const q = query(postsRef, orderBy("createdAt", "desc"));
+
+      const unsubGoal = onSnapshot(goalRef, (docSnap) => {
+        const updatedData = formatEventData(docSnap.data());
+
+        updateGoalForSublist(sublistId as string, {
+          id: goalId as string,
+          ...updatedData,
+        });
+      });
+
+      const unSubPosts = onSnapshot(q, (snapShot) => {
+        const posts = snapShot.docs.map((doc) => ({
+          id: doc.id,
+          ...formatPostData(doc.data()),
+          isPending: false,
+        }));
+
+        const postsRecord: Record<string, PostWithPending> = {};
+        const postOrder: string[] = [];
+
+        posts.forEach((post) => {
+          postsRecord[post.id] = {
+            ...post,
+          };
+          postOrder.push(post.id);
+        });
+        setPostsForGoal(goalId as string, postsRecord, postOrder);
+      });
+
+      return () => {
+        unsubGoal();
+        unSubPosts();
+      };
+    }, [goalId])
+  );
 
   if (!goal) return <LoadingScreen />;
 
@@ -233,7 +326,7 @@ export default function GoalPage() {
 
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
           <View>
             {!isEditing &&
@@ -251,7 +344,10 @@ export default function GoalPage() {
                       {goalTitle}
                     </ThemedText>
                     <TouchableOpacity
-                      onPress={() => setIsEditing(true)}
+                      onPress={() => {
+                        setIsEditing(true);
+                        setIsPostFormVisible(false); // close post form if open
+                      }}
                       hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                     >
                       <Feather
@@ -361,7 +457,7 @@ export default function GoalPage() {
               </View>
             )}
 
-            <View style={{ marginVertical: 8, gap: 8 }}>
+            <View style={{ marginVertical: 5, gap: 8 }}>
               <ThemedText style={styles.metadata}>
                 Updated {goal.updatedAt}
               </ThemedText>
@@ -387,16 +483,22 @@ export default function GoalPage() {
               </View>
             </View>
 
-            <AddPostButton
-              isVisible={!isPostFormVisible}
-              setIsPostFormVisible={setIsPostFormVisible}
-              isDark={isDark}
-            />
-            <PostForm
-              isVisible={isPostFormVisible}
-              setIsVisible={setIsPostFormVisible}
-            />
-            <PostList userId={uid} isDark={isDark} />
+            <View style={{ gap: 8 }}>
+              <AddPostButton
+                isVisible={!isPostFormVisible}
+                setIsPostFormVisible={setIsPostFormVisible}
+                isDark={isDark}
+                onPress={() => setIsEditing(false)} // close edit mode when adding post
+              />
+              <PostForm
+                sublistId={sublistId as string}
+                isVisible={isPostFormVisible}
+                setIsVisible={setIsPostFormVisible}
+                user={user}
+                goalId={goalId as string}
+              />
+              <PostList userId={uid} posts={postList} isDark={isDark} />
+            </View>
           </View>
         </ThemedView>
       </ScrollView>
