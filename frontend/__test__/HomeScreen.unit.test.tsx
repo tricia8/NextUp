@@ -4,7 +4,7 @@ import HomeScreen from "@/app/(main)/(tabs)/index";
 import { AuthContext } from "@/context/AuthContext";
 import { generateSuggestion } from "@/gemini/generateSuggestion";
 import SideMenu from "@/components/SideMenu";
-
+import Notifications from "@/components/Notifications";
 const mockLogout = jest.fn();
 
 const mockUser = {
@@ -81,6 +81,20 @@ describe("HomeScreen", () => {
     );
 
     await waitFor(() => expect(getByTestId("ringing-bell")).toBeTruthy());
+  });
+
+  it("renders message correctly when there are no notifications", () => {
+    const { getByText } = render(
+      <Notifications
+        visible={true}
+        onClose={jest.fn()}
+        items={[]}
+        userId="user"
+        setActivities={jest.fn()}
+      />
+    );
+
+    expect(getByText("No notifications")).toBeTruthy();
   });
 
   it("renders profile picture with correct image url", async () => {

@@ -91,6 +91,7 @@ export default function Notifications({
         <ScrollView>
           <ThemedView style={styles.mainContainer}>
             <FlashList
+              testID="notif-list"
               data={items}
               keyExtractor={(item) => item.id}
               estimatedItemSize={120}
@@ -101,6 +102,7 @@ export default function Notifications({
               }
               renderItem={({ item }) => (
                 <NotificationItem
+                  testID="notif-item"
                   item={item}
                   userId={userId}
                   isProcessing={isProcessing}
@@ -125,6 +127,7 @@ type NotifItemProps = {
   handleAccept: (userId: string, senderId: string, requestId: string) => void;
   handleReject: (requestId: string) => void;
   handleDismiss: (id: string) => void;
+  testID: string,
 };
 
 function NotificationItem({
@@ -134,9 +137,10 @@ function NotificationItem({
   handleAccept,
   handleReject,
   handleDismiss,
+  testID,
 }: NotifItemProps) {
   return (
-    <View style={styles.notifContainer}>
+    <View testID={testID} style={styles.notifContainer}>
       {item.type === "friend" && (
         <View style={styles.notifItem}>
           <View style={styles.textContainer}>

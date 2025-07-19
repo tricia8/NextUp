@@ -4,7 +4,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
