@@ -7,5 +7,5 @@ export type Post = {
   createdAt: string;
   updatedAt: string;
   comment: string;
-  imageUrl: string;
+  imageUrls: string[]; // array of image URLs
 };

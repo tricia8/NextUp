@@ -1070,7 +1070,7 @@ const formatPostData = (data) => {
     createdAt: createdAt ? formatPostDate(createdAt) : "",
     updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
     comment: data.comment ?? "", // default to empty string
-    imageUrl: data.imageUrl ?? "", // default to empty string
+    imageUrls: data.imageUrls ?? [], // default to empty array
   };
 };
 
