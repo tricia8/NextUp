@@ -1,4 +1,5 @@
 import {
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   useColorScheme,
@@ -11,7 +12,11 @@ import { useState } from "react";
 import { useSublistStore } from "@/stores/sublistStore";
 import { User } from "@/types/user";
 import { addPost, formatPostDate } from "@/firebase/firestore";
-import { useShallow } from "zustand/react/shallow";
+import { pickMultipleImages } from "@/cloudinary/pickimage";
+import ImageViewer from "./ImageViewer";
+import { debouncePress } from "@/utils/debouncePress";
+import { showMessage } from "react-native-flash-message";
+import { uploadToCloudinary } from "@/cloudinary/upload";
 
 type PostFormProps = {
   isVisible: boolean;
@@ -32,51 +37,89 @@ export default function PostForm({
   lightLabelBg = "#a2e6ff",
   darkLabelBg = "#141515",
 }: PostFormProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const isDark = useColorScheme() === "dark";
   const styles = getStyles(isDark);
 
   const [comment, setComment] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [base64, setBase64] = useState<string[] | null>(null); // set after picking images
 
   const { addPostToGoal, replacePostId } = useSublistStore();
-  const postOrder = useSublistStore(
-    useShallow((state) => state.postOrderByGoal[goalId])
-  );
+
+  const handlePickImages = async () => {
+    const base64Data = await pickMultipleImages(setImages);
+    if (base64Data) {
+      setBase64(base64Data);
+    }
+  };
+
+  // Save image URLs to cloudinary and return an array of cloudinary URLs
+  const saveImageUrls = async () => {
+    if (images.length > 0 && base64) {
+      try {
+        return await Promise.all(
+          images.map(async (_image, index) => {
+            return await uploadToCloudinary(base64[index], user?.uid, "posts");
+          })
+        );
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        return [];
+      }
+    } else {
+      return [];
+    }
+  };
 
   const onPost = async () => {
     setIsVisible(false);
     const tempId = "temp-" + Date.now();
     const formattedDate = formatPostDate(Date.now());
 
-    addPostToGoal(goalId, {
-      id: tempId,
-      userId: user?.uid,
-      username: user?.username,
-      profilePhotoUrl: user?.photoUrl ?? "",
-      comment: "Sending...",
-      createdAt: formattedDate,
-      updatedAt: formattedDate,
-      imageUrl: imageUrl,
-      isPending: true,
-    });
+    try {
+      const imageUrls: string[] = await saveImageUrls();
+      addPostToGoal(goalId, {
+        id: tempId,
+        userId: user?.uid,
+        username: user?.username,
+        profilePhotoUrl: user?.photoUrl ?? "",
+        comment: "Sending...",
+        createdAt: formattedDate,
+        updatedAt: formattedDate,
+        imageUrls: imageUrls,
+        isPending: true,
+      });
 
-    // Replace tempId when backend responds
-    const { postData } = await addPost(sublistId, goalId, {
-      username: user.username,
-      profilePhotoUrl: user.photoUrl,
-      comment,
-      imageUrl,
-    });
-    replacePostId(goalId, tempId, { isPending: false, ...postData });
-    setComment("");
-    setImageUrl("");
+      // Replace tempId when backend responds
+      const { postData } = await addPost(sublistId, goalId, {
+        username: user.username,
+        profilePhotoUrl: user.photoUrl,
+        comment,
+        imageUrls,
+      });
+      replacePostId(goalId, tempId, { isPending: false, ...postData });
+      setComment("");
+      setImages([]);
+    } catch (error) {
+      console.error("Error adding post:", error);
+      showMessage({
+        message: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to add post",
+        type: "danger",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        icon: "danger",
+        autoHide: false,
+      });
+    }
   };
 
   const onCancel = () => {
-    () => setIsVisible(false);
+    setIsVisible(false);
     setComment("");
-    setImageUrl("");
+    setImages([]);
+    setBase64(null);
   };
 
   return (
@@ -84,11 +127,26 @@ export default function PostForm({
       <View style={styles.formView}>
         <TouchableOpacity
           style={styles.postButton}
-          onPress={() => console.log("Add Media Pressed")}
+          onPress={debouncePress(handlePickImages)}
         >
-          <ThemedText>Add Media</ThemedText>
-          <MaterialIcons name="perm-media" size={24} color="black" />
+          <ThemedText>Add Photo</ThemedText>
+          <MaterialIcons
+            name="perm-media"
+            size={24}
+            color={isDark ? "white" : "black"}
+          />
         </TouchableOpacity>
+        {images.length > 0 ? (
+          <View style={{ height: 150, marginBottom: 10, width: "100%" }}>
+            <ImageViewer
+              setSelectedImages={setImages}
+              selectedImages={images}
+              setBase64={setBase64}
+            />
+          </View>
+        ) : (
+          <></>
+        )}
         <SublistField
           label="Description"
           onChangeText={(value) => setComment(value)}
