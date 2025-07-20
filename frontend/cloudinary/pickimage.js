@@ -2,12 +2,15 @@ import * as ImagePicker from "expo-image-picker";
 
 export async function pickImage(setImage) {
   try {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      alert("Permission to access media library is required!");
-      return null;
+    if (status !== "granted") {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        alert("Permission to access media library is required!");
+        return null;
+      }
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -35,12 +38,15 @@ export async function pickImage(setImage) {
 // Multiple image picker
 export async function pickMultipleImages(setImages) {
   try {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      alert("Permission to access media library is required!");
-      return null;
+    if (status !== "granted") {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        alert("Permission to access media library is required!");
+        return null;
+      }
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -58,6 +64,49 @@ export async function pickMultipleImages(setImages) {
 
     if (!result.canceled) {
       setImages(result.assets.map((asset) => asset.uri));
+      const base64Images = result.assets.map(
+        (asset) => `data:image/jpeg;base64,${asset.base64}`
+      );
+      return base64Images; // Cloudinary-ready
+    }
+
+    return null;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function addMoreImages(setImages, selectionCount) {
+  try {
+    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+    if (status !== "granted") {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        alert("Permission to access media library is required!");
+        return null;
+      }
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      base64: true,
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: 5 - selectionCount,
+      presentationStyle: ImagePicker.PresentationStyle.FullScreen,
+      // allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      setImages((prev) => [
+        ...prev,
+        ...result.assets.map((asset) => asset.uri),
+      ]);
       const base64Images = result.assets.map(
         (asset) => `data:image/jpeg;base64,${asset.base64}`
       );
