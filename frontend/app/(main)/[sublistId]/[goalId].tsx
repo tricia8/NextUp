@@ -326,7 +326,7 @@ export default function GoalPage() {
 
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled>
         <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
           <View>
             {!isEditing &&
