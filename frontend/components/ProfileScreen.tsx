@@ -164,6 +164,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
 
               <View>
                 <ThemedText
+                  testID="bio"
                   numberOfLines={2}
                   ellipsizeMode="tail"
                   style={{ fontSize: RFValue(12), lineHeight: vs(20) }}

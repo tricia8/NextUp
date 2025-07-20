@@ -3,8 +3,6 @@ import { render, waitFor, fireEvent } from "@testing-library/react-native";
 import "@testing-library/jest-native/extend-expect";
 import HomeScreen from "@/app/(main)/(tabs)/index";
 import { AuthContext } from "@/context/AuthContext";
-import { generateSuggestion } from "@/gemini/generateSuggestion";
-import SideMenu from "@/components/SideMenu";
 
 const mockLogout = jest.fn();
 

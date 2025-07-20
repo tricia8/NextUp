@@ -64,9 +64,9 @@ export default function EditProfile({
       await updateProfile(uid, profileDetails);
       Alert.alert("Saved!");
       const updatedUser = await getUserProfile(uid); // refetch
-      onClose();
       setUserData(updatedUser);
       setCategory(updatedUser?.category?.[0] ?? "--");
+      onClose();
     } catch (error) {
       console.log(error);
       Alert.alert("Error saving");
