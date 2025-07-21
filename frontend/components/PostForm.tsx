@@ -44,7 +44,8 @@ export default function PostForm({
   const [images, setImages] = useState<string[]>([]);
   const [base64, setBase64] = useState<string[] | null>(null); // set after picking images
 
-  const { addPostToGoal, replacePostId } = useSublistStore();
+  const { addPostToGoal, replacePostId, removePostFromGoal } =
+    useSublistStore();
 
   const handlePickImages = async () => {
     const base64Data = await pickMultipleImages(setImages);
@@ -55,13 +56,16 @@ export default function PostForm({
 
   // Save image URLs to cloudinary and return an array of cloudinary URLs
   const saveImageUrls = async () => {
+    console.log("base64: ", base64);
     if (images.length > 0 && base64) {
       try {
-        return await Promise.all(
+        const urls = await Promise.all(
           images.map(async (_image, index) => {
             return await uploadToCloudinary(base64[index], user?.uid, "posts");
           })
         );
+        console.log("All image URLs:", urls);
+        return urls;
       } catch (error) {
         console.error("Error uploading image:", error);
         return [];
@@ -72,18 +76,24 @@ export default function PostForm({
   };
 
   const onPost = async () => {
+    console.log("onPost called");
     setIsVisible(false);
     const tempId = "temp-" + Date.now();
     const formattedDate = formatPostDate(Date.now());
 
     try {
+      console.log("Before saveImageUrls");
+
       const imageUrls: string[] = await saveImageUrls();
+      console.log("After saveImageUrls");
+
+      console.log("Posting with imageUrls:", imageUrls);
       addPostToGoal(goalId, {
         id: tempId,
         userId: user?.uid,
         username: user?.username,
         profilePhotoUrl: user?.photoUrl ?? "",
-        comment: "Sending...",
+        comment,
         createdAt: formattedDate,
         updatedAt: formattedDate,
         imageUrls: imageUrls,
@@ -102,6 +112,7 @@ export default function PostForm({
       setImages([]);
     } catch (error) {
       console.error("Error adding post:", error);
+      removePostFromGoal(goalId, tempId);
       showMessage({
         message: "Error",
         description:
@@ -125,17 +136,6 @@ export default function PostForm({
   return (
     isVisible && (
       <View style={styles.formView}>
-        <TouchableOpacity
-          style={styles.postButton}
-          onPress={debouncePress(handlePickImages)}
-        >
-          <ThemedText>Add Photo</ThemedText>
-          <MaterialIcons
-            name="perm-media"
-            size={24}
-            color={isDark ? "white" : "black"}
-          />
-        </TouchableOpacity>
         {images.length > 0 ? (
           <View style={{ height: 150, marginBottom: 10, width: "100%" }}>
             <ImageViewer
@@ -145,7 +145,17 @@ export default function PostForm({
             />
           </View>
         ) : (
-          <></>
+          <TouchableOpacity
+            style={styles.postButton}
+            onPress={debouncePress(handlePickImages)}
+          >
+            <ThemedText>Add Photos</ThemedText>
+            <MaterialIcons
+              name="perm-media"
+              size={24}
+              color={isDark ? "white" : "black"}
+            />
+          </TouchableOpacity>
         )}
         <SublistField
           label="Description"
