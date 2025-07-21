@@ -1,3 +1,5 @@
+import { PostImage } from "./postImage";
+
 // Post type used in [goalId] screen
 export type Post = {
   id: string; // postId
@@ -7,5 +9,5 @@ export type Post = {
   createdAt: string;
   updatedAt: string;
   comment: string;
-  imageUrls: string[]; // array of image URLs
+  images: PostImage[]; // array of image URLs
 };

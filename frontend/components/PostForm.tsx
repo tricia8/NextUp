@@ -16,7 +16,8 @@ import { pickMultipleImages } from "@/cloudinary/pickimage";
 import ImageViewer from "./ImageViewer";
 import { debouncePress } from "@/utils/debouncePress";
 import { showMessage } from "react-native-flash-message";
-import { uploadToCloudinary } from "@/cloudinary/upload";
+import { uploadPostImageToCloudinary } from "@/cloudinary/upload";
+import { PostImage } from "@/types/postImage";
 
 type PostFormProps = {
   isVisible: boolean;
@@ -59,13 +60,17 @@ export default function PostForm({
     console.log("base64: ", base64);
     if (images.length > 0 && base64) {
       try {
-        const urls = await Promise.all(
+        const cloudinaryImages = await Promise.all(
           images.map(async (_image, index) => {
-            return await uploadToCloudinary(base64[index], user?.uid, "posts");
+            return await uploadPostImageToCloudinary(
+              base64[index],
+              user?.uid,
+              "posts"
+            );
           })
         );
-        console.log("All image URLs:", urls);
-        return urls;
+        console.log("All image objects:", cloudinaryImages);
+        return cloudinaryImages;
       } catch (error) {
         console.error("Error uploading image:", error);
         return [];
@@ -84,10 +89,10 @@ export default function PostForm({
     try {
       console.log("Before saveImageUrls");
 
-      const imageUrls: string[] = await saveImageUrls();
+      const images: PostImage[] = await saveImageUrls();
       console.log("After saveImageUrls");
 
-      console.log("Posting with imageUrls:", imageUrls);
+      console.log("Posting with images:", images);
       addPostToGoal(goalId, {
         id: tempId,
         userId: user?.uid,
@@ -96,7 +101,7 @@ export default function PostForm({
         comment,
         createdAt: formattedDate,
         updatedAt: formattedDate,
-        imageUrls: imageUrls,
+        images: images,
         isPending: true,
       });
 
@@ -105,7 +110,7 @@ export default function PostForm({
         username: user.username,
         profilePhotoUrl: user.photoUrl,
         comment,
-        imageUrls,
+        images,
       });
       replacePostId(goalId, tempId, { isPending: false, ...postData });
       setComment("");
