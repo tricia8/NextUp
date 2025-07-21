@@ -1,6 +1,12 @@
 import { LegendList } from "@legendapp/list";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet, View, Image, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { Post } from "@/types/post";
 import ProfilePic from "./ProfilePic";
 import { ThemedText } from "./ThemedText";
@@ -9,12 +15,18 @@ import Feather from "@expo/vector-icons/Feather";
 import { RFValue } from "react-native-responsive-fontsize";
 import ViewMoreContent from "./ViewMoreContent";
 import { PostWithPending } from "@/types/postWithPending";
+import Carousel, { TAnimationStyle } from "react-native-reanimated-carousel";
+import { useCallback } from "react";
+import { interpolate } from "react-native-reanimated";
+import PostImage from "./PostImage";
 
 type PostListProps = {
   userId: string;
   posts: PostWithPending[];
   isDark?: boolean;
 };
+
+const screenWidth = Dimensions.get("window").width;
 
 export default function PostList({
   userId,
@@ -32,9 +44,23 @@ export default function PostList({
       isPending: false,
       comment:
         "This is a sample post. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-      imageUrl: "https://picsum.photos/200/300",
+      imageUrls: ["https://picsum.photos/200/300"],
     },
   ];
+
+  const animationStyle: TAnimationStyle = useCallback((value: number) => {
+    "worklet";
+
+    const zIndex = interpolate(value, [-1, 0, 1], [10, 20, 30]);
+    const scale = interpolate(value, [-1, 0, 1], [1.25, 1, 0.25]);
+    const opacity = interpolate(value, [-0.75, 0, 1], [0, 1, 0]);
+
+    return {
+      transform: [{ scale }],
+      zIndex: Math.round(zIndex),
+      opacity,
+    };
+  }, []);
 
   const renderItem = ({ item }: { item: Post }) => {
     return (
@@ -73,11 +99,29 @@ export default function PostList({
             <ThemedText style={styles.text}>{item?.createdAt}</ThemedText>
           </View>
         </View>
-        {item?.imageUrl && (
-          <Image
-            source={{ uri: item.imageUrl }}
-            style={{ width: "100%", height: 200, borderRadius: 10 }}
-          />
+        {Array.isArray(item?.imageUrls) && item?.imageUrls.length > 0 && (
+          <>
+            {/* <Image
+              source={{ uri: item.imageUrls[0] }}
+              style={{ width: "100%", height: 200, borderRadius: 10 }}
+            /> */}
+            <Carousel
+              loop
+              autoPlay
+              width={screenWidth * 0.7}
+              height={240 * 0.7}
+              data={item?.imageUrls}
+              snapEnabled
+              mode="parallax"
+              renderItem={({ index }) => (
+                <PostImage source={item?.imageUrls[index]} />
+              )}
+              onConfigurePanGesture={(gestureChain) =>
+                gestureChain.activeOffsetX([-10, 10])
+              }
+              customAnimation={animationStyle}
+            />
+          </>
         )}
         <ViewMoreContent content={item?.comment} />
         <TouchableOpacity
