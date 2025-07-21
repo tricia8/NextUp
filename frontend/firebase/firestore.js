@@ -949,7 +949,7 @@ export async function addPost(subBucketListId, goalId, postData) {
     const token = await getIdTokenFromFirebaseUser();
 
     const res = await fetch(
-      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/goals/${goalId}/posts`,
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${goalId}/posts`,
       {
         method: "POST",
         headers: {
