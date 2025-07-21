@@ -1070,7 +1070,7 @@ const formatPostData = (data) => {
     createdAt: createdAt ? formatPostDate(createdAt) : "",
     updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
     comment: data.comment ?? "", // default to empty string
-    imageUrls: data.imageUrls ?? [], // default to empty array
+    images: data.images ?? [], // default to empty array
   };
 };
 
@@ -1368,6 +1368,80 @@ router.post(
       });
     } catch (error) {
       res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Delete a post under a goal
+router.delete(
+  "/user/bucketList/:sublistId/events/:eventId/posts/:postId",
+  async (req, res) => {
+    const { sublistId, eventId, postId } = req.params;
+    const userId = req.user; // Verified from middleware
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+      if (ownerId !== userId) {
+        const err = new Error("Only the author can delete this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const postDocRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc(postId);
+
+      const postSnap = await postDocRef.get();
+      const postData = postSnap.data();
+      const images = postData?.images || [];
+
+      // batch delete images from Cloudinary
+      if (images.length > 0) {
+        const cloudRes = await fetch(
+          "https://nextup-l0e9.onrender.com/api/cloudinary/delete-images",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: req.headers.authorization,
+            },
+            body: JSON.stringify({
+              public_ids: images.map((img) => img.publicId),
+            }),
+          }
+        );
+
+        // Delete post document in Firestore
+        await postDocRef.delete();
+
+        const cloudResult = await cloudRes.json();
+
+        if (!cloudRes.ok || !cloudResult.success) {
+          // Log failed deletions for developer alerting/monitoring
+          console.warn(
+            "Failed to delete some images from Cloudinary:",
+            cloudResult.failed
+          );
+
+          // Return 200 to client if post was deleted successfully
+          // but include metadata for UI/debugging (optional)
+          return res.status(200).json({
+            success: true,
+            message:
+              "Post deleted. Some images could not be removed from Cloudinary.",
+            // failedDeletes: cloudResult.failed,
+          });
+        }
+      }
+
+      return res.status(200).json({ success: true, message: "Post deleted" });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
