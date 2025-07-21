@@ -69,8 +69,9 @@ export default function ImageViewer({
             // backgroundColor: "#eeeeee",
             justifyContent: "center",
             alignItems: "center",
+            borderRadius: 25,
           }}
-          underlayColor={"#eeeeeee1"}
+          underlayColor={"#eeeeee98"}
           onPress={onPressAdd}
         >
           <Ionicons
@@ -101,11 +102,7 @@ export default function ImageViewer({
               : () => onRemoveDefault(item as string)
           }
         >
-          <Ionicons
-            name="close-circle"
-            size={30}
-            color="rgba(225, 225, 225, 0.8)"
-          />
+          <Ionicons name="close-circle" size={30} color="#64748ce1" />
         </TouchableOpacity>
       </View>
     );
@@ -122,7 +119,7 @@ export default function ImageViewer({
           ? [...selectedImages, { addMore: true }]
           : selectedImages
       }
-      contentContainerStyle={{ gap: 10, paddingRight: 10 }}
+      contentContainerStyle={{ gap: 10, paddingRight: 100 }}
     />
   );
 }
