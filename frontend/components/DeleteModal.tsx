@@ -11,12 +11,13 @@ import { RFValue } from "react-native-responsive-fontsize";
 import { Sublist } from "@/types/sublist";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Goal } from "@/types/goal";
+import { PostWithPending } from "@/types/postWithPending";
 
 type DeleteModalProps = {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
-  item: Sublist | Goal | null;
-  handleItemDelete: (item: Sublist | Goal) => void;
+  item: Sublist | Goal | PostWithPending | null;
+  handleItemDelete: (item: Sublist | Goal | PostWithPending) => void;
   heading: string;
   body: string;
 };
