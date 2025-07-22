@@ -1434,12 +1434,18 @@ router.delete(
             success: true,
             message:
               "Post deleted. Some images could not be removed from Cloudinary.",
+            userMessage:
+              "Post deleted. Some images could not be removed from our server, but they are no longer visible in your account.",
             // failedDeletes: cloudResult.failed,
           });
         }
       }
 
-      return res.status(200).json({ success: true, message: "Post deleted" });
+      return res.status(200).json({
+        success: true,
+        message: "Post deleted",
+        userMessage: "Post deleted!",
+      });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
     }
