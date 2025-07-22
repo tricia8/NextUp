@@ -497,7 +497,14 @@ export default function GoalPage() {
                 user={user}
                 goalId={goalId as string}
               />
-              <PostList userId={uid} posts={postList} isDark={isDark} />
+              <PostList
+                ownerId={ownerId}
+                userId={uid}
+                sublistId={sublistId as string}
+                goalId={goalId as string}
+                posts={postList}
+                isDark={isDark}
+              />
             </View>
           </View>
         </ThemedView>
