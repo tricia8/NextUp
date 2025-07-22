@@ -973,6 +973,40 @@ export async function addPost(subBucketListId, goalId, postData) {
   }
 }
 
+export async function updatePost(
+  subBucketListId,
+  goalId,
+  postId,
+  updates = {} // comment, images
+) {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${goalId}/posts/${postId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to update post");
+    }
+
+    const data = await res.json();
+    return data; // success boolean, message, postData
+  } catch (error) {
+    console.error("Error updating post:", error);
+    throw error;
+  }
+}
+
 export async function deletePost(subBucketListId, goalId, postId) {
   try {
     const token = await getIdTokenFromFirebaseUser();
