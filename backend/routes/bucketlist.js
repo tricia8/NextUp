@@ -1336,7 +1336,7 @@ router.post(
   async (req, res) => {
     const { sublistId, eventId } = req.params;
     const userId = req.user; // Verified from middleware
-    const { username, profilePhotoUrl, comment, imageUrl } = req.body;
+    const { username, profilePhotoUrl, comment, images } = req.body;
 
     try {
       const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
@@ -1353,7 +1353,7 @@ router.post(
         username,
         profilePhotoUrl,
         comment,
-        imageUrl,
+        images,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
