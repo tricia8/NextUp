@@ -1,4 +1,6 @@
 import { getIdTokenFromFirebaseUser } from "../utils/getIdToken";
+import "react-native-get-random-values";
+import { v4 as uuidv4 } from "uuid";
 
 // For profile pictures
 export async function uploadToCloudinary(base64Image, uid, subfolder) {
@@ -59,8 +61,8 @@ export async function uploadPostImageToCloudinary(base64Image, uid, subfolder) {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const uniqueId = Date.now();
-    const public_id = `nextup/users/${uid}/${subfolder}/${uniqueId}`;
+    // const uniqueId = Date.now();
+    const public_id = `nextup/users/${uid}/${subfolder}/${uuidv4()}`;
     const folder = `nextup/users/${uid}/${subfolder}`;
 
     const res = await fetch(
