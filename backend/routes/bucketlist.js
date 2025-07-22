@@ -1334,6 +1334,8 @@ router.patch(
 router.post(
   "/user/bucketList/:sublistId/events/:eventId/posts",
   async (req, res) => {
+    console.log("Incoming post body:", req.body);
+
     const { sublistId, eventId } = req.params;
     const userId = req.user; // Verified from middleware
     const { username, profilePhotoUrl, comment, images } = req.body;
@@ -1357,6 +1359,7 @@ router.post(
         createdAt: timestamp,
         updatedAt: timestamp,
       };
+      console.log("Post data to be added:", postData);
 
       await newPostRef.set(postData);
       const postSnap = await newPostRef.get();
@@ -1384,6 +1387,8 @@ router.delete(
         userId,
         sublistId
       );
+      console.log("Sublist retrieved. Owner ID:", ownerId);
+
       if (ownerId !== userId) {
         const err = new Error("Only the author can delete this post");
         err.status = 403; // Permission denied
@@ -1397,6 +1402,13 @@ router.delete(
         .doc(postId);
 
       const postSnap = await postDocRef.get();
+
+      if (!postSnap.exists) {
+        const err = new Error("Post not found");
+        err.status = 404; // Not found
+        throw err;
+      }
+
       const postData = postSnap.data();
       const images = postData?.images || [];
 
@@ -1436,8 +1448,12 @@ router.delete(
         }
       }
 
+      console.log("Attempting to delete post:", postDocRef.path);
+
       // Delete post document in Firestore
       await postDocRef.delete();
+
+      console.log("Post document deleted from Firestore");
 
       // Return 200 to client if post was deleted successfully
       // but include metadata for UI/debugging (optional)
