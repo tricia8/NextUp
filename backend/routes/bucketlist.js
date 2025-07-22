@@ -1400,6 +1400,9 @@ router.delete(
       const postData = postSnap.data();
       const images = postData?.images || [];
 
+      let message;
+      let userMessage;
+
       // batch delete images from Cloudinary
       if (images.length > 0) {
         const cloudRes = await fetch(
@@ -1416,9 +1419,6 @@ router.delete(
           }
         );
 
-        // Delete post document in Firestore
-        await postDocRef.delete();
-
         const cloudResult = await cloudRes.json();
 
         if (!cloudRes.ok || !cloudResult.success) {
@@ -1428,23 +1428,23 @@ router.delete(
             cloudResult.failed
           );
 
-          // Return 200 to client if post was deleted successfully
-          // but include metadata for UI/debugging (optional)
-          return res.status(200).json({
-            success: true,
-            message:
-              "Post deleted. Some images could not be removed from Cloudinary.",
-            userMessage:
-              "Post deleted. Some images could not be removed from our server, but they are no longer visible in your account.",
-            // failedDeletes: cloudResult.failed,
-          });
+          message =
+            "Post deleted. Some images could not be removed from Cloudinary.";
+
+          userMessage =
+            "Post deleted. Some images could not be removed from our server, but they are no longer visible in your account.";
         }
       }
 
+      // Delete post document in Firestore
+      await postDocRef.delete();
+
+      // Return 200 to client if post was deleted successfully
+      // but include metadata for UI/debugging (optional)
       return res.status(200).json({
         success: true,
-        message: "Post deleted",
-        userMessage: "Post deleted!",
+        message: message ?? "Post deleted",
+        userMessage: userMessage ?? "Post deleted!",
       });
     } catch (error) {
       return res.status(error.status || 500).json({ error: error.message });
