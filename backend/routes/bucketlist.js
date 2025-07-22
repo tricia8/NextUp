@@ -1452,4 +1452,88 @@ router.delete(
   }
 );
 
+// Update a post under a goal
+router.patch(
+  "/user/bucketList/:sublistId/events/:eventId/posts/:postId",
+  async (req, res) => {
+    const { sublistId, eventId, postId } = req.params;
+    const userId = req.user; // Verified from middleware
+    const { comment, images } = req.body;
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+      if (ownerId !== userId) {
+        const err = new Error("Only the author can update this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const postDocRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc(postId);
+
+      const postSnap = await postDocRef.get();
+      const oldImages = postSnap.data()?.images || [];
+
+      const imagesToDelete = oldImages.filter(
+        (oldImg) => !images.some((img) => img.publicId === oldImg.publicId)
+      );
+
+      await postDocRef.update({
+        comment,
+        updatedAt: FieldValue.serverTimestamp(),
+        images: images ?? oldImages, // Update images if provided, else keep existing
+      });
+
+      let message;
+
+      // batch delete images from Cloudinary
+      // NOTE: new images have already been uploaded to Cloudinary
+      if (imagesToDelete.length > 0) {
+        const cloudDelRes = await fetch(
+          "https://nextup-l0e9.onrender.com/api/cloudinary/delete-images",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: req.headers.authorization,
+            },
+            body: JSON.stringify({
+              public_ids: imagesToDelete.map((img) => img.publicId),
+            }),
+          }
+        );
+
+        const cloudResult = await cloudDelRes.json();
+
+        if (!cloudDelRes.ok || !cloudResult.success) {
+          // Log failed deletions for developer alerting/monitoring
+          console.warn(
+            "Failed to delete some images from Cloudinary:",
+            cloudResult.failed
+          );
+
+          message =
+            "Post updated! Some images could not be removed from our server, but they are no longer visible in your account.";
+        }
+      }
+
+      const updatedPostSnap = await postDocRef.get();
+
+      return res.status(200).json({
+        success: true,
+        message: message || "Post updated!",
+        postData: { id: postId, ...formatPostData(updatedPostSnap.data()) },
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
 export default router;
