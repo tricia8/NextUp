@@ -48,19 +48,31 @@ export default function PostList({
   const heading = "Are you sure you want to delete this post?";
   const body = "This action cannot be undone.";
 
+  const isPostWithPending = (item: any): item is PostWithPending => {
+    return (
+      item &&
+      typeof item === "object" &&
+      "images" in item &&
+      "isPending" in item
+    );
+  };
+
   const handleDeletePost = async (postId: string) => {
     try {
       console.log("deleting post");
-      await deletePost(sublistId, goalId, postId);
+      setModalVisible(false); // close modal after deletion
+
+      const res = await deletePost(sublistId, goalId, postId);
+      console.log("deletePost response:", res);
+
       console.log("deleted!");
 
       /* updateData((prevSublists) =>
             prevSublists.filter((list) => list.id !== sublist.id)
           ); */
-      setModalVisible(false); // clsose modal after deletion
       showMessage({
         message: "Success",
-        description: "Post deleted!",
+        description: res.userMessage || "Post deleted!",
         type: "success",
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
@@ -140,10 +152,6 @@ export default function PostList({
         </View>
         {Array.isArray(item?.images) && item?.images.length > 0 && (
           <>
-            {/* <Image
-              source={{ uri: item.imageUrls[0] }}
-              style={{ width: "100%", height: 200, borderRadius: 10 }}
-            /> */}
             <Carousel
               loop
               autoPlay
@@ -212,7 +220,7 @@ export default function PostList({
         item={itemToDelete}
         handleItemDelete={(item) => {
           // type check to ensure item is a Post
-          if (item && "imageUrls" in item && "isPending" in item) {
+          if (isPostWithPending(item)) {
             handleDeletePost(item.id);
           }
         }}
