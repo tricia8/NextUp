@@ -20,9 +20,12 @@ import { interpolate } from "react-native-reanimated";
 import PostImage from "./PostImage";
 import DeleteModal from "./DeleteModal";
 import { showMessage } from "react-native-flash-message";
+import { deletePost } from "@/firebase/firestore";
 
 type PostListProps = {
   userId: string;
+  sublistId: string;
+  goalId: string;
   ownerId: string;
   posts: PostWithPending[];
   isDark?: boolean;
@@ -32,6 +35,8 @@ const screenWidth = Dimensions.get("window").width;
 
 export default function PostList({
   userId,
+  sublistId,
+  goalId,
   ownerId,
   posts,
   isDark = false,
@@ -43,25 +48,10 @@ export default function PostList({
   const heading = "Are you sure you want to delete this post?";
   const body = "This action cannot be undone.";
 
-  /* const DATA: PostWithPending[] = [
-    {
-      id: "109384",
-      userId: userId,
-      username: "john_doe",
-      profilePhotoUrl: "",
-      createdAt: "3 June 2025, 3:59pm ",
-      updatedAt: "3 June 2025, 4:59pm ",
-      isPending: false,
-      comment:
-        "This is a sample post. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-      imageUrls: ["https://picsum.photos/200/300"],
-    },
-  ]; */
-
   const handleDeletePost = async (postId: string) => {
     try {
       console.log("deleting post");
-      await deletePost(postId);
+      await deletePost(sublistId, goalId, postId);
       console.log("deleted!");
 
       /* updateData((prevSublists) =>
@@ -92,10 +82,9 @@ export default function PostList({
   };
 
   const onDeletePress = (post: PostWithPending) => {
-    () => {
-      setItemToDelete(post);
-      setModalVisible(true);
-    };
+    setItemToDelete(post);
+    setModalVisible(true);
+    console.log("Delete post pressed", post.id);
   };
 
   const animationStyle: TAnimationStyle = useCallback((value: number) => {
@@ -178,7 +167,7 @@ export default function PostList({
           <View
             style={{
               flexDirection: "row",
-              gap: 10,
+              gap: 16,
               justifyContent: "flex-end",
             }}
           >
