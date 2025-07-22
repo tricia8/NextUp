@@ -90,17 +90,38 @@ router.post("/delete-images", async (req, res) => {
         continue;
       }
 
-      const result = await cloudinary.uploader.destroy(public_id);
-      if (result.result === "ok") {
-        deleted.push(public_id);
-      } else {
+      let attempts = 0;
+      let success = false;
+      let result;
+
+      // Retry logic for image deletion
+      while (attempts < 3 && !success) {
+        result = await cloudinary.uploader.destroy(public_id);
+
+        // Image successfully removed from Cloudinary
+        if (result.result === "ok" || result.result === "not_found") {
+          deleted.push(public_id);
+          success = true;
+        } else {
+          //
+          await new Promise((resolve) => setTimeout(resolve, 500)); // delay before retry
+        }
+
+        attempts++;
+      }
+
+      if (!success) {
         failed.push({ public_id, error: result.result || "Unknown error" });
+        console.warn(
+          `Failed to delete image after 3 attempts: ${public_id}, result: ${result.result}`
+        );
       }
     }
 
     const success = failed.length === 0;
+
+    // 207 for partial success
     res.status(success ? 200 : 207).json({
-      // 207 for partial success
       success,
       deleted,
       failed,
