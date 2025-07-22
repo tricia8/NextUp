@@ -973,6 +973,33 @@ export async function addPost(subBucketListId, goalId, postData) {
   }
 }
 
+export async function deletePost(subBucketListId, goalId, postId) {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${goalId}/posts/${postId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to delete post");
+    }
+
+    const data = await res.json();
+    return data; // success boolean, message, userMessage
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    throw error;
+  }
+}
+
 // collaborators
 export const addCollaborator = async (subBucketListId, collaboratorId) => {
   try {
