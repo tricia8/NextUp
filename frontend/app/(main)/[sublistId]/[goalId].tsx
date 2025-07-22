@@ -22,6 +22,7 @@ import {
   formatEventData,
   formatPostData,
   getEvent,
+  getOwnerProfile,
   toggleEventCompletion,
   updateEvent,
 } from "@/firebase/firestore";
@@ -52,10 +53,14 @@ import {
 } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import { PostWithPending } from "@/types/postWithPending";
+import { useUserStore } from "@/stores/userStore";
+import { UserWithCategory } from "@/types/userWithCategory";
 
 export default function GoalPage() {
   const { user } = useContext(AuthContext);
-  const uid = user?.uid;
+  // Fetch user from zustand store
+  const userProfile = useUserStore(useShallow((state) => state.user));
+  // const uid = user?.uid;
   const { sublistId, goalId } = useLocalSearchParams();
 
   const goal = useSublistStore(
@@ -88,6 +93,7 @@ export default function GoalPage() {
   }, [posts, postOrderByGoal]);
 
   useEffect(() => {
+    // Fetch goal data when component mounts
     const fetchGoal = async () => {
       try {
         // Fetch goal from backend if not found in store
@@ -120,6 +126,34 @@ export default function GoalPage() {
 
     fetchGoal();
   }, [goal, sublistId, goalId]);
+
+  useEffect(() => {
+    // Fetch user data if null when component mounts
+    const fetchUserData = async () => {
+      try {
+        // Fetch user data if not already in store
+        if (!userProfile && user?.uid) {
+          const fetchedUserProfile = await getOwnerProfile(user.uid);
+          useUserStore
+            .getState()
+            .setUser(fetchedUserProfile as UserWithCategory);
+        }
+      } catch (error) {
+        showMessage({
+          message: "Error",
+          description:
+            error instanceof Error ? error.message : "Failed to fetch goal",
+          type: "danger",
+          statusBarHeight: StatusBar.currentHeight,
+          floating: true,
+          icon: "danger",
+          duration: 5000,
+        });
+      }
+    };
+
+    fetchUserData();
+  }, [user, userProfile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -160,6 +194,8 @@ export default function GoalPage() {
           ...formatPostData(doc.data()),
           isPending: false,
         }));
+
+        console.log("Posts from Firestore:", posts);
 
         const postsRecord: Record<string, PostWithPending> = {};
         const postOrder: string[] = [];
@@ -490,16 +526,18 @@ export default function GoalPage() {
                 isDark={isDark}
                 onPress={() => setIsEditing(false)} // close edit mode when adding post
               />
-              <PostForm
-                sublistId={sublistId as string}
-                isVisible={isPostFormVisible}
-                setIsVisible={setIsPostFormVisible}
-                user={user}
-                goalId={goalId as string}
-              />
+              {userProfile && (
+                <PostForm
+                  sublistId={sublistId as string}
+                  isVisible={isPostFormVisible}
+                  setIsVisible={setIsPostFormVisible}
+                  user={userProfile}
+                  goalId={goalId as string}
+                />
+              )}
               <PostList
                 ownerId={ownerId}
-                userId={uid}
+                userId={userProfile?.uid as string}
                 sublistId={sublistId as string}
                 goalId={goalId as string}
                 posts={postList}
