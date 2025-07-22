@@ -60,7 +60,7 @@ import { Goal } from "@/types/goal";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
 import GoalList from "@/components/GoalList";
-import { doc, onSnapshot, collection } from "firebase/firestore";
+import { doc, onSnapshot, collection, Timestamp } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
 import { useSublistStore } from "@/stores/sublistStore";
 import { formatSublistData, formatEventData } from "@/firebase/firestore";
@@ -96,11 +96,26 @@ export default function currentSublist() {
     await addCollaborator(sublistId as string, userId);
   };
 
+  // Record<string, Goal>
   const goalsBySublist = useSublistStore(
     useShallow(
-      (state) => state.goalsBySublist[sublistId as string] || ([] as Goal[])
+      (state) =>
+        state.goalsBySublist[sublistId as string] ||
+        ({} as Record<string, Goal>)
     )
   );
+
+  // array of goalIds
+  const goalOrderBySublist = useSublistStore(
+    useShallow(
+      (state) =>
+        state.goalOrderBySublist[sublistId as string] || ([] as string[])
+    )
+  );
+
+  const flashListGoals = useMemo(() => {
+    return goalOrderBySublist?.map((id) => goalsBySublist?.[id]) ?? [];
+  }, [goalsBySublist, goalOrderBySublist]);
 
   // loading state for sublist data
   const [isFetching, setIsFetching] = useState(false);
@@ -166,9 +181,18 @@ export default function currentSublist() {
             sublistData = fetched.sublistData;
             collaborators = fetched.sublistData.collaborators;
 
+            // build goals record and order array
+            const goalsRecord: Record<string, Goal> = {};
+            const goalOrder: string[] = [];
+
+            fetched.goalData.forEach((goal: Goal) => {
+              goalsRecord[goal.id] = goal;
+              goalOrder.push(goal.id);
+            });
+
             if (isActive) {
               setSublist(sublistId as string, sublistData, ownerId);
-              setGoalsForSublist(sublistId as string, fetched.goalData);
+              setGoalsForSublist(sublistId as string, goalsRecord, goalOrder);
 
               // event object: { id, title, description, categories, isCompleted, updatedAt, deadline }
 
@@ -294,25 +318,51 @@ export default function currentSublist() {
             }
           );
 
-          unsubGoals = onSnapshot(
-            collection(
-              db,
-              "users",
-              ownerId as string,
-              "bucketList",
-              sublistId as string,
-              "events"
-            ),
-            (snapshot) => {
-              if (!isActive) return; // prevent state update after unmount
-
-              const goals: Goal[] = [];
-              snapshot.forEach((doc) => {
-                goals.push({ id: doc.id, ...formatEventData(doc.data()) });
-              });
-              setGoalsForSublist(sublistId as string, goals);
-            }
+          const goalsRef = collection(
+            db,
+            "users",
+            ownerId as string,
+            "bucketList",
+            sublistId as string,
+            "events"
           );
+
+          unsubGoals = onSnapshot(goalsRef, (snapshot) => {
+            if (!isActive) return; // prevent state update after unmount
+
+            type RawGoal = Goal & { updatedAtRaw: Timestamp };
+            const goalList: RawGoal[] = [];
+
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+
+              goalList.push({
+                id: doc.id,
+                ...formatEventData(data),
+                updatedAtRaw: data.updatedAt ?? data.createdAt, // raw Timestamp
+              });
+            });
+
+            goalList.sort((a, b) => {
+              if (a.isCompleted !== b.isCompleted) {
+                return a.isCompleted ? 1 : -1; // Incomplete first
+              }
+              return b.updatedAtRaw.toMillis() - a.updatedAtRaw.toMillis(); // Most recent first
+            });
+
+            const goalsRecord: Record<string, Goal> = {};
+            const goalOrder: string[] = [];
+
+            goalList.forEach((goal) => {
+              const { updatedAtRaw, ...goalData } = goal; // exclude raw Timestamp
+
+              goalsRecord[goal.id] = {
+                ...goalData,
+              };
+              goalOrder.push(goal.id);
+            });
+            setGoalsForSublist(sublistId as string, goalsRecord, goalOrder);
+          });
         } catch (error) {
           // Handle error
           showMessage({
@@ -379,7 +429,7 @@ export default function currentSublist() {
 
   //Date-Time Picker
   const [deadlineString, setDeadlineString] = useState(""); // string
-  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date()); // deadline in
+  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date());
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
 
   const onCategoryOpen = useCallback(() => {
@@ -714,7 +764,7 @@ export default function currentSublist() {
         <GoalList
           uid={uid}
           sublistId={sublistId as string}
-          data={goalsBySublist}
+          data={flashListGoals}
           colorScheme={colorScheme}
         />
       </ThemedView>

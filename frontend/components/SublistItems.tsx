@@ -66,7 +66,7 @@ export default function SublistItems({
     try {
       console.log("deleting sublist");
       console.log("userid", uid);
-      await deleteSubBucketList(uid, sublist);
+      await deleteSubBucketList(sublist);
       console.log("deleted!");
       // update sublists state
       updateData((prevSublists) =>

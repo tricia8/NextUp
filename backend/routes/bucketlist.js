@@ -1055,9 +1055,8 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
 
 // convert Timestamp to string e.g. "4 June 2025, 10:12am"
 const formatPostDate = (fetchedDate) => {
-  return `${dayjs(fetchedDate).format("DD MMM YYYY")}, ${dayjs(
-    fetchedDate
-  ).format("h:mma")}`;
+  const date = dayjs(fetchedDate);
+  return `${date.format("DD MMM YYYY")}, ${date.format("h:mma")}`;
 };
 
 const formatPostData = (data) => {
@@ -1065,12 +1064,13 @@ const formatPostData = (data) => {
   const updatedAt = data.updatedAt?.toDate?.();
 
   return {
+    userId: data.userId,
     username: data.username,
     profilePhotoUrl: data.profilePhotoUrl,
     createdAt: createdAt ? formatPostDate(createdAt) : "",
     updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
     comment: data.comment ?? "", // default to empty string
-    imageUrl: data.imageUrl ?? "", // default to empty string
+    images: data.images ?? [], // default to empty array
   };
 };
 
@@ -1270,10 +1270,11 @@ router.delete(
 );
 
 // Toggle event completion
-router.post(
-  "/users/:userId/bucketList/:sublistId/events/:eventId/toggleCompletion",
+router.patch(
+  "/user/bucketList/:sublistId/events/:eventId/toggleCompletion",
   async (req, res) => {
-    const { userId, sublistId, eventId } = req.params;
+    const { sublistId, eventId } = req.params;
+    const userId = req.user;
 
     const eventDocRef = db
       .collection("users")
@@ -1309,10 +1310,6 @@ router.post(
           ? [completed + 1, total]
           : [Math.max(0, completed - 1), total]; // avoid negative values
 
-        /* await updateDoc(eventDocRef, {
-      isCompleted: !currentCompleted,
-    }); */
-
         // update event
         transaction.update(eventDocRef, { isCompleted: !currentCompleted });
 
@@ -1329,6 +1326,212 @@ router.post(
     } catch (error) {
       console.error("Error toggling event completion:", error);
       return res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// Create a post under a goal
+router.post(
+  "/user/bucketList/:sublistId/events/:eventId/posts",
+  async (req, res) => {
+    const { sublistId, eventId } = req.params;
+    const userId = req.user; // Verified from middleware
+    const { username, profilePhotoUrl, comment, imageUrl } = req.body;
+
+    try {
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+
+      const newPostRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc();
+
+      const timestamp = FieldValue.serverTimestamp();
+      const postData = {
+        userId,
+        username,
+        profilePhotoUrl,
+        comment,
+        imageUrl,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+
+      await newPostRef.set(postData);
+      const postSnap = await newPostRef.get();
+
+      return res.json({
+        success: true,
+        message: "New post added",
+        postData: { id: newPostRef.id, ...formatPostData(postSnap.data()) },
+      });
+    } catch (error) {
+      res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Delete a post under a goal
+router.delete(
+  "/user/bucketList/:sublistId/events/:eventId/posts/:postId",
+  async (req, res) => {
+    const { sublistId, eventId, postId } = req.params;
+    const userId = req.user; // Verified from middleware
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+      if (ownerId !== userId) {
+        const err = new Error("Only the author can delete this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const postDocRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc(postId);
+
+      const postSnap = await postDocRef.get();
+      const postData = postSnap.data();
+      const images = postData?.images || [];
+
+      // batch delete images from Cloudinary
+      if (images.length > 0) {
+        const cloudRes = await fetch(
+          "https://nextup-l0e9.onrender.com/api/cloudinary/delete-images",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: req.headers.authorization,
+            },
+            body: JSON.stringify({
+              public_ids: images.map((img) => img.publicId),
+            }),
+          }
+        );
+
+        // Delete post document in Firestore
+        await postDocRef.delete();
+
+        const cloudResult = await cloudRes.json();
+
+        if (!cloudRes.ok || !cloudResult.success) {
+          // Log failed deletions for developer alerting/monitoring
+          console.warn(
+            "Failed to delete some images from Cloudinary:",
+            cloudResult.failed
+          );
+
+          // Return 200 to client if post was deleted successfully
+          // but include metadata for UI/debugging (optional)
+          return res.status(200).json({
+            success: true,
+            message:
+              "Post deleted. Some images could not be removed from Cloudinary.",
+            userMessage:
+              "Post deleted. Some images could not be removed from our server, but they are no longer visible in your account.",
+            // failedDeletes: cloudResult.failed,
+          });
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Post deleted",
+        userMessage: "Post deleted!",
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Update a post under a goal
+router.patch(
+  "/user/bucketList/:sublistId/events/:eventId/posts/:postId",
+  async (req, res) => {
+    const { sublistId, eventId, postId } = req.params;
+    const userId = req.user; // Verified from middleware
+    const { comment, images } = req.body;
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+      if (ownerId !== userId) {
+        const err = new Error("Only the author can update this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const postDocRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc(postId);
+
+      const postSnap = await postDocRef.get();
+      const oldImages = postSnap.data()?.images || [];
+
+      const imagesToDelete = oldImages.filter(
+        (oldImg) => !images.some((img) => img.publicId === oldImg.publicId)
+      );
+
+      await postDocRef.update({
+        comment,
+        updatedAt: FieldValue.serverTimestamp(),
+        images: images ?? oldImages, // Update images if provided, else keep existing
+      });
+
+      let message;
+
+      // batch delete images from Cloudinary
+      // NOTE: new images have already been uploaded to Cloudinary
+      if (imagesToDelete.length > 0) {
+        const cloudDelRes = await fetch(
+          "https://nextup-l0e9.onrender.com/api/cloudinary/delete-images",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: req.headers.authorization,
+            },
+            body: JSON.stringify({
+              public_ids: imagesToDelete.map((img) => img.publicId),
+            }),
+          }
+        );
+
+        const cloudResult = await cloudDelRes.json();
+
+        if (!cloudDelRes.ok || !cloudResult.success) {
+          // Log failed deletions for developer alerting/monitoring
+          console.warn(
+            "Failed to delete some images from Cloudinary:",
+            cloudResult.failed
+          );
+
+          message =
+            "Post updated! Some images could not be removed from our server, but they are no longer visible in your account.";
+        }
+      }
+
+      const updatedPostSnap = await postDocRef.get();
+
+      return res.status(200).json({
+        success: true,
+        message: message || "Post updated!",
+        postData: { id: postId, ...formatPostData(updatedPostSnap.data()) },
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
     }
   }
 );
