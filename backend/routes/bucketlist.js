@@ -953,7 +953,10 @@ router.post("/events/upcoming", async (req, res) => {
 
     const snapshot = await q.get();
 
-    const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const events = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...formatEventData(doc.data()),
+    }));
 
     return res.json({ events });
   } catch (error) {
@@ -988,7 +991,7 @@ router.post("/events/overdue", async (req, res) => {
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      ...formatEventData(doc.data()),
     }));
 
     return res.json({ events });
