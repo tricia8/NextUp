@@ -537,7 +537,7 @@ export default function GoalPage() {
               )}
               <PostList
                 ownerId={ownerId}
-                userId={userProfile?.uid as string}
+                userId={user?.uid as string}
                 sublistId={sublistId as string}
                 goalId={goalId as string}
                 posts={postList}
