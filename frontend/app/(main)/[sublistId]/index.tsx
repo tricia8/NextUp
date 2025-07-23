@@ -43,8 +43,10 @@ import { useLocalSearchParams } from "expo-router";
 import {
   addEvent,
   getAllEventsFormatted,
+  getAllUsers,
   getOwnerProfile,
   getSubBucketList,
+  removeCollaboratorByOwner,
   updateSubBucketList,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
@@ -80,7 +82,10 @@ export default function currentSublist() {
   const [completionStatus, setCompletionStatus] = useState<number[]>([0, 0]); // [completed, total]
   const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
   const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
+  const [invitedUids, setInvitedUids] = useState<string[]>([]); // Array of uids for invited users
   const [createdAt, setCreatedAt] = useState("");
+
+  const [allUsers, setAllUsers] = useState<User[]>([]); // All users in the system
 
   // boolean toggle to trigger re-render
   const [isUpdated, setIsUpdated] = useState(false);
@@ -101,7 +106,8 @@ export default function currentSublist() {
           if (user?.uid && sublistId) {
             console.log("Fetching sublist for path:", user.uid, sublistId);
 
-            const sublistData = await getSubBucketList(user.uid, sublistId);
+            const sublistData = await getSubBucketList(sublistId);
+            const allUsers = (await getAllUsers()) as User[];
 
             const goalData = await getAllEventsFormatted(user.uid, sublistId);
             // returns array of events
@@ -118,6 +124,7 @@ export default function currentSublist() {
               setCreatedAt(sublistData.createdAtFormatted);
               setCompletionStatus(sublistData.completionStatus);
               setExistingGoals(goalData);
+              setAllUsers(allUsers);
 
               // Cache initial values
               setInitialTitle(sublistData.title);
@@ -267,7 +274,7 @@ export default function currentSublist() {
     try {
       setIsEditing(false);
       // Save changes to Firestore
-      await updateSubBucketList(uid, sublistId, {
+      await updateSubBucketList(sublistId, {
         title,
         description,
         accessLevel,
@@ -318,7 +325,7 @@ export default function currentSublist() {
   // Add goal to db
   const onSave = async () => {
     try {
-      await addEvent(uid, sublistId, {
+      await addEvent(sublistId, {
         // POST — send new goal to Firestore
         title: goalTitle,
         description: goalDesc,
@@ -330,7 +337,7 @@ export default function currentSublist() {
 
       // GET — fetch updated list from Firestore
       const updatedGoals = await getAllEventsFormatted(uid, sublistId);
-      const updatedSublist = await getSubBucketList(uid, sublistId);
+      const updatedSublist = await getSubBucketList(sublistId);
       setExistingGoals(updatedGoals); // update state/UI with fresh data
       setCompletionStatus(updatedSublist.completionStatus); // update completion status
 
@@ -526,10 +533,23 @@ export default function currentSublist() {
         <View style={{ flex: 1 }}>
           <ShareListModal
             currentUid={user?.uid}
-            data={collaborators}
+            collaborators={collaborators}
+            setCollaborators={setCollaborators}
             visible={modalVisible}
             setModalVisible={setModalVisible}
             onClose={() => setModalVisible(false)}
+            allUsers={allUsers}
+            sharedUids={sharedUids} // string[]
+            setSharedUids={setSharedUids}
+            invitedUids={invitedUids}
+            setInvitedUids={setInvitedUids}
+            onRemoveCollaborator={async (userId: string) => {
+              setCollaborators((prev) =>
+                prev.filter((collaborator) => collaborator.uid !== userId)
+              );
+              setSharedUids((prev) => prev.filter((uid) => uid !== userId));
+              await removeCollaboratorByOwner(sublistId, userId);
+            }}
           />
         </View>
       )}

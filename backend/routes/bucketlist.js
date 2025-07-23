@@ -43,7 +43,9 @@ router.delete("/listInvites/:requestId/delete", async (req, res) => {
     const inviteSnap = await inviteRef.get();
 
     if (!inviteSnap.exists) {
-      return res.status(200).json({ message: "Invite already deleted or not found" });
+      return res
+        .status(200)
+        .json({ message: "Invite already deleted or not found" });
     }
 
     await inviteRef.delete();
@@ -130,6 +132,7 @@ router.post(
           receiverId: collaboratorId,
           senderName: ownerDataSnap.data()?.username,
           receiverName: inviteeDataSnap.data()?.username,
+          sublistId,
           sentAt: FieldValue.serverTimestamp(),
           status: "unread",
         });
@@ -205,6 +208,17 @@ router.delete(
         if (shareSublistDocRef.exists) {
           transaction.delete(shareSublistDocRef.ref);
         }
+
+        // Remove invitations for this collaborator
+        const invitesSnap = await db
+          .collection("listInvites")
+          .where("receiverId", "==", collaboratorId)
+          .where("sublistId", "==", sublistId)
+          .get();
+
+        invitesSnap.forEach((inviteDoc) => {
+          transaction.delete(inviteDoc.ref);
+        });
       });
 
       // Update overall stats for removed collaborator
@@ -285,6 +299,17 @@ router.patch(
         if (shareSublistDocRef.exists) {
           transaction.delete(shareSublistDocRef.ref);
         }
+
+        // Remove invitations for this collaborator
+        const invitesSnap = await db
+          .collection("listInvites")
+          .where("receiverId", "==", collaboratorId)
+          .where("sublistId", "==", sublistId)
+          .get();
+
+        invitesSnap.forEach((inviteDoc) => {
+          transaction.delete(inviteDoc.ref);
+        });
       });
 
       // Update overall stats for removed collaborator
@@ -575,7 +600,7 @@ router.post("/user/bucketList", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Sublist created successfully",
+      message: "New sublist added",
       sublistId: sublistRef.id,
       sublistData,
     });
@@ -869,7 +894,10 @@ router.post("/events/upcoming", async (req, res) => {
 
     const snapshot = await q.get();
 
-    const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const events = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...formatEventData(doc.data()),
+    }));
 
     return res.json({ events });
   } catch (error) {
@@ -904,7 +932,7 @@ router.post("/events/overdue", async (req, res) => {
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      ...formatEventData(doc.data()),
     }));
 
     return res.json({ events });
