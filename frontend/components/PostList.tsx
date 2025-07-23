@@ -1,26 +1,12 @@
 import { LegendList } from "@legendapp/list";
-import { LinearGradient } from "expo-linear-gradient";
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Dimensions,
-  StatusBar,
-} from "react-native";
-import ProfilePic from "./ProfilePic";
-import { ThemedText } from "./ThemedText";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
+import { StyleSheet, Dimensions, StatusBar } from "react-native";
 import { RFValue } from "react-native-responsive-fontsize";
-import ViewMoreContent from "./ViewMoreContent";
 import { PostWithPending } from "@/types/postWithPending";
-import Carousel, { TAnimationStyle } from "react-native-reanimated-carousel";
-import { useCallback, useState } from "react";
-import { interpolate } from "react-native-reanimated";
-import PostImage from "./PostImage";
+import { useState } from "react";
 import DeleteModal from "./DeleteModal";
 import { showMessage } from "react-native-flash-message";
 import { deletePost } from "@/firebase/firestore";
+import PostItem from "./PostItem";
 
 type PostListProps = {
   userId: string;
@@ -30,8 +16,6 @@ type PostListProps = {
   posts: PostWithPending[];
   isDark?: boolean;
 };
-
-const screenWidth = Dimensions.get("window").width;
 
 export default function PostList({
   userId,
@@ -99,110 +83,15 @@ export default function PostList({
     console.log("Delete post pressed", post.id);
   };
 
-  const animationStyle: TAnimationStyle = useCallback((value: number) => {
-    "worklet";
-
-    const zIndex = interpolate(value, [-1, 0, 1], [10, 20, 30]);
-    const scale = interpolate(value, [-1, 0, 1], [1.25, 1, 0.25]);
-    const opacity = interpolate(value, [-0.75, 0, 1], [0, 1, 0]);
-
-    return {
-      transform: [{ scale }],
-      zIndex: Math.round(zIndex),
-      opacity,
-    };
-  }, []);
-
   const renderItem = ({ item }: { item: PostWithPending }) => {
     return (
-      <LinearGradient
-        colors={isDark ? ["#0f2027", "#664791"] : ["#77c4ff", "#a8b4ff"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.postContainer, item.isPending && { opacity: 0.5 }]}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            flexShrink: 1,
-            marginBottom: 5,
-          }}
-        >
-          <ProfilePic imageUrl={item?.profilePhotoUrl} size={30} />
-          <ThemedText style={styles.text}>
-            {item?.username} {userId === item?.userId ? "(You)" : ""}
-          </ThemedText>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <Ionicons
-              name="time-outline"
-              size={24}
-              color={isDark ? "white" : "black"}
-            />
-            <ThemedText style={styles.text}>{item?.createdAt}</ThemedText>
-          </View>
-        </View>
-        {Array.isArray(item?.images) && item?.images.length > 0 && (
-          <>
-            <Carousel
-              loop
-              autoPlay
-              width={screenWidth * 0.7}
-              height={240 * 0.7}
-              data={item?.images}
-              snapEnabled
-              mode="parallax"
-              renderItem={({ index }) => (
-                <PostImage source={item?.images[index].secureUrl} />
-              )}
-              onConfigurePanGesture={(gestureChain) =>
-                gestureChain.activeOffsetX([-10, 10])
-              }
-              customAnimation={animationStyle}
-            />
-          </>
-        )}
-        <ViewMoreContent content={item?.comment} />
-        {ownerId === userId && (
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 16,
-              justifyContent: "flex-end",
-            }}
-          >
-            <TouchableOpacity
-              onPress={() => console.log("Edit Post Pressed")}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-            >
-              <Feather
-                name="edit-2"
-                size={24}
-                color={isDark ? "white" : "black"}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => onDeletePress(item)}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-            >
-              <Feather
-                name="trash-2"
-                size={24}
-                color={isDark ? "white" : "black"}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-      </LinearGradient>
+      <PostItem
+        item={item}
+        isDark={isDark}
+        ownerId={ownerId}
+        userId={userId}
+        onDeletePress={onDeletePress}
+      />
     );
   };
 
@@ -230,16 +119,3 @@ export default function PostList({
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  postContainer: {
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 8,
-    elevation: 3,
-    flexShrink: 1,
-  },
-  text: {
-    fontSize: RFValue(10),
-  },
-});
