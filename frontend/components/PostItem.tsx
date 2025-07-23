@@ -139,7 +139,7 @@ export default function PostItem({
         </View>
       )}
       <ViewMoreContent content={item?.comment} />
-      {ownerId === userId && (
+      {ownerId === userId && !item?.isPending && (
         <View
           style={{
             flexDirection: "row",
