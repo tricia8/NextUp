@@ -10,12 +10,9 @@ import Modal from "react-native-modal";
 import React, { useState } from "react";
 import { RFValue } from "react-native-responsive-fontsize";
 import { User } from "@/types/user";
-import { ms } from "react-native-size-matters";
 import { useRouter } from "expo-router";
 import UserSearchPicker from "./UserSearchPicker";
 import ProfilePic from "./ProfilePic";
-
-const PROFILEPICSIZE = ms(38);
 
 type CustomModalProps = {
   currentUid: string;
@@ -155,15 +152,6 @@ export default function ShareListModal({
       <View style={styles.modalContent}>
         <View style={styles.card}>
           <Text style={styles.listShareText}>Share This List</Text>
-          {/* <TextInput
-            placeholder="Add people..."
-            value={username}
-            onChangeText={setUsername}
-            enterKeyHint="search"
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
-          /> */}
 
           {isOwner && (
             <View style={{ flexDirection: "row", flexShrink: 0.7, gap: 5 }}>
@@ -232,6 +220,7 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: "center",
     alignItems: "center",
+    maxHeight: "46%",
   },
   closeButton: {
     alignItems: "center",
@@ -266,11 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
-  },
-  profilePic: {
-    height: PROFILEPICSIZE,
-    width: PROFILEPICSIZE,
-    borderRadius: PROFILEPICSIZE / 2,
+    marginVertical: 4,
   },
   owner: {
     fontSize: RFValue(12),
