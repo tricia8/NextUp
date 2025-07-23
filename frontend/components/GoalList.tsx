@@ -107,20 +107,35 @@ export default function GoalList({
         keyExtractor={(item) => item.id}
         estimatedItemSize={130}
         contentContainerStyle={{ paddingBottom: 80 }}
+        style={{ flex: 1 }}
       />
-      <DeleteModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        item={selectedItem}
-        handleItemDelete={(item) => {
-          // type check to ensure item is a Goal
-          if (item && "categories" in item) {
-            handleDelete(item);
-          }
-        }}
-        heading={heading}
-        body={body}
-      />
+
+      {modalVisible && (
+        <View
+          style={{
+            zIndex: 1000,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <DeleteModal
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            item={selectedItem}
+            handleItemDelete={(item) => {
+              // type check to ensure item is a Goal
+              if (item && "categories" in item) {
+                handleDelete(item);
+              }
+            }}
+            heading={heading}
+            body={body}
+          />
+        </View>
+      )}
     </View>
   );
 }
