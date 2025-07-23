@@ -1243,6 +1243,7 @@ router.delete(
 
         transaction.update(docSnap.ref, {
           completionStatus: updatedStatus,
+          updatedAt: FieldValue.serverTimestamp(),
         });
         console.log(`Updated sublist ${sublistId}`);
       });
@@ -1311,11 +1312,15 @@ router.patch(
           : [Math.max(0, completed - 1), total]; // avoid negative values
 
         // update event
-        transaction.update(eventDocRef, { isCompleted: !currentCompleted });
+        transaction.update(eventDocRef, {
+          isCompleted: !currentCompleted,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
 
         // update subBucketList completionStatus
         transaction.update(subBucketListRef, {
           completionStatus: updatedStatus,
+          updatedAt: FieldValue.serverTimestamp(),
         });
       });
       await updateOverallStats(userId);
@@ -1363,6 +1368,14 @@ router.post(
 
       await newPostRef.set(postData);
       const postSnap = await newPostRef.get();
+
+      await docSnap.ref.update({
+        updatedAt: timestamp,
+      });
+
+      await docSnap.ref.collection("events").doc(eventId).update({
+        updatedAt: timestamp,
+      });
 
       return res.json({
         success: true,
@@ -1455,6 +1468,17 @@ router.delete(
 
       console.log("Post document deleted from Firestore");
 
+      const timestamp = FieldValue.serverTimestamp();
+
+      // Update sublist and event updatedAt timestamps
+      await docSnap.ref.update({
+        updatedAt: timestamp,
+      });
+
+      await docSnap.ref.collection("events").doc(eventId).update({
+        updatedAt: timestamp,
+      });
+
       // Return 200 to client if post was deleted successfully
       // but include metadata for UI/debugging (optional)
       return res.status(200).json({
@@ -1538,6 +1562,16 @@ router.patch(
             "Post updated! Some images could not be removed from our server, but they are no longer visible in your account.";
         }
       }
+
+      const timestamp = FieldValue.serverTimestamp();
+
+      // Update timestamps for goal and sublist
+      await docSnap.ref.update({
+        updatedAt: timestamp,
+      });
+      await docSnap.ref.collection("events").doc(eventId).update({
+        updatedAt: timestamp,
+      });
 
       const updatedPostSnap = await postDocRef.get();
 
