@@ -53,6 +53,7 @@ export default function ShareListModal({
   console.log("Modal collaborators:", collaborators);
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const isOwner = currentUid === ownerId;
 
   // const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -105,21 +106,38 @@ export default function ShareListModal({
             {item.username} {item.uid == currentUid ? "(you)" : ""}
           </Text>
           {item.uid === ownerId && <Text style={styles.owner}>Owner</Text>}
-          {item.uid !== ownerId && (
-            <TouchableOpacity
-              onPress={() => {
-                onRemoveCollaborator(item.uid);
-              }}
-              style={{
-                backgroundColor: "#f8d7da",
-                borderRadius: 10,
-                padding: 4,
-                marginTop: 4,
-              }}
-            >
-              <Text>Remove</Text>
-            </TouchableOpacity>
-          )}
+
+          {isOwner
+            ? item.uid !== ownerId && (
+                <TouchableOpacity
+                  onPress={() => {
+                    onRemoveCollaborator(item.uid);
+                  }}
+                  style={{
+                    backgroundColor: "#f8d7da",
+                    borderRadius: 10,
+                    padding: 4,
+                    marginTop: 4,
+                  }}
+                >
+                  <Text>Remove</Text>
+                </TouchableOpacity>
+              )
+            : item.uid === currentUid && (
+                <TouchableOpacity
+                  onPress={() => {
+                    onRemoveCollaborator(item.uid);
+                  }}
+                  style={{
+                    backgroundColor: "#f8d7da",
+                    borderRadius: 10,
+                    padding: 4,
+                    marginTop: 4,
+                  }}
+                >
+                  <Text>Remove</Text>
+                </TouchableOpacity>
+              )}
         </TouchableOpacity>
       </View>
     );
@@ -147,29 +165,31 @@ export default function ShareListModal({
             style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
           /> */}
 
-          <View style={{ flexDirection: "row", flexShrink: 0.7, gap: 5 }}>
-            <UserSearchPicker
-              colorScheme={colorScheme}
-              allUsers={allUsers}
-              invitedUsers={invitedUids}
-              setInvitedUsers={setInvitedUids}
-              collaboratorUids={sharedUids}
-            />
+          {isOwner && (
+            <View style={{ flexDirection: "row", flexShrink: 0.7, gap: 5 }}>
+              <UserSearchPicker
+                colorScheme={colorScheme}
+                allUsers={allUsers}
+                invitedUsers={invitedUids}
+                setInvitedUsers={setInvitedUids}
+                collaboratorUids={sharedUids}
+              />
 
-            <TouchableOpacity
-              style={{
-                borderRadius: 15,
-                padding: 5,
-                backgroundColor: "#c6e1dc",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              disabled={!hasInvitees}
-              onPress={onInvitation}
-            >
-              <Text>Invite</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={{
+                  borderRadius: 15,
+                  padding: 5,
+                  backgroundColor: "#c6e1dc",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+                disabled={!hasInvitees}
+                onPress={onInvitation}
+              >
+                <Text>Invite</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <Text style={styles.withAcessText}>People with access</Text>
           <FlatList
