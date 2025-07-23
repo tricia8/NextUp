@@ -55,7 +55,7 @@ export default function PostForm({
     }
   };
 
-  // Save image URLs to cloudinary and return an array of cloudinary URLs
+  // Save image URLs to cloudinary and return an array of {publicId: ..., secureUrl: ...} objects
   const saveImageUrls = async () => {
     console.log("base64: ", base64);
     if (images.length > 0 && base64) {
@@ -84,26 +84,24 @@ export default function PostForm({
     console.log("onPost called");
     setIsVisible(false);
     const tempId = "temp-" + Date.now();
-    const formattedDate = formatPostDate(Date.now());
+    const formattedDate = formatPostDate(new Date()); // get local time
 
     try {
       console.log("Before saveImageUrls");
-
-      const images: PostImage[] = await saveImageUrls();
-      console.log("After saveImageUrls");
-
-      console.log("Posting with images:", images);
       addPostToGoal(goalId, {
         id: tempId,
         userId: user?.uid,
         username: user?.username,
         profilePhotoUrl: user?.photoUrl ?? "",
-        comment,
+        comment: "Sending...",
         createdAt: formattedDate,
         updatedAt: formattedDate,
-        images: images,
+        images: [],
         isPending: true,
       });
+      const images: PostImage[] = await saveImageUrls();
+
+      console.log("Posting with images:", images);
 
       // Replace tempId when backend responds
       const { postData } = await addPost(sublistId, goalId, {
