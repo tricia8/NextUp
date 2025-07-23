@@ -1,7 +1,13 @@
 import { PostWithPending } from "@/types/postWithPending";
 import Feather from "@expo/vector-icons/Feather";
 import { LinearGradient } from "expo-linear-gradient";
-import { TouchableOpacity, View, StyleSheet, Dimensions } from "react-native";
+import {
+  TouchableOpacity,
+  View,
+  StyleSheet,
+  Dimensions,
+  Text,
+} from "react-native";
 import ProfilePic from "./ProfilePic";
 import { ThemedText } from "./ThemedText";
 import ViewMoreContent from "./ViewMoreContent";
@@ -43,6 +49,8 @@ export default function PostItem({
     });
   };
 
+  const images = item?.images ?? [];
+
   return (
     <LinearGradient
       colors={isDark ? ["#0f2027", "#664791"] : ["#77c4ff", "#a8b4ff"]}
@@ -50,19 +58,13 @@ export default function PostItem({
       end={{ x: 1, y: 1 }}
       style={[styles.postContainer, item.isPending && { opacity: 0.5 }]}
     >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
-          flexShrink: 1,
-          marginBottom: 5,
-        }}
-      >
-        <ProfilePic imageUrl={item?.profilePhotoUrl} size={30} />
-        <ThemedText style={styles.text}>
-          {item?.username} {userId === item?.userId ? "(You)" : ""}
-        </ThemedText>
+      <View style={styles.postHeaderContainer}>
+        <View style={styles.postAuthor}>
+          <ProfilePic imageUrl={item?.profilePhotoUrl} size={30} />
+          <ThemedText style={styles.text}>
+            {item?.username} {userId === item?.userId ? "(You)" : ""}
+          </ThemedText>
+        </View>
         <View
           style={{
             flexDirection: "row",
@@ -79,14 +81,14 @@ export default function PostItem({
           <ThemedText style={styles.text}>{item?.createdAt}</ThemedText>
         </View>
       </View>
-      {Array.isArray(item?.images) && item?.images.length > 0 && (
+      {images.length > 0 && (
         <View>
           <Carousel
-            loop
+            loop={images.length > 1}
             // autoPlay
             width={screenWidth * 0.7}
             height={240 * 0.7}
-            data={item?.images}
+            data={images}
             snapEnabled
             pagingEnabled
             onProgressChange={localProgress}
@@ -96,39 +98,44 @@ export default function PostItem({
               parallaxScrollingScale: 0.9,
               parallaxScrollingOffset: 50,
             }}
-            renderItem={({ index }) => (
-              <PostImage source={item?.images[index].secureUrl} />
-            )}
+            renderItem={({ item }) => {
+              if (!item?.secureUrl) {
+                return <Text style={{ color: "red" }}>Invalid image</Text>;
+              }
+              return <PostImage source={item?.secureUrl} />;
+            }}
             onConfigurePanGesture={(gestureChain) =>
               gestureChain.activeOffsetX([-10, 10])
             }
             defaultScrollOffsetValue={localScrollOffsetValue}
             // customAnimation={animationStyle}
           />
-          <Pagination.Basic
-            progress={localProgress}
-            data={item?.images}
-            size={14}
-            dotStyle={{
-              borderRadius: 100,
-              backgroundColor: "#b4b4b4a6",
-            }}
-            activeDotStyle={{
-              borderRadius: 100,
-              overflow: "hidden",
-              backgroundColor: "#f1f1f1",
-            }}
-            containerStyle={[
-              {
-                gap: 5,
-                marginBottom: 10,
-                position: "absolute",
-                bottom: 10,
-              },
-            ]}
-            horizontal
-            onPress={onPressPagination}
-          />
+          {images.length > 1 && (
+            <Pagination.Basic
+              progress={localProgress}
+              data={item?.images}
+              size={14}
+              dotStyle={{
+                borderRadius: 100,
+                backgroundColor: "#b4b4b4a6",
+              }}
+              activeDotStyle={{
+                borderRadius: 100,
+                overflow: "hidden",
+                backgroundColor: "#f1f1f1",
+              }}
+              containerStyle={[
+                {
+                  gap: 5,
+                  marginBottom: 10,
+                  position: "absolute",
+                  bottom: 10,
+                },
+              ]}
+              horizontal
+              onPress={onPressPagination}
+            />
+          )}
         </View>
       )}
       <ViewMoreContent content={item?.comment} />
@@ -177,5 +184,18 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: RFValue(10),
+  },
+  postHeaderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    flexShrink: 1,
+    marginBottom: 5,
+  },
+  postAuthor: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    gap: 6,
   },
 });
