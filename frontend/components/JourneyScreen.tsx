@@ -16,6 +16,8 @@ import {
   getAllEvents,
   getRelationship,
 } from "@/firebase/firestore";
+import { debouncePress } from "@/utils/debouncePress";
+import { router } from "expo-router";
 
 type SubBucketList = {
   id: string;
@@ -57,9 +59,9 @@ export default function JourneyScreen() {
           setRelationship(rel);
 
           const accessLevels =
-            relationship === "self"
+            rel === "self"
               ? ["private", "friends", "everyone"]
-              : relationship === "friend"
+              : rel === "friend"
               ? ["friends", "everyone"]
               : ["everyone"];
 
@@ -90,7 +92,15 @@ export default function JourneyScreen() {
           alignItems: Number(item.id) % 2 === 0 ? "flex-start" : "flex-end",
         }}
       >
-        <TouchableOpacity style={styles.itemContainer}>
+        <TouchableOpacity
+          style={styles.itemContainer}
+          onPress={debouncePress(() => {
+            router.push({
+              pathname: "../[sublistId]/[goalId]",
+              params: { sublistId: item.sublistId, goalId: item.id },
+            });
+          })}
+        >
           <MaterialCommunityIcons
             name="flag-variant"
             size={ms(30)}

@@ -1,5 +1,6 @@
 export type Event = {
     id: string,
+    sublistId?: string,
     ownerId: string,
     title: string;
     description: string;

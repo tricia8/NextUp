@@ -907,6 +907,7 @@ router.post("/sublists/allEvents", async (req, res) => {
         const data = doc.data();
         return {
           id: doc.id,
+          sublistId: sub.id,
           ownerId: data.ownerId,
           title: data.title,
           description: data.description,
