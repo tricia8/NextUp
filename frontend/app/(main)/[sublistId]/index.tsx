@@ -43,8 +43,6 @@ import DateTimePicker, {
 import { useLocalSearchParams } from "expo-router";
 import {
   addEvent,
-  getAllEventsFormatted,
-  getOwnerProfile,
   getAllUsers,
   getSubBucketList,
   updateSubBucketList,
@@ -52,6 +50,7 @@ import {
   getSubBucketListOwnerId,
   getCollaborators,
   addCollaborator,
+  getUserProfile,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
@@ -229,7 +228,7 @@ export default function currentSublist() {
 
           // Fetch owner + collaborators
           console.log("Owner ID:", ownerId);
-          const ownerProfile = await getOwnerProfile(ownerId);
+          const ownerProfile = await getUserProfile(ownerId);
           const otherProfiles = await getCollaborators(
             collaborators.filter(
               (uid: string | undefined) =>
