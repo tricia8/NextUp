@@ -10,6 +10,7 @@ import {
   StatusBar,
   Pressable,
   Switch,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useContext, useEffect, useMemo, useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
@@ -362,191 +363,200 @@ export default function GoalPage() {
 
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled>
-        <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
-          <View>
-            {!isEditing &&
-              (isFetching ? (
-                <LoadingScreen />
-              ) : (
-                <View style={{ gap: 10 }}>
-                  <View style={styles.titleEditBar}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={"height"}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled>
+          <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
+            <View>
+              {!isEditing &&
+                (isFetching ? (
+                  <LoadingScreen />
+                ) : (
+                  <View style={{ gap: 10 }}>
+                    <View style={styles.titleEditBar}>
+                      <ThemedText
+                        type="title"
+                        style={{
+                          flexShrink: 1, // shrink if needed so no overflowing occurs
+                        }}
+                      >
+                        {goalTitle}
+                      </ThemedText>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setIsEditing(true);
+                          setIsPostFormVisible(false); // close post form if open
+                        }}
+                        hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                      >
+                        <Feather
+                          name="edit-2"
+                          size={24}
+                          color={isDark ? "white" : "black"}
+                        />
+                      </TouchableOpacity>
+                    </View>
+
                     <ThemedText
-                      type="title"
-                      style={{
-                        flexShrink: 1, // shrink if needed so no overflowing occurs
-                      }}
+                      type="defaultSemiBold"
+                      style={{ flexWrap: "wrap" }}
                     >
-                      {goalTitle}
+                      {goalDescription}
                     </ThemedText>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setIsEditing(true);
-                        setIsPostFormVisible(false); // close post form if open
-                      }}
-                      hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                    >
-                      <Feather
-                        name="edit-2"
-                        size={24}
-                        color={isDark ? "white" : "black"}
+
+                    <CategoryChips
+                      selectedTags={goal.categories}
+                      style={{ elevation: 5 }}
+                    />
+                    {goal.deadline && (
+                      <ThemedText
+                        style={styles.metadata}
+                        lightColor="#b72222"
+                        darkColor="#fb6e6e"
+                      >
+                        Due {goal.deadline}
+                      </ThemedText>
+                    )}
+                  </View>
+                ))}
+
+              {isEditing && (
+                <View style={{ gap: 10 }}>
+                  <TitleDescFields
+                    title={goalTitle}
+                    description={goalDescription}
+                    setTitle={handleGoalTitleChange}
+                    setDescription={setDesc}
+                    lightLabelBg="#a2e6ff"
+                    darkLabelBg="#141515"
+                  />
+                  <CategoryPicker
+                    open={categoryOpen}
+                    setOpen={setCategoryOpen}
+                    onOpen={onCategoryOpen}
+                    selectedTags={categories}
+                    setSelectedTags={setCategories}
+                    max={3}
+                    noun="categories"
+                  />
+                  <View>
+                    {dateTimeOpen && (
+                      <DateTimePicker
+                        mode="date"
+                        display="spinner"
+                        value={deadlineDate}
+                        onChange={onChange}
+                        minimumDate={new Date()}
+                        themeVariant={isDark ? "dark" : "light"}
                       />
+                    )}
+
+                    {!dateTimeOpen && (
+                      <Pressable
+                        onPress={toggleDatePicker}
+                        style={{ paddingHorizontal: 10 }}
+                      >
+                        <View pointerEvents="none">
+                          <FloatingLabelInput
+                            value={deadlineString}
+                            style={styles.input}
+                            label={"End Date (Optional)"}
+                          />
+                        </View>
+                      </Pressable>
+                    )}
+                  </View>
+                  <View style={styles.editHandler}>
+                    <TouchableOpacity
+                      style={[
+                        styles.editingButton,
+                        { backgroundColor: "#f4f1f0" },
+                      ]}
+                      onPress={() => {
+                        setTitle(initialTitle);
+                        setDesc(initialDescription);
+                        setCategories(initialCategories);
+                        setDeadlineString(initialDeadline);
+                        setIsEditing(false);
+                      }}
+                    >
+                      <Text style={{ color: "#618ce0" }}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.editingButton,
+                        { backgroundColor: "#618ce0" },
+                      ]}
+                      onPress={handleUpdate}
+                    >
+                      <Text>Save</Text>
                     </TouchableOpacity>
                   </View>
-
-                  <ThemedText
-                    type="defaultSemiBold"
-                    style={{ flexWrap: "wrap" }}
-                  >
-                    {goalDescription}
-                  </ThemedText>
-
-                  <CategoryChips
-                    selectedTags={goal.categories}
-                    style={{ elevation: 5 }}
-                  />
-                  {goal.deadline && (
-                    <ThemedText
-                      style={styles.metadata}
-                      lightColor="#b72222"
-                      darkColor="#fb6e6e"
-                    >
-                      Due {goal.deadline}
-                    </ThemedText>
-                  )}
                 </View>
-              ))}
-
-            {isEditing && (
-              <View style={{ gap: 10 }}>
-                <TitleDescFields
-                  title={goalTitle}
-                  description={goalDescription}
-                  setTitle={handleGoalTitleChange}
-                  setDescription={setDesc}
-                  lightLabelBg="#a2e6ff"
-                  darkLabelBg="#141515"
-                />
-                <CategoryPicker
-                  open={categoryOpen}
-                  setOpen={setCategoryOpen}
-                  onOpen={onCategoryOpen}
-                  selectedTags={categories}
-                  setSelectedTags={setCategories}
-                  max={3}
-                  noun="categories"
-                />
-                <View>
-                  {dateTimeOpen && (
-                    <DateTimePicker
-                      mode="date"
-                      display="spinner"
-                      value={deadlineDate}
-                      onChange={onChange}
-                      minimumDate={new Date()}
-                      themeVariant={isDark ? "dark" : "light"}
-                    />
-                  )}
-
-                  {!dateTimeOpen && (
-                    <Pressable
-                      onPress={toggleDatePicker}
-                      style={{ paddingHorizontal: 10 }}
-                    >
-                      <View pointerEvents="none">
-                        <FloatingLabelInput
-                          value={deadlineString}
-                          style={styles.input}
-                          label={"End Date (Optional)"}
-                        />
-                      </View>
-                    </Pressable>
-                  )}
-                </View>
-                <View style={styles.editHandler}>
-                  <TouchableOpacity
-                    style={[
-                      styles.editingButton,
-                      { backgroundColor: "#f4f1f0" },
-                    ]}
-                    onPress={() => {
-                      setTitle(initialTitle);
-                      setDesc(initialDescription);
-                      setCategories(initialCategories);
-                      setDeadlineString(initialDeadline);
-                      setIsEditing(false);
-                    }}
-                  >
-                    <Text style={{ color: "#618ce0" }}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.editingButton,
-                      { backgroundColor: "#618ce0" },
-                    ]}
-                    onPress={handleUpdate}
-                  >
-                    <Text>Save</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            <View style={{ marginVertical: 5, gap: 8 }}>
-              <ThemedText style={styles.metadata}>
-                Updated {goal.updatedAt}
-              </ThemedText>
-
-              <ThemedText style={styles.metadata}>
-                Status: {goal.isCompleted ? "Completed" : "Pending"}
-              </ThemedText>
-              <View
-                style={[styles.titleEditBar, { justifyContent: "flex-start" }]}
-              >
-                <ThemedText style={styles.metadata}>Done?</ThemedText>
-                <Switch
-                  trackColor={{ false: "#767577", true: "#81b0ff" }}
-                  thumbColor={isDone ? "#caffbf" : "#ffe5b5"}
-                  onValueChange={handleToggle}
-                  value={isDone}
-                  style={{
-                    top: -11,
-                    marginVertical: 0,
-                    alignSelf: "flex-start",
-                  }}
-                />
-              </View>
-            </View>
-
-            <View style={{ gap: 8 }}>
-              <AddPostButton
-                isVisible={!isPostFormVisible}
-                setIsPostFormVisible={setIsPostFormVisible}
-                isDark={isDark}
-                onPress={() => setIsEditing(false)} // close edit mode when adding post
-              />
-              {userProfile && (
-                <PostForm
-                  sublistId={sublistId as string}
-                  isVisible={isPostFormVisible}
-                  setIsVisible={setIsPostFormVisible}
-                  user={userProfile}
-                  goalId={goalId as string}
-                />
               )}
-              <PostList
-                ownerId={ownerId}
-                userId={user?.uid as string}
-                sublistId={sublistId as string}
-                goalId={goalId as string}
-                posts={postList}
-                isDark={isDark}
-              />
+
+              <View style={{ marginVertical: 5, gap: 8 }}>
+                <ThemedText style={styles.metadata}>
+                  Updated {goal.updatedAt}
+                </ThemedText>
+
+                <ThemedText style={styles.metadata}>
+                  Status: {goal.isCompleted ? "Completed" : "Pending"}
+                </ThemedText>
+                <View
+                  style={[
+                    styles.titleEditBar,
+                    { justifyContent: "flex-start" },
+                  ]}
+                >
+                  <ThemedText style={styles.metadata}>Done?</ThemedText>
+                  <Switch
+                    trackColor={{ false: "#767577", true: "#81b0ff" }}
+                    thumbColor={isDone ? "#caffbf" : "#ffe5b5"}
+                    onValueChange={handleToggle}
+                    value={isDone}
+                    style={{
+                      top: -11,
+                      marginVertical: 0,
+                      alignSelf: "flex-start",
+                    }}
+                  />
+                </View>
+              </View>
+
+              <View style={{ gap: 8 }}>
+                <AddPostButton
+                  isVisible={!isPostFormVisible}
+                  setIsPostFormVisible={setIsPostFormVisible}
+                  isDark={isDark}
+                  onPress={() => setIsEditing(false)} // close edit mode when adding post
+                />
+                {userProfile && (
+                  <PostForm
+                    sublistId={sublistId as string}
+                    isVisible={isPostFormVisible}
+                    setIsVisible={setIsPostFormVisible}
+                    user={userProfile}
+                    goalId={goalId as string}
+                  />
+                )}
+                <PostList
+                  ownerId={ownerId}
+                  userId={user?.uid as string}
+                  sublistId={sublistId as string}
+                  goalId={goalId as string}
+                  posts={postList}
+                  isDark={isDark}
+                />
+              </View>
             </View>
-          </View>
-        </ThemedView>
-      </ScrollView>
+          </ThemedView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
