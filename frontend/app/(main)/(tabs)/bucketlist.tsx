@@ -3,10 +3,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useContext, useState } from "react";
 import {
   ColorSchemeName,
-  Modal,
   StatusBar,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
@@ -40,7 +38,7 @@ export default function BucketList() {
       const fetchSubBucketLists = async () => {
         try {
           setIsLoading(true);
-          const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
+          const sublists = (await getAllSubBucketLists()) as Sublist[];
           setSublists(sublists);
           setIsLoading(false);
           console.log("Fetched sub-bucket lists:", sublists);
@@ -69,7 +67,7 @@ export default function BucketList() {
 
   const styles = getStyles(colorScheme);
 
-  if (loading || !user?.uid) {
+  if (loading || !user?.uid || isLoading) {
     return <LoadingScreen />;
   }
 

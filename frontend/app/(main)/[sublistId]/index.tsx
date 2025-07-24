@@ -1,6 +1,7 @@
 import {
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -42,12 +43,14 @@ import DateTimePicker, {
 import { useLocalSearchParams } from "expo-router";
 import {
   addEvent,
-  getAllEventsFormatted,
   getAllUsers,
-  getOwnerProfile,
   getSubBucketList,
-  removeCollaboratorByOwner,
   updateSubBucketList,
+  removeCollaboratorByOwner,
+  getSubBucketListOwnerId,
+  getCollaborators,
+  addCollaborator,
+  getUserProfile,
 } from "@/firebase/firestore";
 import { AuthContext } from "@/context/AuthContext";
 import { showMessage } from "react-native-flash-message";
@@ -56,13 +59,50 @@ import { Goal } from "@/types/goal";
 import LoadingScreen from "@/components/Loading";
 import { useKeyboardStatus } from "@/hooks/useKeyboardStatus";
 import GoalList from "@/components/GoalList";
+import { doc, onSnapshot, collection } from "firebase/firestore";
+import { db } from "@/firebase/firebaseConfig";
+import { useSublistStore } from "@/stores/sublistStore";
+import { formatSublistData, formatEventData } from "@/firebase/firestore";
+import { useShallow } from "zustand/react/shallow";
 
 export default function currentSublist() {
   // Fetching sublist data from firestore
   const { user, loading } = useContext(AuthContext);
+  console.log("Current user:", user);
   const uid = user?.uid;
   const { sublistId } = useLocalSearchParams();
   console.log("sublistId param:", sublistId);
+
+  // Zustand store
+  const { setSublist, updateSublistField, setGoalsForSublist } =
+    useSublistStore();
+
+  const sublist = useSublistStore(
+    useShallow((state) => state.sublistData[sublistId as string])
+  );
+
+  const sharedUids = sublist?.collaborators ?? [];
+
+  // wrapper setter for sharedUids that matches React state setter signature
+  const setSharedUids: React.Dispatch<React.SetStateAction<string[]>> = (
+    value
+  ) => {
+    // value can be a string[] or a function
+    const newUids = typeof value === "function" ? value(sharedUids) : value;
+    updateSublistField(sublistId as string, "collaborators", newUids);
+  };
+
+  const onInviteUser = async (userId: string) => {
+    await addCollaborator(sublistId as string, userId);
+  };
+
+  const goalsBySublist = useSublistStore(
+    useShallow(
+      (state) => state.goalsBySublist[sublistId as string] || ([] as Goal[])
+    )
+  );
+
+  // loading state for sublist data
   const [isFetching, setIsFetching] = useState(true);
 
   if (loading || !uid || !sublistId) {
@@ -77,15 +117,16 @@ export default function currentSublist() {
   // Cache original values
   const [initialTitle, setInitialTitle] = useState("");
   const [initialDescription, setInitialDescription] = useState("");
+  const [initialAccessLevel, setInitialAccessLevel] = useState("");
 
   const [accessLevel, setAccessLevel] = useState("");
   const [completionStatus, setCompletionStatus] = useState<number[]>([0, 0]); // [completed, total]
-  const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
-  const [collaborators, setCollaborators] = useState<User[]>([]); // Add owner first?
+  // const [sharedUids, setSharedUids] = useState<string[]>([]); // Array of uids
+  const [collaboratorProfiles, setCollaboratorProfiles] = useState<User[]>([]); // Add owner first?
   const [invitedUids, setInvitedUids] = useState<string[]>([]); // Array of uids for invited users
-  const [createdAt, setCreatedAt] = useState("");
-
   const [allUsers, setAllUsers] = useState<User[]>([]); // All users in the system
+
+  const [updatedAt, setUpdatedAt] = useState("");
 
   // boolean toggle to trigger re-render
   const [isUpdated, setIsUpdated] = useState(false);
@@ -100,54 +141,153 @@ export default function currentSublist() {
     useCallback(() => {
       // Async logic only runs when the required values exist
       let isActive = true;
+      let unsubSublist: (() => void) | undefined;
+      let unsubGoals: (() => void) | undefined;
 
       const fetchData = async () => {
         try {
-          if (user?.uid && sublistId) {
-            console.log("Fetching sublist for path:", user.uid, sublistId);
+          if (!user?.uid || !sublistId) return;
 
-            const sublistData = await getSubBucketList(sublistId);
-            const allUsers = (await getAllUsers()) as User[];
+          let ownerId: string | undefined;
+          let collaborators: string[] = [];
 
-            const goalData = await getAllEventsFormatted(user.uid, sublistId);
-            // returns array of events
-            // event object: { id, title, description, categories, isCompleted, createdAt, deadline }
+          const cachedSublist =
+            useSublistStore.getState().sublistData[sublistId as string];
+          let sublistData;
+          console.log("cachedSublist:", cachedSublist);
 
-            console.log("fetched goals: ", goalData);
-            setExistingGoals(goalData);
+          if (!cachedSublist) {
+            // store doesn't have sublist data yet
+            setIsFetching(true);
+            console.log("Fetching sublist:", sublistId);
+
+            const fetched = await getSubBucketList(sublistId);
+            console.log("fetched:", fetched.ownerId);
+            ownerId = fetched.ownerId as string;
+            sublistData = fetched.sublistData;
+            collaborators = fetched.sublistData.collaborators;
 
             if (isActive) {
-              setTitle(sublistData.title);
-              setDesc(sublistData.description);
-              setAccessLevel(sublistData.accessLevel);
-              setSharedUids(sublistData.collaborators); // array of uids
-              setCreatedAt(sublistData.createdAtFormatted);
-              setCompletionStatus(sublistData.completionStatus);
-              setExistingGoals(goalData);
-              setAllUsers(allUsers);
+              setSublist(sublistId as string, sublistData, ownerId);
+              setGoalsForSublist(sublistId as string, fetched.goalData);
 
-              // Cache initial values
+              // event object: { id, title, description, categories, isCompleted, updatedAt, deadline }
+
+              console.log("fetched goals: ", fetched.goalData);
+
+              setTitle(sublistData.title ?? "");
+              setDesc(sublistData.description ?? "");
+              setAccessLevel(sublistData.accessLevel);
+              setUpdatedAt(sublistData.updatedAt ?? "");
+              setCompletionStatus(sublistData.completionStatus ?? [0, 0]);
+
+              // Cache initial values for editing
               setInitialTitle(sublistData.title);
               setInitialDescription(sublistData.description);
+              setInitialAccessLevel(sublistData.accessLevel);
 
               setIsFetching(false);
-              // Fetch owner + collaborators
-              const owner = await getOwnerProfile(user.uid);
-              const otherProfiles = await Promise.all(
-                // Fetches all collaborator profiles in parallel
-                sublistData.collaborators
-                  .filter(
-                    (uid: string | undefined) =>
-                      /* uid && uid !== user.uid */ typeof uid === "string" &&
-                      uid.length > 0 &&
-                      uid !== user.uid
-                  )
-                  .map((uid: string) => getOwnerProfile(uid))
-              );
+            }
+          } else {
+            ownerId = cachedSublist.ownerId;
+            collaborators = cachedSublist.collaborators;
+            sublistData = cachedSublist;
+          }
 
-              setCollaborators([owner, ...otherProfiles]);
+          // Last fallback if ownerId is still undefined
+          if (!ownerId) {
+            ownerId = await getSubBucketListOwnerId(sublistId as string);
+            if (!ownerId) {
+              throw new Error("Owner ID not found for sublist");
             }
           }
+
+          console.log("Owner ID from sublist:", ownerId);
+
+          // Fetch owner + collaborators
+          console.log("Owner ID:", ownerId);
+          const ownerProfile = await getUserProfile(ownerId);
+          const otherProfiles = await getCollaborators(
+            collaborators.filter(
+              (uid: string | undefined) =>
+                typeof uid === "string" && uid.length > 0 && uid !== ownerId
+            )
+          );
+
+          // Fetch all users
+          const allUsers = (await getAllUsers()) as User[];
+
+          if (isActive) {
+            setCollaboratorProfiles([ownerProfile, ...otherProfiles]);
+            setAllUsers(allUsers);
+          }
+
+          // onSnapshot listener
+          unsubSublist = onSnapshot(
+            doc(
+              db,
+              "users",
+              ownerId as string,
+              "bucketList",
+              sublistId as string
+            ),
+            async (docSnap) => {
+              if (!isActive) return; // prevent state update after unmount
+
+              const updatedData = formatSublistData(docSnap.data());
+
+              const current =
+                useSublistStore.getState().sublistData[sublistId as string];
+              const currentUids = current?.collaborators ?? [];
+
+              function arraysEqual(a: string[], b: string[]) {
+                return (
+                  a.length === b.length && a.every((val) => b.includes(val))
+                );
+              }
+
+              if (!arraysEqual(currentUids, updatedData.collaborators)) {
+                // update collaboratorProfiles
+                const newUids = updatedData.collaborators;
+                console.log("New UIDs:", newUids);
+
+                const newProfiles = await getCollaborators(
+                  newUids.filter(
+                    (uid: string | undefined) =>
+                      typeof uid === "string" && uid.length > 0
+                  )
+                );
+
+                if (isActive) {
+                  setCollaboratorProfiles(newProfiles);
+                }
+              }
+
+              if (isActive) {
+                setSublist(sublistId as string, updatedData, ownerId as string);
+              }
+            }
+          );
+
+          unsubGoals = onSnapshot(
+            collection(
+              db,
+              "users",
+              ownerId as string,
+              "bucketList",
+              sublistId as string,
+              "events"
+            ),
+            (snapshot) => {
+              if (!isActive) return; // prevent state update after unmount
+
+              const goals: Goal[] = [];
+              snapshot.forEach((doc) => {
+                goals.push({ id: doc.id, ...formatEventData(doc.data()) });
+              });
+              setGoalsForSublist(sublistId as string, goals);
+            }
+          );
         } catch (error) {
           // Handle error
           showMessage({
@@ -170,9 +310,31 @@ export default function currentSublist() {
       // Do something when the screen is unfocused
       return () => {
         isActive = false; // Avoids setting state after unmount
+        if (unsubSublist) unsubSublist(); // Avoids setting state after unmount
+        if (unsubGoals) unsubGoals();
       };
-    }, [uid, sublistId, isUpdated])
+    }, [uid, sublistId])
   );
+
+  // Set sublist metadata with cached data
+  useEffect(() => {
+    if (sublist) {
+      setTitle(sublist.title ?? "");
+      setInitialTitle(sublist.title ?? "");
+      setDesc(sublist.description ?? "");
+      setInitialDescription(sublist.description ?? "");
+      setAccessLevel(sublist.accessLevel ?? "");
+      setInitialAccessLevel(sublist.accessLevel);
+      setUpdatedAt(sublist.updatedAt ?? "");
+      setCompletionStatus(sublist.completionStatus ?? [0, 0]);
+    }
+  }, [sublist]);
+
+  useEffect(() => {
+    if (sublistId && uid) {
+      // Fetch all users only once when sublistId and uid are available
+    }
+  }, [uid, sublistId]);
 
   // Share modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -244,7 +406,7 @@ export default function currentSublist() {
   };
 
   const handleAccessChange = (access: string) => {
-    setAccessLevel(access);
+    // setAccessLevel(access);
     if (access && sublistErrors.accessLevel) {
       setSublistErrors((prev) => ({ ...prev, accessLevel: "" })); // remove error message when user selects an access level
     }
@@ -335,12 +497,6 @@ export default function currentSublist() {
       });
       console.log("goal added!");
 
-      // GET — fetch updated list from Firestore
-      const updatedGoals = await getAllEventsFormatted(uid, sublistId);
-      const updatedSublist = await getSubBucketList(sublistId);
-      setExistingGoals(updatedGoals); // update state/UI with fresh data
-      setCompletionStatus(updatedSublist.completionStatus); // update completion status
-
       showMessage({
         message: "Success",
         description: "Goal added successfully",
@@ -421,46 +577,49 @@ export default function currentSublist() {
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View>
-          {!isEditing && (
-            <View style={{ gap: 10 }}>
-              <View style={styles.titleEditBar}>
-                <ThemedText
-                  type="title"
-                  style={{
-                    flexShrink: 1, // shrink if needed so no overflowing occurs
-                  }}
-                >
-                  {title}
+          {!isEditing &&
+            (isFetching ? (
+              <LoadingScreen />
+            ) : (
+              <View style={{ gap: 10 }}>
+                <View style={styles.titleEditBar}>
+                  <ThemedText
+                    type="title"
+                    style={{
+                      flexShrink: 1, // shrink if needed so no overflowing occurs
+                    }}
+                  >
+                    {title}
+                  </ThemedText>
+                  <TouchableOpacity
+                    onPress={() => setIsEditing(true)}
+                    hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                  >
+                    <Feather
+                      name="edit-2"
+                      size={24}
+                      color={isDark ? "white" : "black"}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
+                  {description}
                 </ThemedText>
-                <TouchableOpacity
-                  onPress={() => setIsEditing(true)}
-                  hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                >
-                  <Feather
-                    name="edit-2"
-                    size={24}
-                    color={isDark ? "white" : "black"}
+
+                <View style={{ marginVertical: 10 }}>
+                  <AccessDropdownPicker
+                    accessLevel={accessLevel}
+                    onChange={setAccessLevel}
+                    theme={isDark ? "DARK" : "LIGHT"}
+                    isDisabled={true}
+                    onChangeValue={(value) => {
+                      if (typeof value === "string") handleAccessChange(value);
+                    }}
                   />
-                </TouchableOpacity>
+                </View>
               </View>
-
-              <ThemedText type="defaultSemiBold" style={{ flexWrap: "wrap" }}>
-                {description}
-              </ThemedText>
-
-              <View style={{ marginVertical: 10 }}>
-                <AccessDropdownPicker
-                  accessLevel={accessLevel}
-                  onChange={setAccessLevel}
-                  theme={isDark ? "DARK" : "LIGHT"}
-                  isDisabled={true}
-                  onChangeValue={(value) => {
-                    if (typeof value === "string") handleAccessChange(value);
-                  }}
-                />
-              </View>
-            </View>
-          )}
+            ))}
 
           {isEditing && (
             <View style={{ gap: 10 }}>
@@ -485,6 +644,7 @@ export default function currentSublist() {
                   onPress={() => {
                     setTitle(initialTitle);
                     setDesc(initialDescription);
+                    setAccessLevel(initialAccessLevel);
                     setIsEditing(false);
                   }}
                 >
@@ -502,13 +662,12 @@ export default function currentSublist() {
           )}
 
           <View style={{ marginVertical: 10, gap: 8 }}>
-            <ThemedText style={styles.metadata}>Created {createdAt}</ThemedText>
+            <ThemedText style={styles.metadata}>Updated {updatedAt}</ThemedText>
             <ThemedText style={styles.metadata}>
               {completionStatus[0]} of {completionStatus[1]} complete
             </ThemedText>
           </View>
 
-          {/* } <View pointerEvents="box-none"> */}
           <TouchableOpacity
             style={styles.addButton}
             onPress={handlePresentModalPress}
@@ -517,14 +676,12 @@ export default function currentSublist() {
             <Text style={{ fontSize: RFValue(13) }}>Add Goal</Text>
             <Ionicons name="add-circle-outline" size={22} color="black" />
           </TouchableOpacity>
-          {/* </View> */}
         </View>
 
         <GoalList
           uid={uid}
           sublistId={sublistId as string}
-          data={existingGoals}
-          updateData={setExistingGoals}
+          data={goalsBySublist}
           colorScheme={colorScheme}
         />
       </ThemedView>
@@ -533,8 +690,9 @@ export default function currentSublist() {
         <View style={{ flex: 1 }}>
           <ShareListModal
             currentUid={user?.uid}
-            collaborators={collaborators}
-            setCollaborators={setCollaborators}
+            ownerId={sublist?.ownerId}
+            collaborators={collaboratorProfiles}
+            setCollaborators={setCollaboratorProfiles}
             visible={modalVisible}
             setModalVisible={setModalVisible}
             onClose={() => setModalVisible(false)}
@@ -543,12 +701,28 @@ export default function currentSublist() {
             setSharedUids={setSharedUids}
             invitedUids={invitedUids}
             setInvitedUids={setInvitedUids}
+            onInviteUser={onInviteUser}
             onRemoveCollaborator={async (userId: string) => {
-              setCollaborators((prev) =>
-                prev.filter((collaborator) => collaborator.uid !== userId)
-              );
-              setSharedUids((prev) => prev.filter((uid) => uid !== userId));
-              await removeCollaboratorByOwner(sublistId, userId);
+              try {
+                const response = await removeCollaboratorByOwner(
+                  sublistId,
+                  userId
+                );
+                setSharedUids((prev) => prev.filter((uid) => uid !== userId));
+              } catch (error) {
+                showMessage({
+                  message: "Error",
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to remove collaborator",
+                  type: "danger",
+                  statusBarHeight: StatusBar.currentHeight,
+                  floating: true,
+                  icon: "danger",
+                  duration: 5000,
+                });
+              }
             }}
           />
         </View>

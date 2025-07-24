@@ -1,19 +1,15 @@
-import {
-  Stack,
-  Redirect,
-  useRootNavigationState,
-  useRouter,
-} from "expo-router";
+import { Stack, useRouter, useNavigation } from "expo-router";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "@/context/AuthContext";
 
 export default function AuthLayout() {
+  const navigation = useNavigation();
+  const navigationState = navigation.getState();
   const { user, loading } = useContext(AuthContext);
-  const rootNavigationState = useRootNavigationState();
   const router = useRouter();
 
   useEffect(() => {
-    if (!rootNavigationState?.key || loading) return;
+    if (!navigationState?.key || loading) return;
 
     if (user) {
       if (!user.emailVerified) {
@@ -24,9 +20,9 @@ export default function AuthLayout() {
         router.replace("/(main)/(tabs)");
       }
     }
-  }, [user, loading, rootNavigationState]);
+  }, [user, loading, navigationState]);
 
-  if (!rootNavigationState?.key) {
+  if (!navigationState?.key) {
     console.log("Waiting for navigation state...");
     return null; // Wait for navigation to be ready
   }

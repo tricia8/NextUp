@@ -117,7 +117,9 @@ export default function HomeScreen() {
 
         try {
           const upcoming = await getUpcomingEvents(uid, now);
+          console.log("Upcoming events:", upcoming);
           const overdue = await getOverdueEvents(uid, now);
+          console.log("Overdue events:", overdue);
           setUpcomingEvents(upcoming);
           setOverdueCount(overdue.length);
         } catch (error) {

@@ -11,12 +11,12 @@ import { auth } from "@/firebase/firebaseConfig";
 import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
-
-const router = useRouter();
+import { useMemo } from "react";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -116,11 +116,19 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const contextValue = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      forgotPassword,
+    }),
+    [user, loading, login, register, logout, forgotPassword]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, register, logout, forgotPassword }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }

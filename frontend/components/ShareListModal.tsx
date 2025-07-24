@@ -10,12 +10,9 @@ import Modal from "react-native-modal";
 import React, { useState } from "react";
 import { RFValue } from "react-native-responsive-fontsize";
 import { User } from "@/types/user";
-import { ms } from "react-native-size-matters";
 import { useRouter } from "expo-router";
 import UserSearchPicker from "./UserSearchPicker";
 import ProfilePic from "./ProfilePic";
-
-const PROFILEPICSIZE = ms(38);
 
 type CustomModalProps = {
   currentUid: string;
@@ -53,6 +50,7 @@ export default function ShareListModal({
   console.log("Modal collaborators:", collaborators);
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const isOwner = currentUid === ownerId;
 
   // const [username, setUsername] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -105,21 +103,38 @@ export default function ShareListModal({
             {item.username} {item.uid == currentUid ? "(you)" : ""}
           </Text>
           {item.uid === ownerId && <Text style={styles.owner}>Owner</Text>}
-          {item.uid !== ownerId && (
-            <TouchableOpacity
-              onPress={() => {
-                onRemoveCollaborator(item.uid);
-              }}
-              style={{
-                backgroundColor: "#f8d7da",
-                borderRadius: 10,
-                padding: 4,
-                marginTop: 4,
-              }}
-            >
-              <Text>Remove</Text>
-            </TouchableOpacity>
-          )}
+
+          {isOwner
+            ? item.uid !== ownerId && (
+                <TouchableOpacity
+                  onPress={() => {
+                    onRemoveCollaborator(item.uid);
+                  }}
+                  style={{
+                    backgroundColor: "#f8d7da",
+                    borderRadius: 10,
+                    padding: 4,
+                    marginTop: 4,
+                  }}
+                >
+                  <Text>Remove</Text>
+                </TouchableOpacity>
+              )
+            : item.uid === currentUid && (
+                <TouchableOpacity
+                  onPress={() => {
+                    onRemoveCollaborator(item.uid);
+                  }}
+                  style={{
+                    backgroundColor: "#f8d7da",
+                    borderRadius: 10,
+                    padding: 4,
+                    marginTop: 4,
+                  }}
+                >
+                  <Text>Remove</Text>
+                </TouchableOpacity>
+              )}
         </TouchableOpacity>
       </View>
     );
@@ -137,39 +152,32 @@ export default function ShareListModal({
       <View style={styles.modalContent}>
         <View style={styles.card}>
           <Text style={styles.listShareText}>Share This List</Text>
-          {/* <TextInput
-            placeholder="Add people..."
-            value={username}
-            onChangeText={setUsername}
-            enterKeyHint="search"
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            style={[styles.textInput, isFocused && styles.inputWrapperFocused]}
-          /> */}
 
-          <View style={{ flexDirection: "row", flexShrink: 0.7, gap: 5 }}>
-            <UserSearchPicker
-              colorScheme={colorScheme}
-              allUsers={allUsers}
-              invitedUsers={invitedUids}
-              setInvitedUsers={setInvitedUids}
-              collaboratorUids={sharedUids}
-            />
+          {isOwner && (
+            <View style={{ flexDirection: "row", flexShrink: 0.7, gap: 5 }}>
+              <UserSearchPicker
+                colorScheme={colorScheme}
+                allUsers={allUsers}
+                invitedUsers={invitedUids}
+                setInvitedUsers={setInvitedUids}
+                collaboratorUids={sharedUids}
+              />
 
-            <TouchableOpacity
-              style={{
-                borderRadius: 15,
-                padding: 5,
-                backgroundColor: "#c6e1dc",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              disabled={!hasInvitees}
-              onPress={onInvitation}
-            >
-              <Text>Invite</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={{
+                  borderRadius: 15,
+                  padding: 5,
+                  backgroundColor: "#c6e1dc",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+                disabled={!hasInvitees}
+                onPress={onInvitation}
+              >
+                <Text>Invite</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <Text style={styles.withAcessText}>People with access</Text>
           <FlatList
@@ -201,7 +209,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    // backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   card: {
     width: "95%",
@@ -212,6 +219,7 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: "center",
     alignItems: "center",
+    maxHeight: "46%",
   },
   closeButton: {
     alignItems: "center",
@@ -246,11 +254,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
-  },
-  profilePic: {
-    height: PROFILEPICSIZE,
-    width: PROFILEPICSIZE,
-    borderRadius: PROFILEPICSIZE / 2,
+    marginVertical: 4,
   },
   owner: {
     fontSize: RFValue(12),
