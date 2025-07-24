@@ -915,7 +915,7 @@ router.post("/sublists/allEvents", async (req, res) => {
           deadline: data.deadline,
           createdAt: data.createdAt,
         };
-      });
+      }).filter(event => event.isCompleted);
 
       allEvents.push(...events);
     }
