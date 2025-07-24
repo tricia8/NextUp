@@ -1,31 +1,35 @@
 // stores/sublistStore.ts
 import { Goal } from "@/types/goal";
-import { Post } from "@/types/post";
 import { PostWithPending } from "@/types/postWithPending";
 import { Sublist } from "@/types/sublist";
 import { create } from "zustand";
 
-type SublistWithoutId = Omit<Sublist, "id"> & {
+type SublistWithOwnerId = Sublist & {
   ownerId: string;
 };
 
 interface SublistState {
-  sublistData: { [sublistId: string]: SublistWithoutId };
+  sublistData: { [sublistId: string]: SublistWithOwnerId };
+  sublistOrder: string[]; // store array of sublist IDs
   goalsBySublist: Record<string, Record<string, Goal>>;
   goalOrderBySublist: Record<string, string[]>; // store array of goal IDs for each sublist
   postsByGoal: Record<string, Record<string, PostWithPending>>;
   postOrderByGoal: Record<string, string[]>; // store array of post IDs for each goal
 
-  // goalData: { [goalId: string]: Goal };
-  setSublist: (
+  setSublists: (
+    sublistRecord: Record<string, SublistWithOwnerId>,
+    sublistOrder: string[]
+  ) => void;
+  addSublist: (sublistId: string, data: Sublist, ownerId: string) => void;
+  updateCachedSublist: (
     sublistId: string,
-    data: Omit<Sublist, "id">,
+    data: Sublist,
     ownerId: string
   ) => void;
-  updateSublistField: <K extends keyof SublistWithoutId>(
+  updateSublistField: <K extends keyof SublistWithOwnerId>(
     sublistId: string,
     key: K,
-    value: SublistWithoutId[K]
+    value: SublistWithOwnerId[K]
   ) => void;
 
   setGoalsForSublist: (
@@ -36,7 +40,6 @@ interface SublistState {
 
   updateGoalForSublist: (sublistId: string, goal: Goal) => void;
   addGoalToSublist: (sublistId: string, goal: Goal) => void;
-  // setGoal: (goalId: string, data: Goal) => void;
 
   removeGoalFromSublist: (sublistId: string, goalId: string) => void;
 
@@ -63,12 +66,28 @@ interface SublistState {
 
 export const useSublistStore = create<SublistState>()((set) => ({
   sublistData: {},
+  sublistOrder: [],
   goalsBySublist: {},
   goalOrderBySublist: {},
   postsByGoal: {},
   postOrderByGoal: {},
 
-  setSublist: (sublistId, data, ownerId) =>
+  setSublists: (sublistRecord, sublistOrder) =>
+    set((state) => ({
+      sublistData: sublistRecord,
+      sublistOrder: sublistOrder,
+    })),
+
+  addSublist: (sublistId, data, ownerId) =>
+    set((state) => ({
+      sublistData: {
+        ...state.sublistData,
+        [sublistId]: { ...data, ownerId },
+      },
+      sublistOrder: [sublistId, ...state.sublistOrder],
+    })),
+
+  updateCachedSublist: (sublistId, data, ownerId) =>
     set((state) => ({
       sublistData: {
         ...state.sublistData,
