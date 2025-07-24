@@ -912,7 +912,7 @@ router.post("/sublists/allEvents", async (req, res) => {
           title: data.title,
           description: data.description,
           categories: data.categories,
-          isCompleted: data.completed,
+          isCompleted: data.isCompleted,
           deadline: data.deadline,
           createdAt: data.createdAt,
         };
