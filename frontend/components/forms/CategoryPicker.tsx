@@ -120,7 +120,8 @@ export default function CategoryPicker({
           nestedScrollEnabled: true,
           showsVerticalScrollIndicator: true,
         }}
-        containerStyle={{
+        dropDownContainerStyle={{
+          maxHeight: 250,
           zIndex: 3000,
           elevation: 3000,
         }}

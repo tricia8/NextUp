@@ -4,6 +4,7 @@ import { RFValue } from "react-native-responsive-fontsize";
 
 type CategoryChipsProps = {
   selectedTags: string[];
+  style?: object; // optional prop for custom styles
 };
 
 const categoryColorMap: Record<string, { bg: string; text: string }> = {
@@ -22,7 +23,10 @@ const categoryColorMap: Record<string, { bg: string; text: string }> = {
   default: { bg: "#e0e0e0", text: "#424242" },
 };
 
-export default function CategoryChips({ selectedTags }: CategoryChipsProps) {
+export default function CategoryChips({
+  selectedTags,
+  style = {},
+}: CategoryChipsProps) {
   return (
     selectedTags.length > 0 && (
       <View
@@ -39,10 +43,13 @@ export default function CategoryChips({ selectedTags }: CategoryChipsProps) {
             <Chip
               key={tag}
               icon="tag"
-              style={{
-                borderRadius: 15,
-                backgroundColor: bg,
-              }}
+              style={[
+                {
+                  borderRadius: 15,
+                  backgroundColor: bg,
+                },
+                style,
+              ]}
               compact
               textStyle={{
                 fontSize: RFValue(10),
