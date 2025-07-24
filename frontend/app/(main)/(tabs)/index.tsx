@@ -215,12 +215,14 @@ export default function HomeScreen() {
 
             <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
               <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                {overdueCount && (
+                {overdueCount ? (
                   <View style={styles.overdueContainer}>
                     <Text style={[styles.smallText, { fontWeight: "bold" }]}>
                       You have {overdueCount} overdue goal(s).
                     </Text>
                   </View>
+                ) : (
+                  <></>
                 )}
 
                 <View style={styles.upcomingContainer}>
