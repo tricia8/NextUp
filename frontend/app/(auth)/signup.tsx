@@ -75,8 +75,7 @@ export default function Signup() {
     Keyboard.dismiss();
     setLoading(true);
     try {
-      const userCredential = await register(email, password);
-      const user = userCredential.user;
+      const user = await register(email, password);
       await createUser(user, username);
       router.replace("/login");
     } catch (error) {
@@ -91,6 +90,7 @@ export default function Signup() {
           icon: "warning",
         });
       }
+      console.log(error);
     } finally {
       setLoading(false);
     }
@@ -113,7 +113,7 @@ export default function Signup() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={"height"}

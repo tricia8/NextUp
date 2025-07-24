@@ -3,10 +3,8 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useContext, useState } from "react";
 import {
   ColorSchemeName,
-  Modal,
   StatusBar,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   useColorScheme,
   View,
@@ -40,7 +38,7 @@ export default function BucketList() {
       const fetchSubBucketLists = async () => {
         try {
           setIsLoading(true);
-          const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
+          const sublists = (await getAllSubBucketLists()) as Sublist[];
           setSublists(sublists);
           setIsLoading(false);
           console.log("Fetched sub-bucket lists:", sublists);
@@ -69,7 +67,7 @@ export default function BucketList() {
 
   const styles = getStyles(colorScheme);
 
-  if (loading || !user?.uid) {
+  if (loading || !user?.uid || isLoading) {
     return <LoadingScreen />;
   }
 
@@ -97,7 +95,7 @@ export default function BucketList() {
         ) : sublists.length === 0 ? (
           <View style={styles.emptyListView}>
             <ThemedText style={styles.emptyListText}>
-              “Looks empty here...{"\n"}Add a sublist to get things rolling!
+              Looks empty here...{"\n"}Add a sublist to get things rolling!
             </ThemedText>
           </View>
         ) : (
@@ -115,10 +113,10 @@ export default function BucketList() {
         <View style={{ flex: 0.2 }}>
           <TouchableOpacity
             onPress={() => router.push("../new-sublist")}
-            activeOpacity={0.8}
+            activeOpacity={0.5}
             style={styles.addButton}
           >
-            <Ionicons name="add-circle" size={75} color="#39a64b" />
+            <Ionicons name="add-circle" size={80} color="#39a64b" />
           </TouchableOpacity>
         </View>
       </ThemedView>

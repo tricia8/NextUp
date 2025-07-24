@@ -1,22 +1,22 @@
 import {
-  Modal,
-  Pressable,
   TouchableOpacity,
   useColorScheme,
   View,
+  StyleSheet,
 } from "react-native";
+import Modal from "react-native-modal";
 import { ThemedView } from "./ThemedView";
 import { ThemedText } from "./ThemedText";
 import { RFValue } from "react-native-responsive-fontsize";
 import { Sublist } from "@/types/sublist";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { use } from "react";
+import { Goal } from "@/types/goal";
+import { PostWithPending } from "@/types/postWithPending";
 
 type DeleteModalProps = {
   modalVisible: boolean;
   setModalVisible: (visible: boolean) => void;
-  item: Sublist | null;
-  handleItemDelete: (sublist: Sublist) => void;
+  item: Sublist | Goal | PostWithPending | null;
+  handleItemDelete: (item: Sublist | Goal | PostWithPending) => void;
   heading: string;
   body: string;
 };
@@ -40,14 +40,17 @@ export default function DeleteModal({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, zIndex: 1000 }}>
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <Pressable
+    // <SafeAreaView style={{ flex: 1, zIndex: 1000 }}>
+
+    <Modal
+      animationIn={"fadeIn"}
+      animationOut={"fadeOut"}
+      isVisible={modalVisible}
+      avoidKeyboard
+      onBackButtonPress={() => setModalVisible(false)}
+      onBackdropPress={() => setModalVisible(false)}
+    >
+      {/* <Pressable
           style={{
             flex: 1,
             justifyContent: "center",
@@ -55,71 +58,81 @@ export default function DeleteModal({
             backgroundColor: "rgba(0, 0, 0, 0.44)",
           }}
           onPress={() => setModalVisible(false)}
+        > */}
+      <View style={styles.modalContent}>
+        <ThemedView
+          onStartShouldSetResponder={() => true}
+          onTouchEnd={(e) => e.stopPropagation()}
+          style={{
+            width: "80%",
+            padding: 20,
+            borderRadius: 10,
+            elevation: 3,
+            alignItems: "center",
+            backgroundColor: colorScheme === "dark" ? "#393939" : "#e5e5e5",
+          }}
         >
-          <ThemedView
-            onStartShouldSetResponder={() => true}
-            onTouchEnd={(e) => e.stopPropagation()}
+          <ThemedText
+            type="subtitle"
             style={{
-              width: "80%",
-              padding: 20,
-              borderRadius: 10,
-              elevation: 3,
-              alignItems: "center",
-              backgroundColor: colorScheme === "dark" ? "#393939" : "#e5e5e5",
+              fontSize: RFValue(16),
+              marginBottom: 16,
+              textAlign: "center",
             }}
           >
-            <ThemedText
-              type="subtitle"
+            {heading}
+          </ThemedText>
+          <ThemedText
+            style={{
+              fontSize: RFValue(13),
+              marginBottom: 16,
+            }}
+          >
+            {body}
+          </ThemedText>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-around" }}
+          >
+            <TouchableOpacity
+              onPress={handleDelete}
               style={{
-                fontSize: RFValue(16),
-                marginBottom: 16,
-                textAlign: "center",
+                backgroundColor: "#ec4b6a",
+                margin: 10,
+                padding: 10,
+                borderRadius: 5,
+                alignItems: "center",
               }}
             >
-              {heading}
-            </ThemedText>
-            <ThemedText
+              <ThemedText style={{ color: "#fff", fontSize: RFValue(14) }}>
+                Delete
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
               style={{
-                fontSize: RFValue(13),
-                marginBottom: 16,
+                margin: 10,
+                paddingVertical: 10,
+                borderRadius: 5,
+                alignItems: "center",
               }}
             >
-              {body}
-            </ThemedText>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-around" }}
-            >
-              <TouchableOpacity
-                onPress={handleDelete}
-                style={{
-                  backgroundColor: "#ec4b6a",
-                  margin: 10,
-                  padding: 10,
-                  borderRadius: 5,
-                  alignItems: "center",
-                }}
-              >
-                <ThemedText style={{ color: "#fff", fontSize: RFValue(14) }}>
-                  Delete
-                </ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={{
-                  margin: 10,
-                  paddingVertical: 10,
-                  borderRadius: 5,
-                  alignItems: "center",
-                }}
-              >
-                <ThemedText style={{ color: "#4aa1ff", fontSize: RFValue(14) }}>
-                  Cancel
-                </ThemedText>
-              </TouchableOpacity>
-            </View>
-          </ThemedView>
-        </Pressable>
-      </Modal>
-    </SafeAreaView>
+              <ThemedText style={{ color: "#4aa1ff", fontSize: RFValue(14) }}>
+                Cancel
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </ThemedView>
+      </View>
+      {/* </Pressable> */}
+    </Modal>
+    // </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  modalContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

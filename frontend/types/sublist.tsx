@@ -3,7 +3,7 @@ export type Sublist = {
   description: string;
   accessLevel: string;
   collaborators: string[];
-  createdAt: string;
+  updatedAt: string;
   completionStatus: number[];
   id: string;
 };

@@ -1,14 +1,13 @@
-import { StyleSheet, View, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, TouchableWithoutFeedback, Text } from 'react-native';
 import { RFValue } from 'react-native-responsive-fontsize';
-import { s, ms, vs } from 'react-native-size-matters';
-import { FontAwesome } from '@expo/vector-icons';
+import { s, vs } from 'react-native-size-matters';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import MenuDrawer from 'react-native-side-drawer';
 import { useContext } from 'react';
 import { AuthContext } from "@/context/AuthContext";
 import { router } from 'expo-router';
-
+import { debouncePress } from '@/utils/debouncePress';
 
 
 
@@ -26,9 +25,9 @@ export default function SideMenu(
     const drawerContent = () => {
         return (
             <ThemedView style={styles.sidebarContainer}>
-                <FontAwesome name="user-circle" size={ms(50)} color="#6a5acd" />
+                <Text style={styles.sidebarTitle}>NextUp</Text>
 
-                <TouchableOpacity style={styles.textContainer} onPress={logOut}>
+                <TouchableOpacity style={styles.textContainer} onPress={debouncePress(() => logOut())}>
                     <ThemedText style={styles.sidebarText}>Log out</ThemedText>
                 </TouchableOpacity>
             </ThemedView>
@@ -76,6 +75,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: s(15),
         paddingVertical: vs(15),
         width: '100%',
+    },
+    sidebarTitle: {
+        fontSize: RFValue(24),
+        fontWeight: "bold",
+        textAlign: 'center',
+        color: "#6a5acd",
     },
     sidebarText: {
         fontSize: RFValue(14),

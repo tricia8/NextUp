@@ -36,7 +36,6 @@ export default function SublistItems({
   toggleVersion = () => {},
 }: ItemProps): ReactNode | Promise<ReactNode> {
   const router = useRouter();
-  const styles = getStyles(colorScheme);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sublist | null>(null);
 
@@ -67,7 +66,7 @@ export default function SublistItems({
     try {
       console.log("deleting sublist");
       console.log("userid", uid);
-      await deleteSubBucketList(uid, sublist);
+      await deleteSubBucketList(sublist);
       console.log("deleted!");
       // update sublists state
       updateData((prevSublists) =>
@@ -186,48 +185,55 @@ export default function SublistItems({
         contentContainerStyle={{ paddingBottom: 100 }}
         keyExtractor={(item, index) => `${item.title}-${index}`}
       />
-      <DeleteModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        item={selectedItem}
-        handleItemDelete={handleDelete}
-        heading={heading}
-        body={body}
-      />
+      {modalVisible && (
+        <View
+          style={{
+            zIndex: 1000,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <DeleteModal
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            item={selectedItem}
+            handleItemDelete={(item) => {
+              // type check to ensure item is a Sublist
+              if (item && "accessLevel" in item) {
+                handleDelete(item);
+              }
+            }}
+            heading={heading}
+            body={body}
+          />
+        </View>
+      )}
     </>
   );
 }
 
-const getStyles = (colorScheme: ColorSchemeName) =>
-  StyleSheet.create({
-    itemContainer: {
-      flexDirection: "column",
-      marginVertical: 8,
-      marginHorizontal: 15,
-      padding: 20,
-      justifyContent: "space-between",
-      borderRadius: 5,
-      elevation: 5,
-    },
-    subListRow2: {
-      flexDirection: "row",
-      padding: 2,
-      justifyContent: "space-between",
-    },
-    listName: {
-      fontSize: RFValue(16),
-    },
-    statusText: {
-      fontSize: RFValue(11),
-    },
-    deleteButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 15,
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#ec4b6a",
-      height: "100%",
-      borderRadius: 5,
-      zIndex: 100,
-    },
-  });
+const styles = StyleSheet.create({
+  itemContainer: {
+    flexDirection: "column",
+    marginVertical: 8,
+    marginHorizontal: 15,
+    padding: 20,
+    justifyContent: "space-between",
+    borderRadius: 5,
+    elevation: 5,
+  },
+  subListRow2: {
+    flexDirection: "row",
+    padding: 2,
+    justifyContent: "space-between",
+  },
+  listName: {
+    fontSize: RFValue(16),
+  },
+  statusText: {
+    fontSize: RFValue(11),
+  },
+});

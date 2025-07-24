@@ -11,17 +11,19 @@ import { auth } from "@/firebase/firebaseConfig";
 import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
-
-const router = useRouter();
+import { useMemo } from "react";
 
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
+  const router = useRouter();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setLoading(false);
     });
 
     return () => {
@@ -48,6 +50,7 @@ export function AuthProvider({ children }) {
           statusBarHeight: StatusBar.currentHeight, //Android only
           floating: true,
           color: "#4a2516",
+          autoHide: false,
         });
 
         return;
@@ -78,6 +81,7 @@ export function AuthProvider({ children }) {
         color: "black",
         duration: 2300,
       });
+      return results;
     } catch (error) {
       console.error("Signup error:", error.message);
       throw error;
@@ -112,11 +116,19 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const contextValue = useMemo(
+    () => ({
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      forgotPassword,
+    }),
+    [user, loading, login, register, logout, forgotPassword]
+  );
+
   return (
-    <AuthContext.Provider
-      value={{ user, login, register, logout, forgotPassword }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
