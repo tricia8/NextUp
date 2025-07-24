@@ -6,4 +6,5 @@ export type Sublist = {
   updatedAt: string;
   completionStatus: number[];
   id: string;
+  ownerId: string;
 };
