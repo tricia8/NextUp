@@ -199,6 +199,7 @@ const getStyles = (isDark: boolean) =>
   StyleSheet.create({
     formView: {
       gap: 13,
+      paddingBottom: 20,
     },
     postButton: {
       flexDirection: "row",
