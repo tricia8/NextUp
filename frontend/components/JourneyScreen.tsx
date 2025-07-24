@@ -89,11 +89,11 @@ export default function JourneyScreen() {
     return (
       <View
         style={{
-          alignItems: Number(item.id) % 2 === 0 ? "flex-start" : "flex-end",
+          alignItems: "center",
         }}
       >
         <TouchableOpacity
-          style={styles.itemContainer}
+          style={[styles.itemContainer]}
           onPress={debouncePress(() => {
             router.push({
               pathname: "../[sublistId]/[goalId]",
@@ -104,7 +104,7 @@ export default function JourneyScreen() {
           <MaterialCommunityIcons
             name="flag-variant"
             size={ms(30)}
-            color="#66cdaa"
+            color="#e5f79dff"
           />
           <ThemedText
             style={styles.itemText}
@@ -152,8 +152,15 @@ const styles = StyleSheet.create({
     paddingTop: vs(20),
   },
   itemContainer: {
-    maxWidth: s(150),
+    maxWidth: "80%",
     flexDirection: "row",
+    backgroundColor: "#7cbbd5de",
+    alignItems: "center",
+    paddingHorizontal: s(8),
+    paddingVertical: vs(3),
+    borderRadius: 12,
+    margin: ms(8),
+    gap: ms(5)
   },
   itemText: {
     fontSize: RFValue(14),
