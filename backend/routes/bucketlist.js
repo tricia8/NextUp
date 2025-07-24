@@ -907,15 +907,16 @@ router.post("/sublists/allEvents", async (req, res) => {
         const data = doc.data();
         return {
           id: doc.id,
+          sublistId: sub.id,
           ownerId: data.ownerId,
           title: data.title,
           description: data.description,
           categories: data.categories,
-          isCompleted: data.completed,
+          isCompleted: data.isCompleted,
           deadline: data.deadline,
           createdAt: data.createdAt,
         };
-      });
+      }).filter(event => event.isCompleted);
 
       allEvents.push(...events);
     }
