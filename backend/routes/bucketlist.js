@@ -335,6 +335,7 @@ const formatSublistData = (data) => {
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
+    ownerId: data.ownerId, // owner of the sublist
     updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
     completionStatus: data.completionStatus,
   };
@@ -510,7 +511,7 @@ router.get("/user/bucketList", async (req, res) => {
 
     const formattedSublists = allSublists.docs.map((doc) => ({
       id: doc.id,
-      ...formatSublistData(doc.data()),
+      ...formatSublistData(doc.data()), // includes ownerId
     }));
 
     return res.json(formattedSublists);
@@ -611,6 +612,7 @@ router.post("/user/bucketList", async (req, res) => {
         description,
         accessLevel,
         collaborators, // array of userIds
+        ownerId: userId, // owner of the sublist
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         completionStatus: [0, 0],
@@ -733,6 +735,15 @@ router.get("/filteredSublists", async (req, res) => {
 router.patch("/user/bucketList/:sublistId", async (req, res) => {
   const { sublistId } = req.params;
   const userId = req.user; // Verified from middleware
+
+  const forbiddenFields = ["ownerId", "createdAt"];
+  for (const field of forbiddenFields) {
+    if (field in req.body) {
+      return res.status(400).json({
+        error: `Updating "${field}" is not allowed.`,
+      });
+    }
+  }
 
   try {
     const { docSnap } = await getSublistDocOrThrow(userId, sublistId);

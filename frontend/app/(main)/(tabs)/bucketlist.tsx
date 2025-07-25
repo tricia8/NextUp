@@ -38,7 +38,7 @@ export default function BucketList() {
       if (!uid) return;
       const fetchSubBucketLists = async () => {
         try {
-          const sublists = (await getAllSubBucketLists(uid)) as Sublist[];
+          const sublists = (await getAllSubBucketLists()) as Sublist[];
           setSublists(sublists);
           console.log("Fetched sub-bucket lists:", sublists);
         } catch (error) {
