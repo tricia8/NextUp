@@ -757,6 +757,7 @@ router.get("/filteredSublists", async (req, res) => {
         accessLevel: data.accessLevel,
         collaborators: data.collaborators,
         createdAt: data.createdAt,
+        ownerId: data.ownerId,
       };
     });
 
@@ -957,9 +958,6 @@ router.post("/sublists/allEvents", async (req, res) => {
   try {
     const allEvents = [];
 
-    if (!sub.id || !sub.ownerId) {
-      console.warn("Missing sublist id or ownerId:", sub);
-    }
     for (const sub of subBucketLists) {
       const eventsRef = db
         .collection("users")
