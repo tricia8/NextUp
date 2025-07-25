@@ -93,6 +93,8 @@ router.post(
         );
 
         const collaborators = docSnap.data().collaborators;
+        const createdAt = docSnap.data().createdAt; // Timestamp
+        const updatedAt = docSnap.data().updatedAt; // Timestamp
 
         // Prevent duplicates
         if (collaborators.includes(collaboratorId)) {
@@ -123,6 +125,8 @@ router.post(
         transaction.set(shareSublistDocRef, {
           ownerId: ownerId, // Sublist owner's userId
           permissions: "write",
+          createdAt: createdAt, // Timestamp object
+          updatedAt: updatedAt, // Timestamp object
         });
 
         const invitationDocRef = db.collection("listInvites").doc();
@@ -329,6 +333,7 @@ router.patch(
 const formatSublistData = (data) => {
   // data type: Sublist object
   const updatedAt = data.updatedAt?.toDate?.();
+  const createdAt = data.createdAt?.toDate?.();
 
   return {
     title: data.title,
@@ -337,6 +342,9 @@ const formatSublistData = (data) => {
     collaborators: data.collaborators,
     ownerId: data.ownerId, // owner of the sublist
     updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
+    updatedAtRaw: data.updatedAt, // Timestamp object
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    createdAtRaw: data.createdAt, // Timestamp object
     completionStatus: data.completionStatus,
   };
 };
@@ -528,6 +536,7 @@ router.get("/user/sharedSublists", async (req, res) => {
       .collection("users")
       .doc(userId)
       .collection("sharedSublists")
+      .orderBy("updatedAt", "desc")
       .get();
 
     const sharedSublists = await Promise.all(
@@ -537,16 +546,17 @@ router.get("/user/sharedSublists", async (req, res) => {
         const { docSnap } = await getSublistDocOrThrow(ownerId, sublistId);
         return {
           id: doc.id,
-          updatedAtDate: docSnap.data().updatedAt.toDate(),
-          ...formatSublistData(docSnap.data()),
+          // updatedAtDate: docSnap.data().updatedAt.toDate(),
+          ...formatSublistData(docSnap.data()), // with updatedAtRaw and createdAtRaw
         };
       })
     );
 
     return res.json(
-      sharedSublists.sort((a, b) => {
-        a.updatedAtDate > b.updatedAtDate ? -1 : 1; // sort by most recently updated
-      })
+      /* sharedSublists.sort((a, b) => {
+        a.updatedAtRaw.toMillis() > b.updatedAtRaw.toMillis() ? -1 : 1; // sort by most recently updated
+      }) */
+      sharedSublists
     );
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
@@ -603,6 +613,8 @@ router.post("/user/bucketList", async (req, res) => {
       throw err;
     }
 
+    const timestamp = FieldValue.serverTimestamp();
+
     const sublistRef = await db
       .collection("users")
       .doc(userId)
@@ -613,27 +625,51 @@ router.post("/user/bucketList", async (req, res) => {
         accessLevel,
         collaborators, // array of userIds
         ownerId: userId, // owner of the sublist
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: timestamp,
+        updatedAt: timestamp,
         completionStatus: [0, 0],
       });
 
+    const ownerDataSnap = await db.collection("users").doc(userId).get();
+
     // Add to sharedSublists for all collaborators except for the owner
     const batch = db.batch();
-    collaborators
-      .filter((collaboratorId) => collaboratorId !== userId)
-      .forEach((collaboratorId) => {
-        const sharedSublistDocRef = db
-          .collection("users")
-          .doc(collaboratorId)
-          .collection("sharedSublists")
-          .doc(sublistRef.id);
+    const filteredCollaborators = collaborators.filter(
+      (collaboratorId) => collaboratorId !== userId
+    );
 
-        batch.set(sharedSublistDocRef, {
-          ownerId: userId,
-          permissions: "write",
-        });
+    for (const collaboratorId of filteredCollaborators) {
+      const sharedSublistDocRef = db
+        .collection("users")
+        .doc(collaboratorId)
+        .collection("sharedSublists")
+        .doc(sublistRef.id);
+
+      // Add to listInvites for all collaborators except for the owner
+      const invitationDocRef = db.collection("listInvites").doc();
+
+      const inviteeDataSnap = await db
+        .collection("users")
+        .doc(collaboratorId)
+        .get();
+
+      batch.set(sharedSublistDocRef, {
+        ownerId: userId,
+        permissions: "write",
+        createdAt: timestamp,
+        updatedAt: timestamp,
       });
+
+      batch.set(invitationDocRef, {
+        senderId: userId,
+        receiverId: collaboratorId,
+        senderName: ownerDataSnap.data()?.username,
+        receiverName: inviteeDataSnap.data()?.username,
+        sublistId: sublistRef.id,
+        sentAt: FieldValue.serverTimestamp(),
+        status: "unread",
+      });
+    }
 
     await batch.commit();
 
@@ -736,7 +772,7 @@ router.patch("/user/bucketList/:sublistId", async (req, res) => {
   const { sublistId } = req.params;
   const userId = req.user; // Verified from middleware
 
-  const forbiddenFields = ["ownerId", "createdAt"];
+  const forbiddenFields = ["ownerId", "createdAt", "collaborators"];
   for (const field of forbiddenFields) {
     if (field in req.body) {
       return res.status(400).json({
@@ -746,12 +782,29 @@ router.patch("/user/bucketList/:sublistId", async (req, res) => {
   }
 
   try {
-    const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+    const { docSnap, ownerId } = await getSublistDocOrThrow(userId, sublistId);
 
+    const timestamp = FieldValue.serverTimestamp();
     await docSnap.ref.update({
       ...req.body,
-      updatedAt: FieldValue.serverTimestamp(),
+      updatedAt: timestamp,
     });
+
+    // Update updatedAt for collaborators' doc in sharedSublists
+    const collaborators = docSnap
+      .data()
+      .collaborators.filter((id) => id !== ownerId);
+    const batch = db.batch();
+    collaborators.forEach((collaboratorId) => {
+      const sharedListRef = db
+        .collection("users")
+        .doc(collaboratorId)
+        .collection("sharedSublists")
+        .doc(sublistId);
+      batch.update(sharedListRef, { updatedAt: timestamp });
+    });
+
+    await batch.commit();
 
     // Refetch the updated sublist
     const updatedSnap = await docSnap.ref.get();
@@ -905,8 +958,8 @@ router.post("/sublists/allEvents", async (req, res) => {
     const allEvents = [];
 
     if (!sub.id || !sub.ownerId) {
-    console.warn("Missing sublist id or ownerId:", sub);
-  }
+      console.warn("Missing sublist id or ownerId:", sub);
+    }
     for (const sub of subBucketLists) {
       const eventsRef = db
         .collection("users")
@@ -917,20 +970,22 @@ router.post("/sublists/allEvents", async (req, res) => {
 
       const eventsSnap = await eventsRef.get();
 
-      const events = eventsSnap.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          sublistId: sub.id,
-          ownerId: data.ownerId,
-          title: data.title,
-          description: data.description,
-          categories: data.categories,
-          isCompleted: data.isCompleted,
-          deadline: data.deadline,
-          createdAt: data.createdAt,
-        };
-      }).filter(event => event.isCompleted);
+      const events = eventsSnap.docs
+        .map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            sublistId: sub.id,
+            ownerId: data.ownerId,
+            title: data.title,
+            description: data.description,
+            categories: data.categories,
+            isCompleted: data.isCompleted,
+            deadline: data.deadline,
+            createdAt: data.createdAt,
+          };
+        })
+        .filter((event) => event.isCompleted);
 
       allEvents.push(...events);
     }
@@ -1023,9 +1078,11 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
   const userId = req.user; // Verified from middleware
 
   try {
-    const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+    const { docSnap, ownerId } = await getSublistDocOrThrow(userId, sublistId);
 
     const newEventRef = docSnap.ref.collection("events").doc();
+
+    const timestamp = FieldValue.serverTimestamp();
 
     const eventData = {
       title,
@@ -1033,8 +1090,8 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
       categories,
       collaborators,
       isCompleted: false,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
     };
 
     // deadline is optional
@@ -1050,8 +1107,22 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
       const completionStatus = docSnap.data().completionStatus || [0, 0]; // default fallback set
 
       transaction.update(docSnap.ref, {
-        updatedAt: FieldValue.serverTimestamp(),
+        updatedAt: timestamp,
         completionStatus: [completionStatus[0], completionStatus[1] + 1],
+      });
+
+      // Update updatedAt for collaborators' doc in sharedSublists
+      const collaborators = docSnap
+        .data()
+        .collaborators.filter((id) => id !== ownerId);
+
+      collaborators.forEach((collaboratorId) => {
+        const sharedListRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId);
+        transaction.update(sharedListRef, { updatedAt: timestamp });
       });
     });
 
@@ -1143,10 +1214,14 @@ router.patch(
       let completionStatusChanged = false;
 
       await db.runTransaction(async (transaction) => {
-        const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+        const { docSnap, ownerId } = await getSublistDocOrThrow(
+          userId,
+          sublistId
+        );
 
         const eventDocRef = docSnap.ref.collection("events").doc(eventId);
-        const eventDocSnap = await eventDocRef.get();
+        const eventDocSnap = await transaction.get(eventDocRef);
+
         if (!eventDocSnap.exists) {
           const err = new Error("Event not found");
           err.status = 404;
@@ -1173,15 +1248,31 @@ router.patch(
           });
         }
 
+        const timestamp = FieldValue.serverTimestamp();
+
         // Update event document
         transaction.update(eventDocRef, {
           ...req.body,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: timestamp,
         });
 
         // Update sublist updatedAt timestamp
         transaction.update(docSnap.ref, {
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: timestamp,
+        });
+
+        // Update updatedAt for collaborators' doc in sharedSublists
+        const collaborators = docSnap
+          .data()
+          .collaborators.filter((id) => id !== ownerId);
+
+        collaborators.forEach((collaboratorId) => {
+          const sharedListRef = db
+            .collection("users")
+            .doc(collaboratorId)
+            .collection("sharedSublists")
+            .doc(sublistId);
+          transaction.update(sharedListRef, { updatedAt: timestamp });
         });
       });
 
@@ -1225,7 +1316,10 @@ router.delete(
     const userId = req.user; // Verified from middleware
 
     try {
-      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
 
       const eventDocRef = docSnap.ref.collection("events").doc(eventId);
 
@@ -1259,10 +1353,27 @@ router.delete(
           ? [Math.max(0, completed - 1), Math.max(0, total - 1)]
           : [completed, Math.max(0, total - 1)];
 
+        const timestamp = FieldValue.serverTimestamp();
+
         transaction.update(docSnap.ref, {
           completionStatus: updatedStatus,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: timestamp,
         });
+
+        // Update updatedAt for collaborators' doc in sharedSublists
+        const collaborators = docSnap
+          .data()
+          .collaborators.filter((id) => id !== ownerId);
+
+        collaborators.forEach((collaboratorId) => {
+          const sharedListRef = db
+            .collection("users")
+            .doc(collaboratorId)
+            .collection("sharedSublists")
+            .doc(sublistId);
+          transaction.update(sharedListRef, { updatedAt: timestamp });
+        });
+
         console.log(`Updated sublist ${sublistId}`);
       });
 
@@ -1295,52 +1406,56 @@ router.patch(
     const { sublistId, eventId } = req.params;
     const userId = req.user;
 
-    const eventDocRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("bucketList")
-      .doc(sublistId)
-      .collection("events")
-      .doc(eventId);
-
-    const subBucketListRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("bucketList")
-      .doc(sublistId);
-
     try {
       await db.runTransaction(async (transaction) => {
+        const { docSnap, ownerId } = await getSublistDocOrThrow(
+          userId,
+          sublistId
+        );
+
+        const eventDocRef = docSnap.ref.collection("events").doc(eventId);
+
         const eventSnap = await transaction.get(eventDocRef);
 
         if (!eventSnap.exists) {
           throw new Error("Event not found");
         }
 
-        const subBucketListSnap = await transaction.get(subBucketListRef);
-        if (!subBucketListSnap.exists) {
-          throw new Error("Sub-bucket list not found.");
-        }
-
         const currentCompleted = eventSnap.data().isCompleted;
-        const [completed, total] = subBucketListSnap.data()
-          .completionStatus || [0, 0];
+        const [completed, total] = docSnap.data().completionStatus || [0, 0];
         const updatedStatus = !currentCompleted
           ? [completed + 1, total]
           : [Math.max(0, completed - 1), total]; // avoid negative values
 
+        const timestamp = FieldValue.serverTimestamp();
+
         // update event
         transaction.update(eventDocRef, {
           isCompleted: !currentCompleted,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: timestamp,
         });
 
         // update subBucketList completionStatus
-        transaction.update(subBucketListRef, {
+        transaction.update(docSnap.ref, {
           completionStatus: updatedStatus,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: timestamp,
+        });
+
+        // update updatedAt for collaborators' doc in sharedSublists
+        const collaborators = docSnap
+          .data()
+          .collaborators.filter((id) => id !== ownerId);
+
+        collaborators.forEach((collaboratorId) => {
+          const sharedListRef = db
+            .collection("users")
+            .doc(collaboratorId)
+            .collection("sharedSublists")
+            .doc(sublistId);
+          transaction.update(sharedListRef, { updatedAt: timestamp });
         });
       });
+
       await updateOverallStats(userId);
 
       return res
