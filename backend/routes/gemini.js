@@ -6,7 +6,7 @@ const prompt = `You are a bucket list planner assistant. Suggest one realistic a
 Include:
 1. A short title (1 sentence max)
 2. A brief summary (1-2 sentences) describing the goal and why it is worth doing.
-Make sure it is achievable, safe, culturally appropriate, and not fictional.
+Make sure it is achievable, appropriate, and not fictional.
 Avoid hallucination. Use only real places and events. Try to generate a different suggestion each time.`;
 
 router.post("/generate", async (req, res) => {
