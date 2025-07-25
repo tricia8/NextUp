@@ -4,12 +4,8 @@ import { PostWithPending } from "@/types/postWithPending";
 import { Sublist } from "@/types/sublist";
 import { create } from "zustand";
 
-type SublistWithOwnerId = Sublist & {
-  ownerId: string;
-};
-
 interface SublistState {
-  sublistData: { [sublistId: string]: SublistWithOwnerId };
+  sublistData: { [sublistId: string]: Sublist };
   sublistOrder: string[]; // store array of sublist IDs
   goalsBySublist: Record<string, Record<string, Goal>>;
   goalOrderBySublist: Record<string, string[]>; // store array of goal IDs for each sublist
@@ -17,7 +13,7 @@ interface SublistState {
   postOrderByGoal: Record<string, string[]>; // store array of post IDs for each goal
 
   setSublists: (
-    sublistRecord: Record<string, SublistWithOwnerId>,
+    sublistRecord: Record<string, Sublist>,
     sublistOrder: string[]
   ) => void;
   addSublist: (sublistId: string, data: Sublist, ownerId: string) => void;
@@ -26,10 +22,10 @@ interface SublistState {
     data: Sublist,
     ownerId: string
   ) => void;
-  updateSublistField: <K extends keyof SublistWithOwnerId>(
+  updateSublistField: <K extends keyof Sublist>(
     sublistId: string,
     key: K,
-    value: SublistWithOwnerId[K]
+    value: Sublist[K]
   ) => void;
 
   setGoalsForSublist: (
