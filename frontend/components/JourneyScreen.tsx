@@ -16,8 +16,6 @@ import {
   getAllEvents,
   getRelationship,
 } from "@/firebase/firestore";
-import { debouncePress } from "@/utils/debouncePress";
-import { router } from "expo-router";
 
 type SubBucketList = {
   id: string;
@@ -92,15 +90,7 @@ export default function JourneyScreen() {
           alignItems: "center",
         }}
       >
-        <TouchableOpacity
-          style={[styles.itemContainer]}
-          onPress={debouncePress(() => {
-            router.push({
-              pathname: "../[sublistId]/[goalId]",
-              params: { sublistId: item.sublistId, goalId: item.id },
-            });
-          })}
-        >
+        <TouchableOpacity style={[styles.itemContainer]}>
           <MaterialCommunityIcons
             name="flag-variant"
             size={ms(30)}
@@ -160,7 +150,7 @@ const styles = StyleSheet.create({
     paddingVertical: vs(3),
     borderRadius: 12,
     margin: ms(8),
-    gap: ms(5)
+    gap: ms(5),
   },
   itemText: {
     fontSize: RFValue(13),
