@@ -13,7 +13,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
 import { AuthContext } from "@/context/AuthContext";
-import { getAllSubBucketLists } from "@/firebase/firestore";
+import {
+  getAllSubBucketLists,
+  getUnownedSubBucketLists,
+  getOwnedSubBucketLists,
+} from "@/firebase/firestore";
 import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
@@ -22,6 +26,14 @@ import SublistSearchBar from "@/components/SublistSearchBar";
 import { ThemedText } from "@/components/ThemedText";
 import { useSublistStore } from "@/stores/sublistStore";
 import { useShallow } from "zustand/react/shallow";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+import { db } from "@/firebase/firebaseConfig";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -34,7 +46,7 @@ export default function BucketList() {
 
   const colorScheme = useColorScheme(); // 'light' or 'dark'
 
-  const { setSublists } = useSublistStore();
+  const { setSublists, updateCachedSublist, addSublist } = useSublistStore();
   const sublistRecord = useSublistStore(
     useShallow((state) => state.sublistData || ({} as Record<string, Sublist>))
   );
@@ -52,7 +64,8 @@ export default function BucketList() {
     useCallback(() => {
       if (!uid) return;
       let isActive = true;
-      let unsubSublists: (() => void) | undefined;
+      let unsubUnownedSublists: (() => void) | undefined;
+      let unsubOwnedSublists: (() => void) | undefined;
 
       const fetchSubBucketLists = async () => {
         try {
@@ -62,7 +75,8 @@ export default function BucketList() {
           if (!cachedSublistCollection) {
             // store doesn't have sublist collection yet
             setIsLoading(true);
-            const sublists = (await getAllSubBucketLists()) as Sublist[]; // to fix: each sublist returned has an ownerId prop
+            const sublists = (await getAllSubBucketLists()) as Sublist[];
+            console.log("Fetched sub-bucket lists:", sublists);
 
             if (sublists.length === 0) {
               setIsLoading(false);
@@ -70,7 +84,6 @@ export default function BucketList() {
             }
 
             // build sublists record and order array
-            // to fix: update Sublist type to include ownerId
             const sublistRecord: Record<string, Sublist> = {};
             const sublistOrder: string[] = [];
 
@@ -87,7 +100,50 @@ export default function BucketList() {
             setIsLoading(false);
           }
 
-          // console.log("Fetched sub-bucket lists:", sublists);
+          // 2 snapshot listeners for sublists
+          const unownedSublistsRef = collection(
+            db,
+            "users",
+            uid,
+            "sharedSublists"
+          );
+
+          const q1 = query(unownedSublistsRef, orderBy("updatedAt", "desc"));
+
+          unsubUnownedSublists = onSnapshot(q1, async (docSnap) => {
+            if (!isActive) return; // prevent state update after unmount
+
+            const unownedSublistsArray = await getUnownedSubBucketLists(); // sorted by updatedAt desc
+            unownedSublistsArray.forEach((sublist: Sublist) => {
+              if (sublist.id in sublistRecord) {
+                // update existing sublist
+                updateCachedSublist(sublist.id, sublist, sublist.ownerId);
+              } else {
+                // add new sublist, append to the front of sublistOrder
+                addSublist(sublist.id, sublist, sublist.ownerId);
+              }
+              // re-sort sublistOrder by updatedAt to maintain order
+            });
+          });
+
+          const ownedSublistsRef = collection(db, "users", uid, "bucketList");
+
+          const q2 = query(ownedSublistsRef, orderBy("updatedAt", "desc"));
+          unsubOwnedSublists = onSnapshot(q2, async (docSnap) => {
+            if (!isActive) return; // prevent state update after unmount
+
+            const ownedSublistsArray = await getOwnedSubBucketLists(); // sorted by updatedAt desc
+            ownedSublistsArray.forEach((sublist: Sublist) => {
+              if (sublist.id in sublistRecord) {
+                // update existing sublist
+                updateCachedSublist(sublist.id, sublist, sublist.ownerId);
+              } else {
+                // add new sublist, append to the front of sublistOrder
+                addSublist(sublist.id, sublist, sublist.ownerId);
+              }
+              // re-sort sublistOrder by updatedAt to maintain order
+            });
+          });
         } catch (error) {
           console.error("Error fetching sub-bucket lists:", error);
           showMessage({
@@ -106,6 +162,13 @@ export default function BucketList() {
       };
 
       fetchSubBucketLists();
+
+      // Do something when the screen is unfocused
+      return () => {
+        isActive = false; // Avoids setting state after unmount
+        if (unsubUnownedSublists) unsubUnownedSublists();
+        if (unsubOwnedSublists) unsubOwnedSublists();
+      };
     }, [uid, version]) // `version` toggling triggers refetch
   );
 
