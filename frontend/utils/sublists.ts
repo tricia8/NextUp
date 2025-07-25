@@ -100,3 +100,33 @@ export function filterSublistsByProgressStatus(
     filterByProgressStatus(sublist, status)
   );
 }
+
+// Advanced filtering function with multiple criteria
+export function filterSublistsAdvanced(
+  sublistData: Record<string, Sublist>,
+  sublistOrder: string[],
+  options: {
+    ownerId?: string;
+    shared?: boolean;
+    visibility?: "private" | "friends" | "everyone";
+    progressStatus?: "Completed" | "In Progress" | "Getting Started";
+  }
+): Sublist[] {
+  return filterSublists(sublistData, sublistOrder, (sublist) => {
+    if (options.ownerId && sublist.ownerId !== options.ownerId) return false;
+    if (
+      typeof options.shared === "boolean" &&
+      filterBySharedStatus(sublist, !options.shared) === false
+    )
+      return false;
+    if (options.visibility && sublist.accessLevel !== options.visibility)
+      return false;
+    if (
+      options.progressStatus &&
+      !filterByProgressStatus(sublist, options.progressStatus)
+    )
+      return false;
+
+    return true;
+  });
+}
