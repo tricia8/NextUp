@@ -1,6 +1,11 @@
 import { FloatingLabelInput } from "react-native-floating-label-input";
-import { useColorScheme, ColorSchemeName, StyleSheet } from "react-native";
-import { useState, ComponentProps } from "react";
+import {
+  useColorScheme,
+  ColorSchemeName,
+  StyleSheet,
+  ViewStyle,
+} from "react-native";
+import { ComponentProps } from "react";
 
 // Inherit optional versions of all FloatingLabelInput props
 interface Props extends Partial<ComponentProps<typeof FloatingLabelInput>> {
@@ -9,6 +14,7 @@ interface Props extends Partial<ComponentProps<typeof FloatingLabelInput>> {
   onChangeText: (text: string) => void;
   lightLabelBg?: string;
   darkLabelBg?: string;
+  containerStyles?: ViewStyle;
 }
 
 export default function SublistField(props: Props) {
@@ -27,7 +33,10 @@ export default function SublistField(props: Props) {
       value={props.value}
       onChangeText={props.onChangeText}
       inputStyles={{ color: colorScheme == "dark" ? "white" : "black" }}
-      containerStyles={styles.inputContainer}
+      containerStyles={{
+        ...styles.inputContainer,
+        ...(props.containerStyles || {}),
+      }}
       staticLabel
       labelStyles={StyleSheet.flatten([
         styles.floatingLabel,

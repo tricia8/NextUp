@@ -4,16 +4,12 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Redirect, useRootNavigationState } from "expo-router";
 import { Stack, useRouter } from "expo-router";
+import { Redirect, useRootNavigationState } from "expo-router";
 import { AuthContext } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { useFonts } from "expo-font";
-import { StatusBar } from "expo-status-bar";
 import { RFValue } from "react-native-responsive-fontsize";
-import { TouchableOpacity, View } from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { ThemedText } from "@/components/ThemedText";
 
 export default function MainLayout() {
   const { user, loading } = useContext(AuthContext);
@@ -90,25 +86,6 @@ export default function MainLayout() {
           name="[sublistId]/index"
           options={{
             headerTitle: "",
-            /* headerLeft: () => (
-              <TouchableOpacity
-                onPress={() => router.push("/(main)/(tabs)/bucketlist")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-              >
-                <MaterialIcons
-                  name="arrow-back"
-                  size={24}
-                  color={colorScheme == "dark" ? "white" : "black"}
-                />
-
-                <ThemedText>Back to Bucket List</ThemedText>
-              </TouchableOpacity>
-            ), */
           }}
         />
         <Stack.Screen

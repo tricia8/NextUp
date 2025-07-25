@@ -43,7 +43,9 @@ router.delete("/listInvites/:requestId/delete", async (req, res) => {
     const inviteSnap = await inviteRef.get();
 
     if (!inviteSnap.exists) {
-      return res.status(200).json({ message: "Invite already deleted or not found" });
+      return res
+        .status(200)
+        .json({ message: "Invite already deleted or not found" });
     }
 
     await inviteRef.delete();
@@ -130,6 +132,7 @@ router.post(
           receiverId: collaboratorId,
           senderName: ownerDataSnap.data()?.username,
           receiverName: inviteeDataSnap.data()?.username,
+          sublistId,
           sentAt: FieldValue.serverTimestamp(),
           status: "unread",
         });
@@ -205,6 +208,17 @@ router.delete(
         if (shareSublistDocRef.exists) {
           transaction.delete(shareSublistDocRef.ref);
         }
+
+        // Remove invitations for this collaborator
+        const invitesSnap = await db
+          .collection("listInvites")
+          .where("receiverId", "==", collaboratorId)
+          .where("sublistId", "==", sublistId)
+          .get();
+
+        invitesSnap.forEach((inviteDoc) => {
+          transaction.delete(inviteDoc.ref);
+        });
       });
 
       // Update overall stats for removed collaborator
@@ -285,6 +299,17 @@ router.patch(
         if (shareSublistDocRef.exists) {
           transaction.delete(shareSublistDocRef.ref);
         }
+
+        // Remove invitations for this collaborator
+        const invitesSnap = await db
+          .collection("listInvites")
+          .where("receiverId", "==", collaboratorId)
+          .where("sublistId", "==", sublistId)
+          .get();
+
+        invitesSnap.forEach((inviteDoc) => {
+          transaction.delete(inviteDoc.ref);
+        });
       });
 
       // Update overall stats for removed collaborator
@@ -322,6 +347,43 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
+// lightweight function to get ownerId for frontend onSnapshot setup
+const getSublistOwnerOrThrow = async (userId, sublistId) => {
+  const sublistRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("bucketList")
+    .doc(sublistId);
+
+  const sublistSnap = await sublistRef.get();
+  if (sublistSnap.exists) {
+    return userId; // user is owner
+  }
+
+  // check shared sublist reference
+  const sharedSublistRef = db
+    .collection("users")
+    .doc(userId)
+    .collection("sharedSublists")
+    .doc(sublistId);
+
+  const sharedSnap = await sharedSublistRef.get();
+  if (!sharedSnap.exists) {
+    const err = new Error("Access denied");
+    err.status = 403;
+    throw err;
+  }
+
+  const { ownerId } = sharedSnap.data() || {};
+  if (!ownerId) {
+    const err = new Error("Malformed sharedSublist entry: missing ownerId");
+    err.status = 500;
+    throw err;
+  }
+
+  return ownerId;
+};
+
 const getSublistDocOrThrow = async (userId, sublistId) => {
   // Check if userId matches the sublist owner or is a collaborator
   const sublistDocRef = db
@@ -333,6 +395,7 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
 
   if (docSnap.exists) {
     // User is the owner
+    console.log("Found as owner:", userId);
     return { docSnap, ownerId: userId };
   }
 
@@ -352,6 +415,8 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
 
   // Fetch actual sublist data from owner's bucketList
   const { ownerId } = sharedDocSnap.data();
+  console.log("Shared doc found. ownerId from sharedDocSnap:", ownerId);
+
   const ownerSublistSnap = await db
     .collection("users")
     .doc(ownerId)
@@ -575,10 +640,24 @@ router.post("/user/bucketList", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Sublist created successfully",
+      message: "New sublist added",
       sublistId: sublistRef.id,
       sublistData,
+      ownerId: userId,
     });
+  } catch (error) {
+    return res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
+// Get sublist ownerId (for frontend onSnapshot setup)
+router.get("/user/bucketList/:sublistId/owner", async (req, res) => {
+  const userId = req.user; // Verified from auth middleware
+  const { sublistId } = req.params;
+
+  try {
+    const ownerId = await getSublistOwnerOrThrow(userId, sublistId);
+    return res.json({ ownerId });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
   }
@@ -590,10 +669,15 @@ router.get("/user/bucketList/:sublistId", async (req, res) => {
   const userId = req.user; // Verified from middleware
 
   try {
-    const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+    const { docSnap, ownerId } = await getSublistDocOrThrow(userId, sublistId);
     const events = await getAllEventsFormatted(userId, sublistId); // Returns array of event objects
     const formatted = formatSublistData(docSnap.data());
-    return res.json({ sublistData: formatted, goalData: events });
+    console.log("Owner ID: ", ownerId);
+    return res.json({
+      ownerId,
+      sublistData: formatted,
+      goalData: events,
+    });
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
   }
@@ -812,7 +896,7 @@ router.post("/sublists/allEvents", async (req, res) => {
     for (const sub of subBucketLists) {
       const eventsRef = db
         .collection("users")
-        .doc(uid)
+        .doc(sub.ownerId)
         .collection("bucketList")
         .doc(sub.id)
         .collection("events");
@@ -823,15 +907,16 @@ router.post("/sublists/allEvents", async (req, res) => {
         const data = doc.data();
         return {
           id: doc.id,
+          sublistId: sub.id,
           ownerId: data.ownerId,
           title: data.title,
           description: data.description,
           categories: data.categories,
-          isCompleted: data.completed,
+          isCompleted: data.isCompleted,
           deadline: data.deadline,
           createdAt: data.createdAt,
         };
-      });
+      }).filter(event => event.isCompleted);
 
       allEvents.push(...events);
     }
@@ -869,7 +954,10 @@ router.post("/events/upcoming", async (req, res) => {
 
     const snapshot = await q.get();
 
-    const events = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const events = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...formatEventData(doc.data()),
+    }));
 
     return res.json({ events });
   } catch (error) {
@@ -904,7 +992,7 @@ router.post("/events/overdue", async (req, res) => {
 
     const events = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
+      ...formatEventData(doc.data()),
     }));
 
     return res.json({ events });
@@ -971,9 +1059,8 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
 
 // convert Timestamp to string e.g. "4 June 2025, 10:12am"
 const formatPostDate = (fetchedDate) => {
-  return `${dayjs(fetchedDate).format("DD MMM YYYY")}, ${dayjs(
-    fetchedDate
-  ).format("h:mma")}`;
+  const date = dayjs(fetchedDate);
+  return `${date.format("DD MMM YYYY")}, ${date.format("h:mma")}`;
 };
 
 const formatPostData = (data) => {
@@ -981,12 +1068,13 @@ const formatPostData = (data) => {
   const updatedAt = data.updatedAt?.toDate?.();
 
   return {
+    userId: data.userId,
     username: data.username,
     profilePhotoUrl: data.profilePhotoUrl,
     createdAt: createdAt ? formatPostDate(createdAt) : "",
     updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
     comment: data.comment ?? "", // default to empty string
-    imageUrl: data.imageUrl ?? "", // default to empty string
+    images: data.images ?? [], // default to empty array
   };
 };
 
@@ -1159,6 +1247,7 @@ router.delete(
 
         transaction.update(docSnap.ref, {
           completionStatus: updatedStatus,
+          updatedAt: FieldValue.serverTimestamp(),
         });
         console.log(`Updated sublist ${sublistId}`);
       });
@@ -1186,10 +1275,11 @@ router.delete(
 );
 
 // Toggle event completion
-router.post(
-  "/users/:userId/bucketList/:sublistId/events/:eventId/toggleCompletion",
+router.patch(
+  "/user/bucketList/:sublistId/events/:eventId/toggleCompletion",
   async (req, res) => {
-    const { userId, sublistId, eventId } = req.params;
+    const { sublistId, eventId } = req.params;
+    const userId = req.user;
 
     const eventDocRef = db
       .collection("users")
@@ -1225,16 +1315,16 @@ router.post(
           ? [completed + 1, total]
           : [Math.max(0, completed - 1), total]; // avoid negative values
 
-        /* await updateDoc(eventDocRef, {
-      isCompleted: !currentCompleted,
-    }); */
-
         // update event
-        transaction.update(eventDocRef, { isCompleted: !currentCompleted });
+        transaction.update(eventDocRef, {
+          isCompleted: !currentCompleted,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
 
         // update subBucketList completionStatus
         transaction.update(subBucketListRef, {
           completionStatus: updatedStatus,
+          updatedAt: FieldValue.serverTimestamp(),
         });
       });
       await updateOverallStats(userId);
@@ -1245,6 +1335,257 @@ router.post(
     } catch (error) {
       console.error("Error toggling event completion:", error);
       return res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+// Create a post under a goal
+router.post(
+  "/user/bucketList/:sublistId/events/:eventId/posts",
+  async (req, res) => {
+    console.log("Incoming post body:", req.body);
+
+    const { sublistId, eventId } = req.params;
+    const userId = req.user; // Verified from middleware
+    const { username, profilePhotoUrl, comment, images } = req.body;
+
+    try {
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+
+      const newPostRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc();
+
+      const timestamp = FieldValue.serverTimestamp();
+      const postData = {
+        userId,
+        username,
+        profilePhotoUrl,
+        comment,
+        images,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      };
+      console.log("Post data to be added:", postData);
+
+      await newPostRef.set(postData);
+      const postSnap = await newPostRef.get();
+
+      await docSnap.ref.update({
+        updatedAt: timestamp,
+      });
+
+      await docSnap.ref.collection("events").doc(eventId).update({
+        updatedAt: timestamp,
+      });
+
+      return res.json({
+        success: true,
+        message: "New post added",
+        postData: { id: newPostRef.id, ...formatPostData(postSnap.data()) },
+      });
+    } catch (error) {
+      res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Delete a post under a goal
+router.delete(
+  "/user/bucketList/:sublistId/events/:eventId/posts/:postId",
+  async (req, res) => {
+    const { sublistId, eventId, postId } = req.params;
+    const userId = req.user; // Verified from middleware
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+      console.log("Sublist retrieved. Owner ID:", ownerId);
+
+      if (ownerId !== userId) {
+        const err = new Error("Only the author can delete this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const postDocRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc(postId);
+
+      const postSnap = await postDocRef.get();
+
+      if (!postSnap.exists) {
+        const err = new Error("Post not found");
+        err.status = 404; // Not found
+        throw err;
+      }
+
+      const postData = postSnap.data();
+      const images = postData?.images || [];
+
+      let message;
+      let userMessage;
+
+      // batch delete images from Cloudinary
+      if (images.length > 0) {
+        const cloudRes = await fetch(
+          "https://nextup-l0e9.onrender.com/api/cloudinary/delete-images",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: req.headers.authorization,
+            },
+            body: JSON.stringify({
+              public_ids: images.map((img) => img.publicId),
+            }),
+          }
+        );
+
+        const cloudResult = await cloudRes.json();
+
+        if (!cloudRes.ok || !cloudResult.success) {
+          // Log failed deletions for developer alerting/monitoring
+          console.warn(
+            "Failed to delete some images from Cloudinary:",
+            cloudResult.failed
+          );
+
+          message =
+            "Post deleted. Some images could not be removed from Cloudinary.";
+
+          userMessage =
+            "Post deleted. Some images could not be removed from our server, but they are no longer visible in your account.";
+        }
+      }
+
+      console.log("Attempting to delete post:", postDocRef.path);
+
+      // Delete post document in Firestore
+      await postDocRef.delete();
+
+      console.log("Post document deleted from Firestore");
+
+      const timestamp = FieldValue.serverTimestamp();
+
+      // Update sublist and event updatedAt timestamps
+      await docSnap.ref.update({
+        updatedAt: timestamp,
+      });
+
+      await docSnap.ref.collection("events").doc(eventId).update({
+        updatedAt: timestamp,
+      });
+
+      // Return 200 to client if post was deleted successfully
+      // but include metadata for UI/debugging (optional)
+      return res.status(200).json({
+        success: true,
+        message: message ?? "Post deleted",
+        userMessage: userMessage ?? "Post deleted!",
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+);
+
+// Update a post under a goal
+router.patch(
+  "/user/bucketList/:sublistId/events/:eventId/posts/:postId",
+  async (req, res) => {
+    const { sublistId, eventId, postId } = req.params;
+    const userId = req.user; // Verified from middleware
+    const { comment, images } = req.body;
+
+    try {
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
+      if (ownerId !== userId) {
+        const err = new Error("Only the author can update this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const postDocRef = docSnap.ref
+        .collection("events")
+        .doc(eventId)
+        .collection("posts")
+        .doc(postId);
+
+      const postSnap = await postDocRef.get();
+      const oldImages = postSnap.data()?.images || [];
+
+      const imagesToDelete = oldImages.filter(
+        (oldImg) => !images.some((img) => img.publicId === oldImg.publicId)
+      );
+
+      await postDocRef.update({
+        comment,
+        updatedAt: FieldValue.serverTimestamp(),
+        images: images ?? oldImages, // Update images if provided, else keep existing
+      });
+
+      let message;
+
+      // batch delete images from Cloudinary
+      // NOTE: new images have already been uploaded to Cloudinary
+      if (imagesToDelete.length > 0) {
+        const cloudDelRes = await fetch(
+          "https://nextup-l0e9.onrender.com/api/cloudinary/delete-images",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: req.headers.authorization,
+            },
+            body: JSON.stringify({
+              public_ids: imagesToDelete.map((img) => img.publicId),
+            }),
+          }
+        );
+
+        const cloudResult = await cloudDelRes.json();
+
+        if (!cloudDelRes.ok || !cloudResult.success) {
+          // Log failed deletions for developer alerting/monitoring
+          console.warn(
+            "Failed to delete some images from Cloudinary:",
+            cloudResult.failed
+          );
+
+          message =
+            "Post updated! Some images could not be removed from our server, but they are no longer visible in your account.";
+        }
+      }
+
+      const timestamp = FieldValue.serverTimestamp();
+
+      // Update timestamps for goal and sublist
+      await docSnap.ref.update({
+        updatedAt: timestamp,
+      });
+      await docSnap.ref.collection("events").doc(eventId).update({
+        updatedAt: timestamp,
+      });
+
+      const updatedPostSnap = await postDocRef.get();
+
+      return res.status(200).json({
+        success: true,
+        message: message || "Post updated!",
+        postData: { id: postId, ...formatPostData(updatedPostSnap.data()) },
+      });
+    } catch (error) {
+      return res.status(error.status || 500).json({ error: error.message });
     }
   }
 );

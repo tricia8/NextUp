@@ -8,12 +8,13 @@ import GoalCard from "./GoalCard";
 import SwipeableRow from "./SwipeableRow";
 import { FlashList } from "@shopify/flash-list";
 import DeleteModal from "./DeleteModal";
+import { useSublistStore } from "@/stores/sublistStore";
 
 interface ItemProps {
   uid: string;
   sublistId: string;
   data: Goal[];
-  updateData: React.Dispatch<React.SetStateAction<Goal[]>>;
+  // updateData: (data: Goal[]) => void; // React.Dispatch<React.SetStateAction<Goal[]>>;
   toggleVersion?: () => void; // optional, used to trigger refetch of data
   colorScheme: ColorSchemeName;
 }
@@ -22,13 +23,14 @@ export default function GoalList({
   uid,
   sublistId,
   data,
-  updateData,
+  // updateData,
   toggleVersion,
   colorScheme,
 }: ItemProps) {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Goal | null>(null);
+  const { removeGoalFromSublist } = useSublistStore();
 
   // Delete modal text
   const heading = "Are you sure you want to delete this goal?";
@@ -40,11 +42,14 @@ export default function GoalList({
       console.log("deleting goal");
       console.log("userid", uid);
       console.log("sublist id", sublistId);
-      await deleteEvent(uid, sublistId, goal.id);
+      await deleteEvent(sublistId, goal.id);
       console.log("deleted!");
-      updateData((prevGoals) =>
-        prevGoals.filter((item) => item.id !== goal.id)
-      );
+      /* updateData(
+        // (prevGoals: Goal[]) =>
+        // prevGoals.filter((item) => item.id !== goal.id)
+        data.filter((item) => item.id !== goal.id)
+      ); */
+      removeGoalFromSublist(sublistId, goal.id);
       setModalVisible(false); // close modal after deletion
       showMessage({
         message: "Success",
@@ -102,20 +107,35 @@ export default function GoalList({
         keyExtractor={(item) => item.id}
         estimatedItemSize={130}
         contentContainerStyle={{ paddingBottom: 80 }}
+        style={{ flex: 1 }}
       />
-      <DeleteModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        item={selectedItem}
-        handleItemDelete={(item) => {
-          // type check to ensure item is a Goal
-          if (item && "categories" in item) {
-            handleDelete(item);
-          }
-        }}
-        heading={heading}
-        body={body}
-      />
+
+      {modalVisible && (
+        <View
+          style={{
+            zIndex: 1000,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <DeleteModal
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            item={selectedItem}
+            handleItemDelete={(item) => {
+              // type check to ensure item is a Goal
+              if (item && "categories" in item) {
+                handleDelete(item);
+              }
+            }}
+            heading={heading}
+            body={body}
+          />
+        </View>
+      )}
     </View>
   );
 }

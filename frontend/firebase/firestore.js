@@ -277,7 +277,7 @@ export const createSubBucketList = async ({
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await post(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList`,
       {
         method: "POST",
@@ -315,7 +315,7 @@ export const updateSubBucketList = async (subBucketListId, updates = {}) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await patch(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
       {
         method: "PATCH",
@@ -348,7 +348,7 @@ export const getSubBucketList = async (subBucketListId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}`,
       {
         method: "GET",
@@ -370,6 +370,36 @@ export const getSubBucketList = async (subBucketListId) => {
     return data;
   } catch (error) {
     console.error("Error fetching sub-bucket list:", error);
+    throw error;
+  }
+};
+
+export const getSubBucketListOwnerId = async (subBucketListId) => {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/owner`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(
+        `${res.status.toString()}: ${data.error}` ||
+          "Failed to fetch sub-bucket list owner ID"
+      );
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching sub-bucket list owner ID:", error);
     throw error;
   }
 };
@@ -404,16 +434,16 @@ export const getFilteredSubBucketLists = async (uid, accessLevels) => {
   }
 };
 
-const formatSublistData = (data) => {
+export const formatSublistData = (data) => {
   // data type: Sublist object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
 
   return {
     title: data.title,
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
     completionStatus: data.completionStatus,
   };
 };
@@ -425,7 +455,7 @@ export async function getAllSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList`,
       {
         method: "GET",
@@ -455,7 +485,7 @@ export async function getUnownedSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/sharedSublists`,
       {
         method: "GET",
@@ -485,7 +515,7 @@ export async function getOwnedSubBucketLists() {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await get(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/owned`,
       {
         method: "GET",
@@ -514,15 +544,16 @@ export const deleteSubBucketList = async (subBucketList) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res =
-      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketList.id}`,
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketList.id}`,
       {
         method: "DELETE",
         headers: {
           "content-type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
     if (!res.ok) {
       const data = await res.json();
       throw new Error(
@@ -600,7 +631,7 @@ export const addEvent = async (
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await post(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events`,
       {
         method: "POST",
@@ -637,14 +668,15 @@ export const deleteEvent = async (subBucketListId, eventId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res =
-      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
       {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
 
     if (!res.ok) {
       const errorData = await res.json();
@@ -669,9 +701,9 @@ const formatDisplayDate = (fetchedDate) => {
   )})`;
 };
 
-const formatEventData = (data) => {
+export const formatEventData = (data) => {
   // data type: Event object
-  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
   const deadline = data.deadline?.toDate?.();
 
   return {
@@ -680,7 +712,7 @@ const formatEventData = (data) => {
     categories: data.categories ?? [], // default to empty array
     deadline: deadline ? formatDisplayDate(deadline) : "",
     isCompleted: data.isCompleted,
-    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
   };
 };
 
@@ -772,7 +804,7 @@ export const updateEvent = async (subBucketListId, eventId, updates = {}) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await patch(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}`,
       {
         method: "PATCH",
@@ -800,18 +832,14 @@ export const updateEvent = async (subBucketListId, eventId, updates = {}) => {
   }
 };
 
-export const toggleEventCompletion = async (
-  userId,
-  subBucketListId,
-  eventId
-) => {
+export const toggleEventCompletion = async (subBucketListId, eventId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
     const res = await fetch(
-      `https://nextup-l0e9.onrender.com/api/users/${userId}/bucketList/${subBucketListId}/events/${eventId}/toggleCompletion`,
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${eventId}/toggleCompletion`,
       {
-        method: "POST",
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -894,6 +922,118 @@ export async function getOverdueEvents(uid, now) {
   }
 }
 
+// posts
+// convert Timestamp to string e.g. "4 June 2025, 10:12am"
+export const formatPostDate = (fetchedDate) => {
+  const date = dayjs(fetchedDate);
+  return `${date.format("DD MMM YYYY")}, ${date.format("h:mma")}`;
+};
+
+export const formatPostData = (data) => {
+  const createdAt = data.createdAt?.toDate?.();
+  const updatedAt = data.updatedAt?.toDate?.();
+
+  return {
+    userId: data.userId,
+    username: data.username,
+    profilePhotoUrl: data.profilePhotoUrl,
+    createdAt: createdAt ? formatPostDate(createdAt) : "",
+    updatedAt: updatedAt ? formatPostDate(updatedAt) : "",
+    comment: data.comment ?? "", // default to empty string
+    images: data.images ?? [], // default to empty array of objects
+  };
+};
+
+export async function addPost(subBucketListId, goalId, postData) {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${goalId}/posts`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(postData),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to add post");
+    }
+
+    const data = await res.json();
+    return data; // success boolean, message, postData
+  } catch (error) {
+    console.error("Error adding post:", error);
+    throw error;
+  }
+}
+
+export async function updatePost(
+  subBucketListId,
+  goalId,
+  postId,
+  updates = {} // comment, images
+) {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${goalId}/posts/${postId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to update post");
+    }
+
+    const data = await res.json();
+    return data; // success boolean, message, postData
+  } catch (error) {
+    console.error("Error updating post:", error);
+    throw error;
+  }
+}
+
+export async function deletePost(subBucketListId, goalId, postId) {
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/events/${goalId}/posts/${postId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to delete post");
+    }
+
+    const data = await res.json();
+    return data; // success boolean, message, userMessage
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    throw error;
+  }
+}
+
 // collaborators
 export const addCollaborator = async (subBucketListId, collaboratorId) => {
   try {
@@ -933,14 +1073,15 @@ export const removeCollaboratorByOwner = async (
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res =
-      await delete (`https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
+    const res = await fetch(
+      `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
       {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
 
     if (!res.ok) {
       const errorData = await res.json();
@@ -963,7 +1104,7 @@ export const removeCollaboratorBySelf = async (subBucketListId) => {
   try {
     const token = await getIdTokenFromFirebaseUser();
 
-    const res = await patch(
+    const res = await fetch(
       `https://nextup-l0e9.onrender.com/api/user/bucketList/${subBucketListId}/collaborators/${collaboratorId}`,
       {
         method: "PATCH",
@@ -1284,6 +1425,39 @@ export async function getAllUsers() {
       bio: user.bio,
       category: user.category,
     }));
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+}
+
+export async function getCollaborators(collaboratorIds) {
+  // collaboratorIds is an array of userIds
+  if (!Array.isArray(collaboratorIds) || collaboratorIds.length === 0) {
+    return [];
+  }
+  try {
+    const token = await getIdTokenFromFirebaseUser();
+
+    const res = await fetch(
+      "https://nextup-l0e9.onrender.com/api/users/batch",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ uids: collaboratorIds }),
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "Failed to fetch users");
+    }
+
+    const users = await res.json();
+    return users;
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;

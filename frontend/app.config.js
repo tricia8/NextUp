@@ -23,6 +23,7 @@ export default {
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
+      softwareKeyboardLayoutMode: "pan",
     },
     /*"web": {
       "bundler": "metro",

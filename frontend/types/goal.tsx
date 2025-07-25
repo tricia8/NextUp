@@ -5,6 +5,6 @@ export type Goal = {
   description: string;
   categories: string[];
   isCompleted: boolean;
-  createdAt: string;
+  updatedAt: string;
   deadline: string;
 };

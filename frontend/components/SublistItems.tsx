@@ -66,7 +66,7 @@ export default function SublistItems({
     try {
       console.log("deleting sublist");
       console.log("userid", uid);
-      await deleteSubBucketList(uid, sublist);
+      await deleteSubBucketList(sublist);
       console.log("deleted!");
       // update sublists state
       updateData((prevSublists) =>
@@ -185,19 +185,32 @@ export default function SublistItems({
         contentContainerStyle={{ paddingBottom: 100 }}
         keyExtractor={(item, index) => `${item.title}-${index}`}
       />
-      <DeleteModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        item={selectedItem}
-        handleItemDelete={(item) => {
-          // type check to ensure item is a Sublist
-          if (item && "accessLevel" in item) {
-            handleDelete(item);
-          }
-        }}
-        heading={heading}
-        body={body}
-      />
+      {modalVisible && (
+        <View
+          style={{
+            zIndex: 1000,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <DeleteModal
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            item={selectedItem}
+            handleItemDelete={(item) => {
+              // type check to ensure item is a Sublist
+              if (item && "accessLevel" in item) {
+                handleDelete(item);
+              }
+            }}
+            heading={heading}
+            body={body}
+          />
+        </View>
+      )}
     </>
   );
 }

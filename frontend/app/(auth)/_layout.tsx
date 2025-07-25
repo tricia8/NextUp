@@ -1,15 +1,13 @@
-import {
-  Stack,
-  Redirect,
-  useRootNavigationState,
-  useRouter,
-} from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "@/context/AuthContext";
+import { useRootNavigationState } from "expo-router";
 
 export default function AuthLayout() {
-  const { user, loading } = useContext(AuthContext);
+  // const navigation = useNavigation();
+  // const navigationState = navigation.getState();
   const rootNavigationState = useRootNavigationState();
+  const { user, loading } = useContext(AuthContext);
   const router = useRouter();
 
   useEffect(() => {
