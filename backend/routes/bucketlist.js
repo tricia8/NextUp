@@ -1094,7 +1094,8 @@ router.post("/user/bucketList/:sublistId/events", async (req, res) => {
 
     // deadline is optional
     if (deadline) {
-      eventData.deadline = Timestamp.fromDate(deadline); // `deadline` is a JS Date
+      const deadlineDate = new Date(deadline);
+      eventData.deadline = Timestamp.fromDate(deadlineDate);
     }
 
     await newEventRef.set(eventData);
