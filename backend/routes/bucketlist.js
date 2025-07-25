@@ -896,7 +896,7 @@ router.post("/sublists/allEvents", async (req, res) => {
     for (const sub of subBucketLists) {
       const eventsRef = db
         .collection("users")
-        .doc(uid)
+        .doc(sub.ownerId)
         .collection("bucketList")
         .doc(sub.id)
         .collection("events");
