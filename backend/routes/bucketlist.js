@@ -904,10 +904,13 @@ router.post("/sublists/allEvents", async (req, res) => {
   try {
     const allEvents = [];
 
+    if (!sub.id || !sub.ownerId) {
+    console.warn("Missing sublist id or ownerId:", sub);
+  }
     for (const sub of subBucketLists) {
       const eventsRef = db
         .collection("users")
-        .doc(uid)
+        .doc(sub.ownerId)
         .collection("bucketList")
         .doc(sub.id)
         .collection("events");
@@ -918,15 +921,16 @@ router.post("/sublists/allEvents", async (req, res) => {
         const data = doc.data();
         return {
           id: doc.id,
+          sublistId: sub.id,
           ownerId: data.ownerId,
           title: data.title,
           description: data.description,
           categories: data.categories,
-          isCompleted: data.completed,
+          isCompleted: data.isCompleted,
           deadline: data.deadline,
           createdAt: data.createdAt,
         };
-      });
+      }).filter(event => event.isCompleted);
 
       allEvents.push(...events);
     }
