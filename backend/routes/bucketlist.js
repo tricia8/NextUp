@@ -1479,7 +1479,19 @@ router.post(
     const { username, profilePhotoUrl, comment, images } = req.body;
 
     try {
-      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+      if (
+        comment.trim() === "" &&
+        (!Array.isArray(images) || images.length === 0)
+      ) {
+        const err = new Error("Comment or images must not be empty");
+        err.status = 400; // Bad Request
+        throw err;
+      }
+
+      const { docSnap, ownerId } = await getSublistDocOrThrow(
+        userId,
+        sublistId
+      );
 
       const newPostRef = docSnap.ref
         .collection("events")
@@ -1499,16 +1511,37 @@ router.post(
       };
       console.log("Post data to be added:", postData);
 
-      await newPostRef.set(postData);
+      const batch = db.batch();
+      batch.set(newPostRef, postData);
+      // await newPostRef.set(postData);
+
+      batch.update(docSnap.ref, {
+        updatedAt: timestamp,
+      });
+
+      // update updatedAt for collaborators' doc in sharedSublists
+      const collaborators = docSnap
+        .data()
+        .collaborators.filter((id) => id !== ownerId);
+
+      for (const collaboratorId of collaborators) {
+        const sharedListRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId);
+        batch.update(sharedListRef, { updatedAt: timestamp });
+      }
+
+      batch.update(docSnap.ref.collection("events").doc(eventId), {
+        updatedAt: timestamp,
+      });
+
+      await batch.commit();
+
+      console.log("New post written successfully:", newPostRef.id);
+
       const postSnap = await newPostRef.get();
-
-      await docSnap.ref.update({
-        updatedAt: timestamp,
-      });
-
-      await docSnap.ref.collection("events").doc(eventId).update({
-        updatedAt: timestamp,
-      });
 
       return res.json({
         success: true,
@@ -1535,12 +1568,6 @@ router.delete(
       );
       console.log("Sublist retrieved. Owner ID:", ownerId);
 
-      if (ownerId !== userId) {
-        const err = new Error("Only the author can delete this post");
-        err.status = 403; // Permission denied
-        throw err;
-      }
-
       const postDocRef = docSnap.ref
         .collection("events")
         .doc(eventId)
@@ -1556,6 +1583,12 @@ router.delete(
       }
 
       const postData = postSnap.data();
+
+      if (postData.userId !== userId) {
+        const err = new Error("Only the author can delete this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
       const images = postData?.images || [];
 
       let message;
@@ -1572,7 +1605,7 @@ router.delete(
               Authorization: req.headers.authorization,
             },
             body: JSON.stringify({
-              public_ids: images.map((img) => img.publicId),
+              public_ids: images.map((img) => img?.publicId).filter(Boolean), // filter out undefined/null publicIds
             }),
           }
         );
@@ -1596,21 +1629,40 @@ router.delete(
 
       console.log("Attempting to delete post:", postDocRef.path);
 
+      const batch = db.batch();
+
       // Delete post document in Firestore
-      await postDocRef.delete();
+      // await postDocRef.delete();
+      batch.delete(postDocRef);
 
       console.log("Post document deleted from Firestore");
 
       const timestamp = FieldValue.serverTimestamp();
 
       // Update sublist and event updatedAt timestamps
-      await docSnap.ref.update({
+      batch.update(docSnap.ref, {
         updatedAt: timestamp,
       });
 
-      await docSnap.ref.collection("events").doc(eventId).update({
+      // update updatedAt for collaborators' doc in sharedSublists
+      const collaborators = docSnap
+        .data()
+        .collaborators.filter((id) => id !== ownerId);
+
+      for (const collaboratorId of collaborators) {
+        const sharedListRef = db
+          .collection("users")
+          .doc(collaboratorId)
+          .collection("sharedSublists")
+          .doc(sublistId);
+        batch.update(sharedListRef, { updatedAt: timestamp });
+      }
+
+      batch.update(docSnap.ref.collection("events").doc(eventId), {
         updatedAt: timestamp,
       });
+
+      await batch.commit();
 
       // Return 200 to client if post was deleted successfully
       // but include metadata for UI/debugging (optional)
@@ -1634,15 +1686,16 @@ router.patch(
     const { comment, images } = req.body;
 
     try {
-      const { docSnap, ownerId } = await getSublistDocOrThrow(
-        userId,
-        sublistId
-      );
-      if (ownerId !== userId) {
-        const err = new Error("Only the author can update this post");
-        err.status = 403; // Permission denied
+      if (
+        comment.trim() === "" &&
+        (!Array.isArray(images) || images.length === 0)
+      ) {
+        const err = new Error("Comment or images must not be empty");
+        err.status = 400; // Bad Request
         throw err;
       }
+
+      const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
 
       const postDocRef = docSnap.ref
         .collection("events")
@@ -1651,16 +1704,28 @@ router.patch(
         .doc(postId);
 
       const postSnap = await postDocRef.get();
-      const oldImages = postSnap.data()?.images || [];
+      const postData = postSnap.data();
 
-      const imagesToDelete = oldImages.filter(
-        (oldImg) => !images.some((img) => img.publicId === oldImg.publicId)
-      );
+      if (postData.userId !== userId) {
+        const err = new Error("Only the author can update this post");
+        err.status = 403; // Permission denied
+        throw err;
+      }
+
+      const oldImages = postData?.images || [];
+
+      const imagesToDelete = Array.isArray(images)
+        ? oldImages.filter(
+            (oldImg) => !images.some((img) => img.publicId === oldImg.publicId)
+          )
+        : [];
+
+      const timestamp = FieldValue.serverTimestamp();
 
       await postDocRef.update({
         comment,
-        updatedAt: FieldValue.serverTimestamp(),
-        images: images ?? oldImages, // Update images if provided, else keep existing
+        updatedAt: timestamp,
+        images: images ?? oldImages, // Update images if provided, else keep existing ones
       });
 
       let message;
@@ -1684,7 +1749,11 @@ router.patch(
 
         const cloudResult = await cloudDelRes.json();
 
-        if (!cloudDelRes.ok || !cloudResult.success) {
+        if (
+          !cloudDelRes.ok ||
+          !cloudResult.success ||
+          cloudResult.failed?.length > 0
+        ) {
           // Log failed deletions for developer alerting/monitoring
           console.warn(
             "Failed to delete some images from Cloudinary:",
@@ -1696,15 +1765,18 @@ router.patch(
         }
       }
 
-      const timestamp = FieldValue.serverTimestamp();
-
       // Update timestamps for goal and sublist
-      await docSnap.ref.update({
+      const batch = db.batch();
+
+      batch.update(docSnap.ref, {
         updatedAt: timestamp,
       });
-      await docSnap.ref.collection("events").doc(eventId).update({
+
+      batch.update(docSnap.ref.collection("events").doc(eventId), {
         updatedAt: timestamp,
       });
+
+      await batch.commit();
 
       const updatedPostSnap = await postDocRef.get();
 
