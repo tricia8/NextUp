@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     gap: ms(5)
   },
   itemText: {
-    fontSize: RFValue(14),
+    fontSize: RFValue(13),
     flexShrink: 1,
     flexWrap: "wrap",
   },
