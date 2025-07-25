@@ -5,6 +5,7 @@ import { AuthContext } from "@/context/AuthContext";
 import { generateSuggestion } from "@/gemini/generateSuggestion";
 import SideMenu from "@/components/SideMenu";
 import Notifications from "@/components/Notifications";
+
 const mockLogout = jest.fn();
 
 const mockUser = {
@@ -47,7 +48,6 @@ jest.mock("@/firebase/firestore", () => ({
         id: "1",
         senderId: "123",
         type: "friend",
-        sentAt: { toMillis: () => Date.now() },
       },
     ])
   ),

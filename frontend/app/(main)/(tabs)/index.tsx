@@ -228,8 +228,6 @@ export default function HomeScreen() {
                       You have {overdueCount} overdue goal(s).
                     </Text>
                   </View>
-                ) : (
-                  <></>
                 )}
 
                 <View style={styles.upcomingContainer}>
