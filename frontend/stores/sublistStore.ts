@@ -27,6 +27,7 @@ interface SublistState {
     key: K,
     value: Sublist[K]
   ) => void;
+  removeSublist: (sublistId: string) => void;
 
   setGoalsForSublist: (
     sublistId: string,
@@ -101,6 +102,19 @@ export const useSublistStore = create<SublistState>()((set) => ({
         },
       },
     })),
+
+  removeSublist: (sublistId) =>
+    set((state) => {
+      const updatedSublists = {
+        ...(state.sublistData || {}),
+      };
+      delete updatedSublists[sublistId];
+
+      return {
+        sublistData: updatedSublists,
+        sublistOrder: state.sublistOrder.filter((id) => id !== sublistId),
+      };
+    }),
 
   setGoalsForSublist: (sublistId, goalsRecord, goalOrder) =>
     set((state) => ({
@@ -243,6 +257,7 @@ export const useSublistStore = create<SublistState>()((set) => ({
   clearStore: () =>
     set({
       sublistData: {},
+      sublistOrder: [],
       goalsBySublist: {},
       goalOrderBySublist: {},
       postsByGoal: {},
