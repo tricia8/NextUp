@@ -1,14 +1,23 @@
 import { useState } from "react";
 import { ThemedText } from "./ThemedText";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Touchable, TouchableOpacity, View } from "react-native";
 import FilterChip from "./FilterChip";
 import { RFValue } from "react-native-responsive-fontsize";
+import { filterSublistsAdvanced } from "@/utils/sublists";
+import { Sublist } from "@/types/sublist";
+import { auth } from "@/firebase/firebaseConfig";
 
 type FilterPickerProps = {
+  sublistData: Sublist[]; // pass in filtered sublists
   closeSheet: () => void;
+  setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
 };
 
-export default function FilterPicker({ closeSheet }: FilterPickerProps) {
+export default function FilterPicker({
+  sublistData,
+  closeSheet,
+  setFilteredSublists,
+}: FilterPickerProps) {
   // Filters
   const [owned, setOwned] = useState<boolean | undefined>(undefined);
   const [shared, setShared] = useState<boolean | undefined>(undefined);
@@ -18,6 +27,24 @@ export default function FilterPicker({ closeSheet }: FilterPickerProps) {
   const [progressStatus, setProgressStatus] = useState<
     "Completed" | "In Progress" | "Getting Started" | undefined
   >(undefined);
+
+  const uid = auth.currentUser?.uid;
+
+  const submitFilters = () => {
+    if (!uid) {
+      console.error("User ID is not available");
+      return;
+    }
+    closeSheet();
+    setFilteredSublists(
+      filterSublistsAdvanced(uid, sublistData, {
+        owned,
+        shared,
+        visibility,
+        progressStatus,
+      })
+    );
+  };
 
   return (
     <View style={{ gap: 10 }}>
@@ -38,6 +65,13 @@ export default function FilterPicker({ closeSheet }: FilterPickerProps) {
             label="Not Me"
           />
         </View>
+        <TouchableOpacity
+          onPress={() => {
+            setOwned(undefined);
+          }}
+        >
+          <ThemedText style={styles.infoText}>Clear</ThemedText>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.chipsRow}>
@@ -54,6 +88,13 @@ export default function FilterPicker({ closeSheet }: FilterPickerProps) {
             label="Not Shared"
           />
         </View>
+        <TouchableOpacity
+          onPress={() => {
+            setShared(undefined);
+          }}
+        >
+          <ThemedText style={styles.infoText}>Clear</ThemedText>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.chipsRow}>
@@ -77,6 +118,13 @@ export default function FilterPicker({ closeSheet }: FilterPickerProps) {
             label="Everyone"
           />
         </View>
+        <TouchableOpacity
+          onPress={() => {
+            setVisibility(undefined);
+          }}
+        >
+          <ThemedText style={styles.infoText}>Clear</ThemedText>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.chipsRow}>
@@ -98,13 +146,20 @@ export default function FilterPicker({ closeSheet }: FilterPickerProps) {
             label="Getting Started"
           />
         </View>
+        <TouchableOpacity
+          onPress={() => {
+            setProgressStatus(undefined);
+          }}
+        >
+          <ThemedText style={styles.infoText}>Clear</ThemedText>
+        </TouchableOpacity>
       </View>
 
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <TouchableOpacity onPress={closeSheet}>
           <ThemedText>Cancel</ThemedText>
         </TouchableOpacity>
-        <TouchableOpacity onPress={closeSheet}>
+        <TouchableOpacity onPress={submitFilters}>
           <ThemedText>Apply Filters</ThemedText>
         </TouchableOpacity>
       </View>

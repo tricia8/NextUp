@@ -12,12 +12,19 @@ import {
   ColorSchemeName,
 } from "react-native";
 import FilterPicker from "./FilterPicker";
+import { Sublist } from "@/types/sublist";
 
 type FilterModalProps = {
   bottomSheetModalRef: React.RefObject<BottomSheetModal | null>;
+  filteredSublists: Sublist[];
+  setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
 };
 
-export default function FilterModal({ bottomSheetModalRef }: FilterModalProps) {
+export default function FilterModal({
+  bottomSheetModalRef,
+  filteredSublists,
+  setFilteredSublists,
+}: FilterModalProps) {
   const colorScheme = useColorScheme();
   const styles = getStyles(colorScheme);
 
@@ -27,6 +34,8 @@ export default function FilterModal({ bottomSheetModalRef }: FilterModalProps) {
   const handleSheetChanges = (index: number) => {
     console.log("handleSheetChanges", index);
   }; // logs to console when snapPoint changes
+
+  const closeSheet = () => bottomSheetModalRef.current?.dismiss();
 
   const renderBackdrop: React.FC<BottomSheetBackdropProps> = (
     props: BottomSheetBackdropProps
@@ -52,7 +61,11 @@ export default function FilterModal({ bottomSheetModalRef }: FilterModalProps) {
     >
       <BottomSheetScrollView style={styles.contentContainer}>
         <View style={{ paddingHorizontal: 10, gap: 10, flex: 1 }}>
-          <FilterPicker />
+          <FilterPicker
+            closeSheet={closeSheet}
+            sublistData={filteredSublists}
+            setFilteredSublists={setFilteredSublists}
+          />
         </View>
       </BottomSheetScrollView>
     </BottomSheetModal>
