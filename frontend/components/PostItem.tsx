@@ -139,7 +139,7 @@ export default function PostItem({
         </View>
       )}
       <ViewMoreContent content={item?.comment} />
-      {ownerId === userId && !item?.isPending && (
+      {userId === item?.userId && !item?.isPending && (
         <View
           style={{
             flexDirection: "row",
@@ -147,7 +147,7 @@ export default function PostItem({
             justifyContent: "flex-end",
           }}
         >
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={() => console.log("Edit Post Pressed")}
             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
@@ -156,7 +156,7 @@ export default function PostItem({
               size={24}
               color={isDark ? "white" : "black"}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity
             onPress={() => onDeletePress(item)}
