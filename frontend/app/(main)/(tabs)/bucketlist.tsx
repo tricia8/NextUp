@@ -1,6 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useContext, useMemo, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ColorSchemeName,
   StatusBar,
@@ -33,7 +40,9 @@ import {
   orderBy,
   query,
 } from "firebase/firestore";
-import { db } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
+import FilterModal from "@/components/FilterModal";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -59,6 +68,10 @@ export default function BucketList() {
   const bucketList: Sublist[] = useMemo(() => {
     return sublistOrder?.map((id) => sublistRecord?.[id]) ?? [];
   }, [sublistRecord, sublistOrder]);
+
+  useEffect(() => {
+    setFilteredSublists(bucketList);
+  }, [bucketList]);
 
   useFocusEffect(
     useCallback(() => {
@@ -110,6 +123,9 @@ export default function BucketList() {
 
           const q1 = query(unownedSublistsRef, orderBy("updatedAt", "desc"));
 
+          console.log("Signed-in UID:", auth.currentUser?.uid);
+          console.log("Trying to listen to unowned sublists of:", uid);
+
           unsubUnownedSublists = onSnapshot(q1, async (docSnap) => {
             if (!isActive) return; // prevent state update after unmount
 
@@ -127,8 +143,10 @@ export default function BucketList() {
           });
 
           const ownedSublistsRef = collection(db, "users", uid, "bucketList");
+          console.log("Trying to listen to owned sublists of:", uid);
 
           const q2 = query(ownedSublistsRef, orderBy("updatedAt", "desc"));
+
           unsubOwnedSublists = onSnapshot(q2, async (docSnap) => {
             if (!isActive) return; // prevent state update after unmount
 
@@ -180,6 +198,13 @@ export default function BucketList() {
     return <LoadingScreen />;
   }
 
+  // Open filter modal
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+  const handlePresentModalPress = () => {
+    bottomSheetModalRef.current?.present();
+  };
+
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
@@ -191,7 +216,11 @@ export default function BucketList() {
             sublists={bucketList}
           />
 
-          <TouchableOpacity style={{ justifyContent: "center" }}>
+          <TouchableOpacity
+            style={{ justifyContent: "center" }}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            onPress={handlePresentModalPress}
+          >
             <Ionicons
               size={35}
               name="filter-circle-outline"
@@ -213,7 +242,6 @@ export default function BucketList() {
             <SublistItems
               uid={uid}
               data={filteredSublists}
-              updateData={setSublists}
               toggleVersion={() => setVersion(!version)}
               colorScheme={colorScheme}
             />
@@ -230,6 +258,12 @@ export default function BucketList() {
           </TouchableOpacity>
         </View>
       </ThemedView>
+
+      <FilterModal
+        bottomSheetModalRef={bottomSheetModalRef}
+        filteredSublists={filteredSublists}
+        setFilteredSublists={setFilteredSublists}
+      />
     </SafeAreaView>
   );
 }
