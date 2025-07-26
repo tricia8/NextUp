@@ -1,5 +1,5 @@
 import { Chip } from "react-native-paper";
-import { ThemedText } from "./ThemedText";
+import { Text } from "react-native";
 
 type FilterChipProps = {
   onPress: () => void;
@@ -19,7 +19,7 @@ export default function FilterChip({
       selected={selected}
       showSelectedOverlay={true}
     >
-      <ThemedText>{label}</ThemedText>
+      <Text style={{ color: "#2b2e38" }}>{label}</Text>
     </Chip>
   );
 }
