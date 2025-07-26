@@ -28,8 +28,8 @@ export default function SideMenu({
   const { clearStore } = useSublistStore();
   const { clearUser } = useUserStore();
 
-  const logOut = () => {
-    logout();
+  const logOut = async () => {
+    await logout(); // wait for Firebase sign out
     clearStore();
     clearUser();
     router.replace("/(auth)/login");
