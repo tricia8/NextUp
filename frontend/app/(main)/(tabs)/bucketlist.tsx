@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   ColorSchemeName,
+  Keyboard,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
@@ -43,6 +44,7 @@ import {
 import { auth, db } from "@/firebase/firebaseConfig";
 import FilterModal from "@/components/FilterModal";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { debouncePress } from "@/utils/debouncePress";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -72,6 +74,14 @@ export default function BucketList() {
   useEffect(() => {
     setFilteredSublists(bucketList);
   }, [bucketList]);
+
+  // Debounce function
+  const handlePress = useCallback(
+    debouncePress(() => {
+      router.push("../new-sublist");
+    }, 800),
+    [] // empty dependencies so it's created only once
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -202,6 +212,7 @@ export default function BucketList() {
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const handlePresentModalPress = () => {
+    Keyboard.dismiss(); // dismiss keyboard if open
     bottomSheetModalRef.current?.present();
   };
 
@@ -250,7 +261,7 @@ export default function BucketList() {
 
         <View style={{ flex: 0.2 }}>
           <TouchableOpacity
-            onPress={() => router.push("../new-sublist")}
+            onPress={handlePress}
             activeOpacity={0.5}
             style={styles.addButton}
           >

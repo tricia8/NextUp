@@ -11,6 +11,7 @@ import { ThemedText } from "./ThemedText";
 import { RFValue } from "react-native-responsive-fontsize";
 import { Goal } from "@/types/goal";
 import CategoryChips from "./CategoryChips";
+import { debouncePress } from "@/utils/debouncePress";
 
 interface Props extends Partial<Goal> {
   title: string;
@@ -40,7 +41,7 @@ export default function GoalCard({
       end={{ x: 1, y: 1 }}
       style={styles.itemContainer}
     >
-      <TouchableOpacity onPress={onPress} style={{ flex: 1 }}>
+      <TouchableOpacity onPress={debouncePress(onPress)} style={{ flex: 1 }}>
         <View style={styles.row}>
           {deadline && (
             <FontAwesome6 name="hourglass-half" size={20} color="#f64b4b" />

@@ -20,6 +20,7 @@ import { showMessage } from "react-native-flash-message";
 import SwipeableRow from "./SwipeableRow";
 import DeleteModal from "./DeleteModal";
 import { useSublistStore } from "@/stores/sublistStore";
+import { debouncePress } from "@/utils/debouncePress";
 
 interface ItemProps {
   uid: string;
@@ -128,7 +129,7 @@ export default function SublistItems({
         >
           <TouchableOpacity
             style={{ flex: 1 }}
-            onPress={() => handleSublistPress(item)}
+            onPress={debouncePress(() => handleSublistPress(item))}
           >
             <View style={{ flexDirection: "row", gap: 12 }}>
               {item?.collaborators?.length > 1 ? (

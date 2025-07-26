@@ -272,15 +272,18 @@ type Props = {
 };
 
 function Preview({ route, title, color, component, uid }: Props) {
+  const handlePress = useCallback(
+    debouncePress(() => {
+      router.push({
+        pathname: "../journey/[uid]",
+        params: { uid },
+      });
+    }),
+    [uid]
+  );
+
   return (
-    <TouchableOpacity
-      onPress={debouncePress(() => {
-        router.push({
-          pathname: "../journey/[uid]",
-          params: { uid: uid },
-        });
-      })}
-    >
+    <TouchableOpacity onPress={handlePress}>
       <View style={{ height: "100%", width: "100%" }}>
         <View style={{ padding: 15 }}>
           <ThemedText type="subtitle" style={{ textAlign: "center" }}>
