@@ -28,9 +28,9 @@ export default function SublistSearchBar({
   const colorScheme = useColorScheme();
   const styles = getStyles(colorScheme);
 
-  useEffect(() => {
+  /* useEffect(() => {
     setFilteredSublists(sublists);
-  }, [sublists]);
+  }, [sublists]); */
 
   const filterData = (text: string) => {
     console.log("Filtering data with text:", text);

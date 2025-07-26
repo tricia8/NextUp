@@ -1,12 +1,12 @@
 import { Sublist } from "@/types/sublist";
 
-function filterByOwner(sublist: Sublist, userId: string) {
-  return sublist.ownerId === userId;
+function filterByOwner(owned: boolean, sublist: Sublist, userId: string) {
+  return owned ? sublist.ownerId === userId : sublist.ownerId !== userId;
 }
 
-function filterByNotOwner(sublist: Sublist, userId: string) {
+/* function filterByNotOwner(sublist: Sublist, userId: string) {
   return sublist.ownerId !== userId;
-}
+} */
 
 function filterByVisibility(
   sublist: Sublist,
@@ -46,9 +46,10 @@ function filterByProgressStatus(
 export function filterSublists(
   sublistData: Record<string, Sublist>,
   sublistOrder: string[],
+  // sublistData: Sublist[],
   predicate: (sublist: Sublist) => boolean
 ): Sublist[] {
-  return sublistOrder.map((id) => sublistData[id]).filter(predicate);
+  return sublistOrder.map((id) => sublistData[id]).filter(predicate); // sublistData.filter(predicate);
 }
 
 export function getOwnedSublists(
@@ -57,7 +58,7 @@ export function getOwnedSublists(
   userId: string
 ) {
   return filterSublists(sublistData, sublistOrder, (sublist) =>
-    filterByOwner(sublist, userId)
+    filterByOwner(true, sublist, userId)
   );
 }
 
@@ -67,7 +68,7 @@ export function getUnownedSublists(
   userId: string
 ) {
   return filterSublists(sublistData, sublistOrder, (sublist) =>
-    filterByNotOwner(sublist, userId)
+    filterByOwner(false, sublist, userId)
   );
 }
 
@@ -101,22 +102,26 @@ export function filterSublistsByProgressStatus(
   );
 }
 
-// Advanced filtering function with multiple criteria
+// Advanced filtering function with multiple criteria (Only used this)
 export function filterSublistsAdvanced(
-  sublistData: Record<string, Sublist>,
-  sublistOrder: string[],
+  userId: string,
+  sublistData: Sublist[],
   options: {
-    ownerId?: string;
+    owned?: boolean;
     shared?: boolean;
     visibility?: "private" | "friends" | "everyone";
     progressStatus?: "Completed" | "In Progress" | "Getting Started";
   }
 ): Sublist[] {
-  return filterSublists(sublistData, sublistOrder, (sublist) => {
-    if (options.ownerId && sublist.ownerId !== options.ownerId) return false;
+  return sublistData.filter((sublist) => {
+    if (
+      typeof options.owned === "boolean" &&
+      !filterByOwner(options.owned, sublist, userId)
+    )
+      return false;
     if (
       typeof options.shared === "boolean" &&
-      filterBySharedStatus(sublist, !options.shared) === false
+      !filterBySharedStatus(sublist, !options.shared)
     )
       return false;
     if (options.visibility && sublist.accessLevel !== options.visibility)
