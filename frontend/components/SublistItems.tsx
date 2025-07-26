@@ -19,11 +19,12 @@ import { deleteSubBucketList } from "@/firebase/firestore";
 import { showMessage } from "react-native-flash-message";
 import SwipeableRow from "./SwipeableRow";
 import DeleteModal from "./DeleteModal";
+import { useSublistStore } from "@/stores/sublistStore";
 
 interface ItemProps {
   uid: string;
   data: Sublist[];
-  updateData: React.Dispatch<React.SetStateAction<Sublist[]>>;
+  // updateData: React.Dispatch<React.SetStateAction<Sublist[]>>;
   toggleVersion?: () => void; // optional, used to trigger refetch of data
   colorScheme: ColorSchemeName;
 }
@@ -31,7 +32,7 @@ interface ItemProps {
 export default function SublistItems({
   uid,
   data,
-  updateData,
+  // updateData,
   colorScheme,
   toggleVersion = () => {},
 }: ItemProps): ReactNode | Promise<ReactNode> {
@@ -62,16 +63,20 @@ export default function SublistItems({
   };
 
   // delete sublist
+  const { addSublist, removeSublist } = useSublistStore();
   const handleDelete = async (sublist: Sublist) => {
     try {
       console.log("deleting sublist");
       console.log("userid", uid);
+      // Optimistic UI
+      removeSublist(sublist.id);
+
       await deleteSubBucketList(sublist);
       console.log("deleted!");
-      // update sublists state
-      updateData((prevSublists) =>
+
+      /* updateData((prevSublists) =>
         prevSublists.filter((list) => list.id !== sublist.id)
-      );
+      ); */
       toggleVersion?.();
       setModalVisible(false); // clsose modal after deletion
       showMessage({
@@ -94,6 +99,9 @@ export default function SublistItems({
         icon: "danger",
         duration: 5000,
       });
+
+      // Re-add to cache if deletion fails
+      addSublist(sublist.id, sublist, sublist.ownerId);
     }
   };
 

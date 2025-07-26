@@ -74,8 +74,12 @@ export default function currentSublist() {
   console.log("sublistId param:", sublistId);
 
   // Zustand store
-  const { setSublist, updateSublistField, setGoalsForSublist } =
-    useSublistStore();
+  const {
+    updateCachedSublist,
+    addSublist,
+    updateSublistField,
+    setGoalsForSublist,
+  } = useSublistStore();
 
   const sublist = useSublistStore(
     useShallow((state) => state.sublistData[sublistId as string])
@@ -191,7 +195,7 @@ export default function currentSublist() {
             });
 
             if (isActive) {
-              setSublist(sublistId as string, sublistData, ownerId);
+              addSublist(sublistId as string, sublistData, ownerId);
               setGoalsForSublist(sublistId as string, goalsRecord, goalOrder);
 
               // event object: { id, title, description, categories, isCompleted, updatedAt, deadline }
@@ -257,7 +261,10 @@ export default function currentSublist() {
             async (docSnap) => {
               if (!isActive) return; // prevent state update after unmount
 
-              const updatedData = formatSublistData(docSnap.data());
+              const updatedData = {
+                id: sublistId as string,
+                ...formatSublistData(docSnap.data()),
+              };
 
               const current =
                 useSublistStore.getState().sublistData[sublistId as string];
@@ -287,7 +294,11 @@ export default function currentSublist() {
               }
 
               if (isActive) {
-                setSublist(sublistId as string, updatedData, ownerId as string);
+                updateCachedSublist(
+                  sublistId as string,
+                  updatedData,
+                  ownerId as string
+                );
               }
             }
           );

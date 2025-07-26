@@ -437,13 +437,18 @@ export const getFilteredSubBucketLists = async (uid, accessLevels) => {
 export const formatSublistData = (data) => {
   // data type: Sublist object
   const updatedAt = data.updatedAt?.toDate?.();
+  const createdAt = data.createdAt?.toDate?.();
 
   return {
     title: data.title,
     description: data.description ?? "", // default to empty string
     accessLevel: data.accessLevel,
     collaborators: data.collaborators,
+    ownerId: data.ownerId, // owner of the sublist
     updatedAt: updatedAt ? formatDisplayDate(updatedAt) : "",
+    updatedAtRaw: data.updatedAt, // Timestamp object
+    createdAt: createdAt ? formatDisplayDate(createdAt) : "",
+    createdAtRaw: data.createdAt, // Timestamp object
     completionStatus: data.completionStatus,
   };
 };

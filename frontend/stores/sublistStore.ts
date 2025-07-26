@@ -1,32 +1,33 @@
 // stores/sublistStore.ts
 import { Goal } from "@/types/goal";
-import { Post } from "@/types/post";
 import { PostWithPending } from "@/types/postWithPending";
 import { Sublist } from "@/types/sublist";
 import { create } from "zustand";
 
-type SublistWithoutId = Omit<Sublist, "id"> & {
-  ownerId: string;
-};
-
 interface SublistState {
-  sublistData: { [sublistId: string]: SublistWithoutId };
+  sublistData: { [sublistId: string]: Sublist };
+  sublistOrder: string[]; // store array of sublist IDs
   goalsBySublist: Record<string, Record<string, Goal>>;
   goalOrderBySublist: Record<string, string[]>; // store array of goal IDs for each sublist
   postsByGoal: Record<string, Record<string, PostWithPending>>;
   postOrderByGoal: Record<string, string[]>; // store array of post IDs for each goal
 
-  // goalData: { [goalId: string]: Goal };
-  setSublist: (
+  setSublists: (
+    sublistRecord: Record<string, Sublist>,
+    sublistOrder: string[]
+  ) => void;
+  addSublist: (sublistId: string, data: Sublist, ownerId: string) => void;
+  updateCachedSublist: (
     sublistId: string,
-    data: Omit<Sublist, "id">,
+    data: Sublist,
     ownerId: string
   ) => void;
-  updateSublistField: <K extends keyof SublistWithoutId>(
+  updateSublistField: <K extends keyof Sublist>(
     sublistId: string,
     key: K,
-    value: SublistWithoutId[K]
+    value: Sublist[K]
   ) => void;
+  removeSublist: (sublistId: string) => void;
 
   setGoalsForSublist: (
     sublistId: string,
@@ -36,7 +37,6 @@ interface SublistState {
 
   updateGoalForSublist: (sublistId: string, goal: Goal) => void;
   addGoalToSublist: (sublistId: string, goal: Goal) => void;
-  // setGoal: (goalId: string, data: Goal) => void;
 
   removeGoalFromSublist: (sublistId: string, goalId: string) => void;
 
@@ -63,12 +63,34 @@ interface SublistState {
 
 export const useSublistStore = create<SublistState>()((set) => ({
   sublistData: {},
+  sublistOrder: [],
   goalsBySublist: {},
   goalOrderBySublist: {},
   postsByGoal: {},
   postOrderByGoal: {},
 
-  setSublist: (sublistId, data, ownerId) =>
+  setSublists: (sublistRecord, sublistOrder) =>
+    set((state) => ({
+      sublistData: sublistRecord,
+      sublistOrder: sublistOrder,
+    })),
+
+  addSublist: (sublistId, data, ownerId) =>
+    set((state) => {
+      const alreadyExists = state.sublistOrder.includes(sublistId);
+
+      return {
+        sublistData: {
+          ...state.sublistData,
+          [sublistId]: { ...data, ownerId },
+        },
+        sublistOrder: alreadyExists
+          ? state.sublistOrder
+          : [sublistId, ...state.sublistOrder],
+      };
+    }),
+
+  updateCachedSublist: (sublistId, data, ownerId) =>
     set((state) => ({
       sublistData: {
         ...state.sublistData,
@@ -86,6 +108,19 @@ export const useSublistStore = create<SublistState>()((set) => ({
         },
       },
     })),
+
+  removeSublist: (sublistId) =>
+    set((state) => {
+      const updatedSublists = {
+        ...(state.sublistData || {}),
+      };
+      delete updatedSublists[sublistId];
+
+      return {
+        sublistData: updatedSublists,
+        sublistOrder: state.sublistOrder.filter((id) => id !== sublistId),
+      };
+    }),
 
   setGoalsForSublist: (sublistId, goalsRecord, goalOrder) =>
     set((state) => ({
@@ -111,16 +146,27 @@ export const useSublistStore = create<SublistState>()((set) => ({
     })),
 
   addGoalToSublist: (sublistId, goal) =>
-    set((state) => ({
-      goalsBySublist: {
-        ...state.goalsBySublist,
-        [sublistId]: { ...state.goalsBySublist[sublistId], [goal.id]: goal },
-      },
-      goalOrderBySublist: {
-        ...state.goalOrderBySublist,
-        [sublistId]: [goal.id, ...(state.goalOrderBySublist[sublistId] || [])],
-      },
-    })),
+    set((state) => {
+      const alreadyExists = state.goalOrderBySublist[sublistId]?.includes(
+        goal.id
+      );
+
+      return {
+        goalsBySublist: {
+          ...state.goalsBySublist,
+          [sublistId]: { ...state.goalsBySublist[sublistId], [goal.id]: goal },
+        },
+        goalOrderBySublist: alreadyExists
+          ? state.goalOrderBySublist
+          : {
+              ...state.goalOrderBySublist,
+              [sublistId]: [
+                goal.id,
+                ...(state.goalOrderBySublist[sublistId] || []),
+              ],
+            },
+      };
+    }),
 
   removeGoalFromSublist: (sublistId, goalId) =>
     set((state) => {
@@ -156,19 +202,25 @@ export const useSublistStore = create<SublistState>()((set) => ({
     })),
 
   addPostToGoal: (goalId, post) =>
-    set((state) => ({
-      postsByGoal: {
-        ...state.postsByGoal,
-        [goalId]: {
-          ...(state.postsByGoal[goalId] || {}),
-          [post.id]: post,
+    set((state) => {
+      const alreadyExists = state.postOrderByGoal[goalId]?.includes(post.id);
+
+      return {
+        postsByGoal: {
+          ...state.postsByGoal,
+          [goalId]: {
+            ...(state.postsByGoal[goalId] || {}),
+            [post.id]: post,
+          },
         },
-      },
-      postOrderByGoal: {
-        ...state.postOrderByGoal,
-        [goalId]: [post.id, ...(state.postOrderByGoal[goalId] || [])],
-      },
-    })),
+        postOrderByGoal: alreadyExists
+          ? state.postOrderByGoal
+          : {
+              ...state.postOrderByGoal,
+              [goalId]: [post.id, ...(state.postOrderByGoal[goalId] ?? [])],
+            },
+      };
+    }),
 
   updatePostForGoal: (goalId, post) =>
     set((state) => ({
@@ -205,7 +257,7 @@ export const useSublistStore = create<SublistState>()((set) => ({
   replacePostId: (goalId, oldPostId, newPost) =>
     set((state) => {
       const posts = { ...state.postsByGoal[goalId] };
-      const order = [...state.postOrderByGoal[goalId]];
+      const order = [...(state.postOrderByGoal[goalId] ?? [])];
 
       delete posts[oldPostId];
       posts[newPost.id] = newPost;
@@ -228,6 +280,7 @@ export const useSublistStore = create<SublistState>()((set) => ({
   clearStore: () =>
     set({
       sublistData: {},
+      sublistOrder: [],
       goalsBySublist: {},
       goalOrderBySublist: {},
       postsByGoal: {},
