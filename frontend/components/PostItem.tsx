@@ -21,6 +21,8 @@ import Carousel, {
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSharedValue } from "react-native-reanimated";
 import { useRef } from "react";
+import { useUserStore } from "@/stores/userStore";
+import { useShallow } from "zustand/react/shallow";
 
 type PostItemProps = {
   item: PostWithPending;
@@ -39,6 +41,7 @@ export default function PostItem({
   userId,
   onDeletePress,
 }: PostItemProps) {
+  const user = useUserStore(useShallow((state) => state.user));
   const isDark = colorScheme === "dark";
   const localProgress = useSharedValue(0);
   const localScrollOffsetValue = useSharedValue(0);
@@ -62,7 +65,7 @@ export default function PostItem({
     >
       <View style={styles.postHeaderContainer}>
         <View style={styles.postAuthor}>
-          <ProfilePic imageUrl={item?.profilePhotoUrl} size={30} />
+          <ProfilePic imageUrl={user?.photoUrl ?? null} size={30} />
           <ThemedText style={styles.text}>
             {item?.username} {userId === item?.userId ? "(You)" : ""}
           </ThemedText>

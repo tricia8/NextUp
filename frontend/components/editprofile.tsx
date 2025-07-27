@@ -20,6 +20,7 @@ import { pickImage } from "@/cloudinary/pickimage";
 import { uploadToCloudinary } from "@/cloudinary/upload";
 import { debouncePress } from "@/utils/debouncePress";
 import ProfilePic from "./ProfilePic";
+import { useUserStore } from "@/stores/userStore";
 
 const PROFILEPICSIZE = ms(100);
 
@@ -38,7 +39,7 @@ export default function EditProfile({
   setUserData,
   setCategory,
 }: editProfileProps) {
-  const [bioText, setBioText] = useState(userData.bio);
+  const [bioText, setBioText] = useState(userData.bio ?? "");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string[]>([]);
   const [image, setImage] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function EditProfile({
     }
   }, [userData]);
 
+  const { setUser } = useUserStore();
   const handleSave = async (uid: string, profileDetails: Partial<User>) => {
     try {
       if (base64) {
@@ -65,6 +67,7 @@ export default function EditProfile({
       onClose();
       setUserData(updatedUser);
       setCategory(updatedUser?.category?.[0] ?? "--");
+      setUser(updatedUser);
     } catch (error) {
       console.log(error);
       Alert.alert("Error saving");

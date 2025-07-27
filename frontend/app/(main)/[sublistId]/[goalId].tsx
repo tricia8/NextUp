@@ -55,7 +55,7 @@ import {
 import { db } from "@/firebase/firebaseConfig";
 import { PostWithPending } from "@/types/postWithPending";
 import { useUserStore } from "@/stores/userStore";
-import { UserWithCategory } from "@/types/userWithCategory";
+import { User } from "@/types/user";
 
 export default function GoalPage() {
   const { user } = useContext(AuthContext);
@@ -135,9 +135,7 @@ export default function GoalPage() {
         // Fetch user data if not already in store
         if (!userProfile && user?.uid) {
           const fetchedUserProfile = await getOwnerProfile(user.uid);
-          useUserStore
-            .getState()
-            .setUser(fetchedUserProfile as UserWithCategory);
+          useUserStore.getState().setUser(fetchedUserProfile as User);
         }
       } catch (error) {
         showMessage({
