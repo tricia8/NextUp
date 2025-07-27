@@ -73,6 +73,7 @@ export default function BucketList() {
 
   useEffect(() => {
     setFilteredSublists(bucketList);
+    console.log("🪣 bucketList updated:", bucketList);
   }, [bucketList]);
 
   // Debounce function
@@ -82,6 +83,55 @@ export default function BucketList() {
     }, 800),
     [] // empty dependencies so it's created only once
   );
+
+  function sortSublistOrder() {
+    function toMillis(timestamp: { _nanoseconds: number; _seconds: number }) {
+      return (
+        timestamp._seconds * 1000 + Math.floor(timestamp._nanoseconds / 1000000)
+      );
+    }
+
+    const { sublistData } = useSublistStore.getState();
+    /* const sorted = Object.keys(sublistData).sort((a, b) => {
+      const aTime = sublistData[a]?.updatedAtRaw
+        ? toMillis(sublistData[a]?.updatedAtRaw)
+        : 0;
+      const bTime = sublistData[b]?.updatedAtRaw
+        ? toMillis(sublistData[b]?.updatedAtRaw)
+        : 0;
+      return bTime - aTime;
+    });
+
+    useSublistStore.getState().setSublistOrder(sorted);
+    console.log(
+      "Sorted sublistOrder:",
+      sorted.map((id) => ({
+        id,
+        updatedAt: sublistData[id]?.updatedAt,
+      }))
+    ); */
+    const millisMap = Object.fromEntries(
+      Object.entries(sublistData).map(([id, data]) => [
+        id,
+        data.updatedAtRaw ? toMillis(data.updatedAtRaw) : 0,
+      ])
+    );
+
+    const sorted = Object.keys(sublistData).sort(
+      (a, b) => millisMap[b] - millisMap[a]
+    );
+
+    useSublistStore.getState().setSublistOrder(sorted);
+
+    console.log(
+      "✅ Sorted sublistOrder:",
+      sorted.map((id) => ({
+        id,
+        updatedAt: millisMap[id] || undefined,
+        updated: sublistData[id]?.updatedAt,
+      }))
+    );
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -95,7 +145,10 @@ export default function BucketList() {
           const cachedSublistCollection =
             useSublistStore.getState().sublistData;
 
-          if (!cachedSublistCollection) {
+          if (
+            !cachedSublistCollection ||
+            Object.keys(cachedSublistCollection).length === 0
+          ) {
             // store doesn't have sublist collection yet
             setIsLoading(true);
             const sublists = (await getAllSubBucketLists()) as Sublist[];
@@ -140,15 +193,27 @@ export default function BucketList() {
             if (!isActive) return; // prevent state update after unmount
 
             const unownedSublistsArray = await getUnownedSubBucketLists(); // sorted by updatedAt desc
+            const { sublistData } = useSublistStore.getState();
+
             unownedSublistsArray.forEach((sublist: Sublist) => {
-              if (sublist.id in sublistRecord) {
+              if (sublist.id in sublistData) {
                 // update existing sublist
                 updateCachedSublist(sublist.id, sublist, sublist.ownerId);
               } else {
                 // add new sublist, append to the front of sublistOrder
                 addSublist(sublist.id, sublist, sublist.ownerId);
               }
-              // re-sort sublistOrder by updatedAt to maintain order
+              // re-sort sublistOrder by updatedAt desc to maintain order
+              /* const { sublistData: data, sublistOrder: order } =
+                useSublistStore.getState();
+
+              const sortedOrder = [...order].sort((a, b) => {
+                const aTime = data[a]?.updatedAtRaw?.toMillis?.() ?? 0; // convert Timestamp to milliseconds
+                const bTime = data[b]?.updatedAtRaw?.toMillis?.() ?? 0;
+                return bTime - aTime; // descending order (most recent first)
+              }); */
+
+              sortSublistOrder();
             });
           });
 
@@ -161,8 +226,10 @@ export default function BucketList() {
             if (!isActive) return; // prevent state update after unmount
 
             const ownedSublistsArray = await getOwnedSubBucketLists(); // sorted by updatedAt desc
+            const { sublistData } = useSublistStore.getState();
+
             ownedSublistsArray.forEach((sublist: Sublist) => {
-              if (sublist.id in sublistRecord) {
+              if (sublist.id in sublistData) {
                 // update existing sublist
                 updateCachedSublist(sublist.id, sublist, sublist.ownerId);
               } else {
@@ -170,6 +237,17 @@ export default function BucketList() {
                 addSublist(sublist.id, sublist, sublist.ownerId);
               }
               // re-sort sublistOrder by updatedAt to maintain order
+              /* const { sublistData: data, sublistOrder: order } =
+                useSublistStore.getState();
+
+              const sortedOrder = [...order].sort((a, b) => {
+                const aTime = data[a]?.updatedAtRaw?.toMillis?.() ?? 0; // convert Timestamp to milliseconds
+                const bTime = data[b]?.updatedAtRaw?.toMillis?.() ?? 0;
+                return bTime - aTime; // descending order (most recent first)
+              }); 
+
+              useSublistStore.getState().setSublistOrder(sortedOrder); */
+              sortSublistOrder();
             });
           });
         } catch (error) {
@@ -197,16 +275,12 @@ export default function BucketList() {
         if (unsubUnownedSublists) unsubUnownedSublists();
         if (unsubOwnedSublists) unsubOwnedSublists();
       };
-    }, [uid, version]) // `version` toggling triggers refetch
+    }, [uid /* version */])
   );
 
   const router = useRouter();
 
   const styles = getStyles(colorScheme);
-
-  if (loading || !user?.uid || isLoading) {
-    return <LoadingScreen />;
-  }
 
   // Open filter modal
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -216,7 +290,9 @@ export default function BucketList() {
     bottomSheetModalRef.current?.present();
   };
 
-  return (
+  return loading || !user?.uid || isLoading ? (
+    <LoadingScreen />
+  ) : (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View style={styles.searchFilterBar}>
