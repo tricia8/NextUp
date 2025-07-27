@@ -546,7 +546,7 @@ export default function GoalPage() {
                   sublistId={sublistId as string}
                   goalId={goalId as string}
                   posts={postList}
-                  isDark={isDark}
+                  colorScheme={colorScheme}
                 />
               </View>
             </View>

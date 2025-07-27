@@ -25,7 +25,6 @@ import { debouncePress } from "@/utils/debouncePress";
 interface ItemProps {
   uid: string;
   data: Sublist[];
-  // updateData: React.Dispatch<React.SetStateAction<Sublist[]>>;
   toggleVersion?: () => void; // optional, used to trigger refetch of data
   colorScheme: ColorSchemeName;
 }
@@ -33,10 +32,10 @@ interface ItemProps {
 export default function SublistItems({
   uid,
   data,
-  // updateData,
   colorScheme,
   toggleVersion = () => {},
 }: ItemProps): ReactNode | Promise<ReactNode> {
+  const isDark = colorScheme === "dark";
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sublist | null>(null);
@@ -118,11 +117,7 @@ export default function SublistItems({
         }}
       >
         <LinearGradient
-          colors={
-            colorScheme === "dark"
-              ? ["#0f2027", "#188991"]
-              : ["#dcf4a9", "#b2df75"]
-          }
+          colors={isDark ? ["#0f2027", "#188991"] : ["#dcf4a9", "#b2df75"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.itemContainer}
@@ -136,7 +131,7 @@ export default function SublistItems({
                 <Feather
                   name="users"
                   size={24}
-                  color={colorScheme === "dark" ? "white" : "black"}
+                  color={isDark ? "white" : "black"}
                 />
               ) : (
                 <></>
@@ -193,6 +188,7 @@ export default function SublistItems({
         estimatedItemSize={20}
         contentContainerStyle={{ paddingBottom: 100 }}
         keyExtractor={(item, index) => `${item.title}-${index}`}
+        extraData={colorScheme}
       />
       {modalVisible && (
         <View

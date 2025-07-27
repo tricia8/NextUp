@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Text,
+  ColorSchemeName,
 } from "react-native";
 import ProfilePic from "./ProfilePic";
 import { ThemedText } from "./ThemedText";
@@ -23,7 +24,7 @@ import { useRef } from "react";
 
 type PostItemProps = {
   item: PostWithPending;
-  isDark?: boolean;
+  colorScheme: ColorSchemeName;
   ownerId: string;
   userId: string;
   onDeletePress: (item: PostWithPending) => void;
@@ -33,11 +34,12 @@ const screenWidth = Dimensions.get("window").width;
 
 export default function PostItem({
   item,
-  isDark,
+  colorScheme,
   ownerId,
   userId,
   onDeletePress,
 }: PostItemProps) {
+  const isDark = colorScheme === "dark";
   const localProgress = useSharedValue(0);
   const localScrollOffsetValue = useSharedValue(0);
   const localRef = useRef<ICarouselInstance>(null);
