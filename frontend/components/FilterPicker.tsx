@@ -14,6 +14,7 @@ type FilterPickerProps = {
   setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
   filterOptions: FilterOptions;
   setFilterOptions: React.Dispatch<React.SetStateAction<FilterOptions>>;
+  setSearchResults: React.Dispatch<React.SetStateAction<Sublist[]>>;
 };
 
 export default function FilterPicker({
@@ -22,6 +23,7 @@ export default function FilterPicker({
   setFilteredSublists,
   filterOptions,
   setFilterOptions,
+  setSearchResults,
 }: FilterPickerProps) {
   // Filters
   /* const [owned, setOwned] = useState<boolean | undefined>(undefined);
@@ -43,14 +45,15 @@ export default function FilterPicker({
       return;
     }
     closeSheet();
-    setFilteredSublists(
-      filterSublistsAdvanced(uid, sublistData, {
-        owned,
-        shared,
-        visibility,
-        progressStatus,
-      })
-    );
+    const results = filterSublistsAdvanced(uid, sublistData, {
+      owned,
+      shared,
+      visibility,
+      progressStatus,
+    });
+
+    setFilteredSublists(results); // update base filtered list for search bar to work on
+    setSearchResults(results); // reset search too
   };
 
   const resetAllFilters = () => {

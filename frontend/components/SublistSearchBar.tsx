@@ -14,38 +14,34 @@ import { Ionicons } from "@expo/vector-icons";
 type Props = {
   sublists: Sublist[];
   filteredSublists: Sublist[];
-  setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
+  setSearchResults: React.Dispatch<React.SetStateAction<Sublist[]>>;
   placeholder?: string;
 };
 
 export default function SublistSearchBar({
   sublists,
   filteredSublists,
-  setFilteredSublists,
+  setSearchResults,
   placeholder = "Search sublists...",
 }: Props) {
   const [search, setSearch] = useState<string>("");
   const colorScheme = useColorScheme();
   const styles = getStyles(colorScheme);
 
-  /* useEffect(() => {
-    setFilteredSublists(sublists);
-  }, [sublists]); */
-
   const filterData = (text: string) => {
     console.log("Filtering data with text:", text);
     const formattedQuery = text.toLowerCase();
-    const filtered = sublists.filter((item) =>
+    const filtered = filteredSublists.filter((item) =>
       item.title.toLowerCase().includes(formattedQuery)
     );
-    setFilteredSublists(filtered);
-    console.log("filteredSublists", filteredSublists);
+    setSearchResults(filtered);
+    console.log("filteredSublists", filtered);
     setSearch(text);
   };
 
   const resetText = () => {
     setSearch("");
-    setFilteredSublists(sublists);
+    setSearchResults(filteredSublists); // restore prev filtered results
   };
 
   return (

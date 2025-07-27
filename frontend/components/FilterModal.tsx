@@ -17,18 +17,20 @@ import { FilterOptions } from "@/types/filterOptions";
 
 type FilterModalProps = {
   bottomSheetModalRef: React.RefObject<BottomSheetModal | null>;
-  filteredSublists: Sublist[];
+  sublistData: Sublist[];
   setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
-  filterOptions?: FilterOptions;
-  setFilterOptions?: React.Dispatch<React.SetStateAction<FilterOptions>>;
+  filterOptions: FilterOptions;
+  setFilterOptions: React.Dispatch<React.SetStateAction<FilterOptions>>;
+  setSearchResults: React.Dispatch<React.SetStateAction<Sublist[]>>;
 };
 
 export default function FilterModal({
   bottomSheetModalRef,
-  filteredSublists,
+  sublistData,
   setFilteredSublists,
-  filterOptions = {},
-  setFilterOptions = () => {},
+  filterOptions,
+  setFilterOptions,
+  setSearchResults,
 }: FilterModalProps) {
   const colorScheme = useColorScheme();
   const styles = getStyles(colorScheme);
@@ -68,10 +70,11 @@ export default function FilterModal({
         <View style={{ paddingHorizontal: 10, gap: 10, flex: 1 }}>
           <FilterPicker
             closeSheet={closeSheet}
-            sublistData={filteredSublists}
+            sublistData={sublistData}
             setFilteredSublists={setFilteredSublists}
             filterOptions={filterOptions}
             setFilterOptions={setFilterOptions}
+            setSearchResults={setSearchResults}
           />
         </View>
       </BottomSheetScrollView>

@@ -53,6 +53,7 @@ export default function BucketList() {
   const uid = user?.uid;
   //  const [sublists, setSublists] = useState<Sublist[]>([]);
   const [filteredSublists, setFilteredSublists] = useState<Sublist[]>([]);
+  const [searchResults, setSearchResults] = useState<Sublist[]>([]); // for searching within filtered data
   const [version, setVersion] = useState(false); // toggle to trigger refetch
   const [isLoading, setIsLoading] = useState(false); // loading state for sublists
 
@@ -74,8 +75,12 @@ export default function BucketList() {
 
   useEffect(() => {
     setFilteredSublists(bucketList);
-    console.log("🪣 bucketList updated:", bucketList);
+    console.log("bucketList updated:", bucketList);
   }, [bucketList]);
+
+  useEffect(() => {
+    setSearchResults(filteredSublists); // keep search in sync
+  }, [filteredSublists]);
 
   // Debounce function
   const handlePress = useCallback(
@@ -271,7 +276,7 @@ export default function BucketList() {
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View style={styles.searchFilterBar}>
           <SublistSearchBar
-            setFilteredSublists={setFilteredSublists}
+            setSearchResults={setSearchResults}
             filteredSublists={filteredSublists}
             // sublists={sublists}
             sublists={bucketList}
@@ -302,7 +307,7 @@ export default function BucketList() {
           <View style={{ flex: 0.8 }}>
             <SublistItems
               uid={uid}
-              data={filteredSublists}
+              data={searchResults}
               toggleVersion={() => setVersion(!version)}
               colorScheme={colorScheme}
             />
@@ -322,10 +327,11 @@ export default function BucketList() {
 
       <FilterModal
         bottomSheetModalRef={bottomSheetModalRef}
-        filteredSublists={filteredSublists}
+        sublistData={bucketList}
         setFilteredSublists={setFilteredSublists}
         filterOptions={filterOptions}
         setFilterOptions={setFilterOptions}
+        setSearchResults={setSearchResults}
       />
     </SafeAreaView>
   );
