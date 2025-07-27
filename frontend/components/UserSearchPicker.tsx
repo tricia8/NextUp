@@ -77,7 +77,7 @@ export default function UserSearchPicker({
       searchable={true}
       searchPlaceholder="Find users..."
       closeOnBackPressed={true}
-      theme={colorScheme === "dark" ? "DARK" : "LIGHT"}
+      theme={"LIGHT"}
       listMode="FLATLIST"
       flatListProps={{ nestedScrollEnabled: true }}
       mode="BADGE"
