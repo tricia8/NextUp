@@ -16,7 +16,7 @@ let history = [{ role: "user", parts: [{ text: prompt }] }];
 router.post("/generate", async (req, res) => {
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
@@ -42,8 +42,8 @@ router.post("/generate", async (req, res) => {
       parts: [{ text: "Give me another idea." }],
     });
 
-    if (history.length > 6) {
-      history = history.slice(-6); // keep only last 6
+    if (history.length > 10) {
+      history = history.slice(-10); // keep only last 10
     }
     const output =
       data?.candidates?.[0]?.content.parts?.[0]?.text ??
