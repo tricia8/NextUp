@@ -45,6 +45,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import FilterModal from "@/components/FilterModal";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { debouncePress } from "@/utils/debouncePress";
+import { FilterOptions } from "@/types/filterOptions";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -92,24 +93,6 @@ export default function BucketList() {
     }
 
     const { sublistData } = useSublistStore.getState();
-    /* const sorted = Object.keys(sublistData).sort((a, b) => {
-      const aTime = sublistData[a]?.updatedAtRaw
-        ? toMillis(sublistData[a]?.updatedAtRaw)
-        : 0;
-      const bTime = sublistData[b]?.updatedAtRaw
-        ? toMillis(sublistData[b]?.updatedAtRaw)
-        : 0;
-      return bTime - aTime;
-    });
-
-    useSublistStore.getState().setSublistOrder(sorted);
-    console.log(
-      "Sorted sublistOrder:",
-      sorted.map((id) => ({
-        id,
-        updatedAt: sublistData[id]?.updatedAt,
-      }))
-    ); */
     const millisMap = Object.fromEntries(
       Object.entries(sublistData).map(([id, data]) => [
         id,
@@ -124,7 +107,7 @@ export default function BucketList() {
     useSublistStore.getState().setSublistOrder(sorted);
 
     console.log(
-      "✅ Sorted sublistOrder:",
+      "Sorted sublistOrder:",
       sorted.map((id) => ({
         id,
         updatedAt: millisMap[id] || undefined,
@@ -203,16 +186,8 @@ export default function BucketList() {
                 // add new sublist, append to the front of sublistOrder
                 addSublist(sublist.id, sublist, sublist.ownerId);
               }
-              // re-sort sublistOrder by updatedAt desc to maintain order
-              /* const { sublistData: data, sublistOrder: order } =
-                useSublistStore.getState();
 
-              const sortedOrder = [...order].sort((a, b) => {
-                const aTime = data[a]?.updatedAtRaw?.toMillis?.() ?? 0; // convert Timestamp to milliseconds
-                const bTime = data[b]?.updatedAtRaw?.toMillis?.() ?? 0;
-                return bTime - aTime; // descending order (most recent first)
-              }); */
-
+              // re-sort sublistOrder by updatedAt to maintain order
               sortSublistOrder();
             });
           });
@@ -236,17 +211,8 @@ export default function BucketList() {
                 // add new sublist, append to the front of sublistOrder
                 addSublist(sublist.id, sublist, sublist.ownerId);
               }
+
               // re-sort sublistOrder by updatedAt to maintain order
-              /* const { sublistData: data, sublistOrder: order } =
-                useSublistStore.getState();
-
-              const sortedOrder = [...order].sort((a, b) => {
-                const aTime = data[a]?.updatedAtRaw?.toMillis?.() ?? 0; // convert Timestamp to milliseconds
-                const bTime = data[b]?.updatedAtRaw?.toMillis?.() ?? 0;
-                return bTime - aTime; // descending order (most recent first)
-              }); 
-
-              useSublistStore.getState().setSublistOrder(sortedOrder); */
               sortSublistOrder();
             });
           });
@@ -281,6 +247,14 @@ export default function BucketList() {
   const router = useRouter();
 
   const styles = getStyles(colorScheme);
+
+  // Filter modal
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    owned: undefined,
+    shared: undefined,
+    visibility: undefined,
+    progressStatus: undefined,
+  });
 
   // Open filter modal
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -350,6 +324,8 @@ export default function BucketList() {
         bottomSheetModalRef={bottomSheetModalRef}
         filteredSublists={filteredSublists}
         setFilteredSublists={setFilteredSublists}
+        filterOptions={filterOptions}
+        setFilterOptions={setFilterOptions}
       />
     </SafeAreaView>
   );

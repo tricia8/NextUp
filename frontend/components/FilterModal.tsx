@@ -13,17 +13,22 @@ import {
 } from "react-native";
 import FilterPicker from "./FilterPicker";
 import { Sublist } from "@/types/sublist";
+import { FilterOptions } from "@/types/filterOptions";
 
 type FilterModalProps = {
   bottomSheetModalRef: React.RefObject<BottomSheetModal | null>;
   filteredSublists: Sublist[];
   setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
+  filterOptions?: FilterOptions;
+  setFilterOptions?: React.Dispatch<React.SetStateAction<FilterOptions>>;
 };
 
 export default function FilterModal({
   bottomSheetModalRef,
   filteredSublists,
   setFilteredSublists,
+  filterOptions = {},
+  setFilterOptions = () => {},
 }: FilterModalProps) {
   const colorScheme = useColorScheme();
   const styles = getStyles(colorScheme);
@@ -65,6 +70,8 @@ export default function FilterModal({
             closeSheet={closeSheet}
             sublistData={filteredSublists}
             setFilteredSublists={setFilteredSublists}
+            filterOptions={filterOptions}
+            setFilterOptions={setFilterOptions}
           />
         </View>
       </BottomSheetScrollView>
