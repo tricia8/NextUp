@@ -29,6 +29,7 @@ import { AuthContext } from "@/context/AuthContext";
 import { User } from "@/types/user";
 import LoadingScreen from "@/components/Loading";
 import { RFValue } from "react-native-responsive-fontsize";
+import { debouncePress } from "@/utils/debouncePress";
 
 export default function newSubList() {
   const { user, loading } = useContext(AuthContext);
@@ -182,12 +183,12 @@ export default function newSubList() {
     }
   };
 
-  const handleSubmission = () => {
+  const handleSubmission = async () => {
     Keyboard.dismiss();
 
     if (validateForm()) {
       setIsLoading(true);
-      submit();
+      await submit();
       setIsLoading(false);
     } else {
       showMessage({
@@ -200,6 +201,10 @@ export default function newSubList() {
       });
     }
   };
+
+  const debounced = debouncePress(async () => {
+    await handleSubmission();
+  }, 800);
 
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
@@ -258,7 +263,7 @@ export default function newSubList() {
           )}
 
           <TouchableOpacity
-            onPress={handleSubmission}
+            onPress={async () => await debounced()}
             style={[styles.addButton, styles.submitButton]}
           >
             <ThemedText>Create Sublist</ThemedText>

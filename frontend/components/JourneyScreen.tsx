@@ -16,6 +16,8 @@ import {
   getAllEvents,
   getRelationship,
 } from "@/firebase/firestore";
+import { debouncePress } from "@/utils/debouncePress";
+import { router } from "expo-router";
 
 type SubBucketList = {
   id: string;

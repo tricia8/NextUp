@@ -108,6 +108,7 @@ export default function GoalList({
         estimatedItemSize={130}
         contentContainerStyle={{ paddingBottom: 80 }}
         style={{ flex: 1 }}
+        extraData={colorScheme}
       />
 
       {modalVisible && (

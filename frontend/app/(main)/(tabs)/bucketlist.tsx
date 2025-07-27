@@ -1,8 +1,16 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useContext, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ColorSchemeName,
+  Keyboard,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
@@ -13,35 +21,157 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { RFValue } from "react-native-responsive-fontsize";
 import { AuthContext } from "@/context/AuthContext";
-import { getAllSubBucketLists } from "@/firebase/firestore";
+import {
+  getAllSubBucketLists,
+  getUnownedSubBucketLists,
+  getOwnedSubBucketLists,
+} from "@/firebase/firestore";
 import { Sublist } from "@/types/sublist";
 import LoadingScreen from "@/components/Loading";
 import { showMessage } from "react-native-flash-message";
 import SublistItems from "@/components/SublistItems";
 import SublistSearchBar from "@/components/SublistSearchBar";
 import { ThemedText } from "@/components/ThemedText";
+import { useSublistStore } from "@/stores/sublistStore";
+import { useShallow } from "zustand/react/shallow";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+import { auth, db } from "@/firebase/firebaseConfig";
+import FilterModal from "@/components/FilterModal";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { debouncePress } from "@/utils/debouncePress";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
 
   const uid = user?.uid;
-  const [sublists, setSublists] = useState<Sublist[]>([]);
+  //  const [sublists, setSublists] = useState<Sublist[]>([]);
   const [filteredSublists, setFilteredSublists] = useState<Sublist[]>([]);
   const [version, setVersion] = useState(false); // toggle to trigger refetch
   const [isLoading, setIsLoading] = useState(false); // loading state for sublists
 
   const colorScheme = useColorScheme(); // 'light' or 'dark'
 
+  const { setSublists, updateCachedSublist, addSublist } = useSublistStore();
+  const sublistRecord = useSublistStore(
+    useShallow((state) => state.sublistData || ({} as Record<string, Sublist>))
+  );
+
+  const sublistOrder = useSublistStore(
+    useShallow((state) => state.sublistOrder || [])
+  );
+
+  // Sublist array for flashlist
+  const bucketList: Sublist[] = useMemo(() => {
+    return sublistOrder?.map((id) => sublistRecord?.[id]) ?? [];
+  }, [sublistRecord, sublistOrder]);
+
+  useEffect(() => {
+    setFilteredSublists(bucketList);
+  }, [bucketList]);
+
+  // Debounce function
+  const handlePress = useCallback(
+    debouncePress(() => {
+      router.push("../new-sublist");
+    }, 800),
+    [] // empty dependencies so it's created only once
+  );
+
   useFocusEffect(
     useCallback(() => {
       if (!uid) return;
+      let isActive = true;
+      let unsubUnownedSublists: (() => void) | undefined;
+      let unsubOwnedSublists: (() => void) | undefined;
+
       const fetchSubBucketLists = async () => {
         try {
-          setIsLoading(true);
-          const sublists = (await getAllSubBucketLists()) as Sublist[];
-          setSublists(sublists);
-          setIsLoading(false);
-          console.log("Fetched sub-bucket lists:", sublists);
+          const cachedSublistCollection =
+            useSublistStore.getState().sublistData;
+
+          if (!cachedSublistCollection) {
+            // store doesn't have sublist collection yet
+            setIsLoading(true);
+            const sublists = (await getAllSubBucketLists()) as Sublist[];
+            console.log("Fetched sub-bucket lists:", sublists);
+
+            if (sublists.length === 0) {
+              setIsLoading(false);
+              return;
+            }
+
+            // build sublists record and order array
+            const sublistRecord: Record<string, Sublist> = {};
+            const sublistOrder: string[] = [];
+
+            sublists.forEach((sublist: Sublist) => {
+              sublistRecord[sublist.id] = {
+                ...sublist,
+              };
+              sublistOrder.push(sublist.id);
+            });
+
+            if (isActive) {
+              setSublists(sublistRecord, sublistOrder);
+            }
+            setIsLoading(false);
+          }
+
+          // 2 snapshot listeners for sublists
+          const unownedSublistsRef = collection(
+            db,
+            "users",
+            uid,
+            "sharedSublists"
+          );
+
+          const q1 = query(unownedSublistsRef, orderBy("updatedAt", "desc"));
+
+          console.log("Signed-in UID:", auth.currentUser?.uid);
+          console.log("Trying to listen to unowned sublists of:", uid);
+
+          unsubUnownedSublists = onSnapshot(q1, async (docSnap) => {
+            if (!isActive) return; // prevent state update after unmount
+
+            const unownedSublistsArray = await getUnownedSubBucketLists(); // sorted by updatedAt desc
+            unownedSublistsArray.forEach((sublist: Sublist) => {
+              if (sublist.id in sublistRecord) {
+                // update existing sublist
+                updateCachedSublist(sublist.id, sublist, sublist.ownerId);
+              } else {
+                // add new sublist, append to the front of sublistOrder
+                addSublist(sublist.id, sublist, sublist.ownerId);
+              }
+              // re-sort sublistOrder by updatedAt to maintain order
+            });
+          });
+
+          const ownedSublistsRef = collection(db, "users", uid, "bucketList");
+          console.log("Trying to listen to owned sublists of:", uid);
+
+          const q2 = query(ownedSublistsRef, orderBy("updatedAt", "desc"));
+
+          unsubOwnedSublists = onSnapshot(q2, async (docSnap) => {
+            if (!isActive) return; // prevent state update after unmount
+
+            const ownedSublistsArray = await getOwnedSubBucketLists(); // sorted by updatedAt desc
+            ownedSublistsArray.forEach((sublist: Sublist) => {
+              if (sublist.id in sublistRecord) {
+                // update existing sublist
+                updateCachedSublist(sublist.id, sublist, sublist.ownerId);
+              } else {
+                // add new sublist, append to the front of sublistOrder
+                addSublist(sublist.id, sublist, sublist.ownerId);
+              }
+              // re-sort sublistOrder by updatedAt to maintain order
+            });
+          });
         } catch (error) {
           console.error("Error fetching sub-bucket lists:", error);
           showMessage({
@@ -60,6 +190,13 @@ export default function BucketList() {
       };
 
       fetchSubBucketLists();
+
+      // Do something when the screen is unfocused
+      return () => {
+        isActive = false; // Avoids setting state after unmount
+        if (unsubUnownedSublists) unsubUnownedSublists();
+        if (unsubOwnedSublists) unsubOwnedSublists();
+      };
     }, [uid, version]) // `version` toggling triggers refetch
   );
 
@@ -71,6 +208,14 @@ export default function BucketList() {
     return <LoadingScreen />;
   }
 
+  // Open filter modal
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+  const handlePresentModalPress = () => {
+    Keyboard.dismiss(); // dismiss keyboard if open
+    bottomSheetModalRef.current?.present();
+  };
+
   return (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
@@ -78,10 +223,15 @@ export default function BucketList() {
           <SublistSearchBar
             setFilteredSublists={setFilteredSublists}
             filteredSublists={filteredSublists}
-            sublists={sublists}
+            // sublists={sublists}
+            sublists={bucketList}
           />
 
-          <TouchableOpacity style={{ justifyContent: "center" }}>
+          <TouchableOpacity
+            style={{ justifyContent: "center" }}
+            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            onPress={handlePresentModalPress}
+          >
             <Ionicons
               size={35}
               name="filter-circle-outline"
@@ -92,7 +242,7 @@ export default function BucketList() {
 
         {isLoading ? (
           <LoadingScreen />
-        ) : sublists.length === 0 ? (
+        ) : bucketList.length === 0 ? (
           <View style={styles.emptyListView}>
             <ThemedText style={styles.emptyListText}>
               Looks empty here...{"\n"}Add a sublist to get things rolling!
@@ -103,7 +253,6 @@ export default function BucketList() {
             <SublistItems
               uid={uid}
               data={filteredSublists}
-              updateData={setSublists}
               toggleVersion={() => setVersion(!version)}
               colorScheme={colorScheme}
             />
@@ -112,7 +261,7 @@ export default function BucketList() {
 
         <View style={{ flex: 0.2 }}>
           <TouchableOpacity
-            onPress={() => router.push("../new-sublist")}
+            onPress={handlePress}
             activeOpacity={0.5}
             style={styles.addButton}
           >
@@ -120,6 +269,12 @@ export default function BucketList() {
           </TouchableOpacity>
         </View>
       </ThemedView>
+
+      <FilterModal
+        bottomSheetModalRef={bottomSheetModalRef}
+        filteredSublists={filteredSublists}
+        setFilteredSublists={setFilteredSublists}
+      />
     </SafeAreaView>
   );
 }

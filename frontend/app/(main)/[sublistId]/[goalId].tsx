@@ -221,12 +221,10 @@ export default function GoalPage() {
 
   const [isFetching, setIsFetching] = useState(false);
 
-  // Sublist fields for editing
+  // Goal fields for editing
   const [isEditing, setIsEditing] = useState(false);
-  const [goalTitle, setTitle] = useState(goal?.title || "Dummy Title");
-  const [goalDescription, setDesc] = useState(
-    goal?.description || "Dummy Description"
-  );
+  const [goalTitle, setTitle] = useState(goal?.title || "");
+  const [goalDescription, setDesc] = useState(goal?.description || "");
 
   // Date Time picker
   const [deadlineString, setDeadlineString] = useState(""); // string
@@ -283,11 +281,9 @@ export default function GoalPage() {
   });
 
   // Cache original values
-  const [initialTitle, setInitialTitle] = useState(
-    goal?.title || "Dummy Title"
-  );
+  const [initialTitle, setInitialTitle] = useState(goal?.title || "");
   const [initialDescription, setInitialDescription] = useState(
-    goal?.description || "Dummy Description"
+    goal?.description || ""
   );
   const [initialCategories, setInitialCategories] = useState(
     goal?.categories || []
@@ -550,7 +546,7 @@ export default function GoalPage() {
                   sublistId={sublistId as string}
                   goalId={goalId as string}
                   posts={postList}
-                  isDark={isDark}
+                  colorScheme={colorScheme}
                 />
               </View>
             </View>

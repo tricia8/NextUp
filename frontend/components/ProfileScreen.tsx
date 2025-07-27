@@ -48,6 +48,23 @@ export default function ProfileScreen({ uid }: ProfileProps) {
   const router = useRouter();
   const finalUid = uid ?? auth.currentUser?.uid;
 
+  const handleViewFriendsPress = useCallback(
+    debouncePress(() => {
+      router.push({
+        pathname: "../friends",
+        params: { viewedUid: finalUid },
+      });
+    }),
+    [uid]
+  );
+
+  const handleAddFriendPress = useCallback(
+    debouncePress(() => {
+      router.push("../addfriends");
+    }),
+    [uid]
+  );
+
   useFocusEffect(
     useCallback(() => {
       if (!finalUid) return;
@@ -204,12 +221,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
           <View style={styles.friendsContainer}>
             <TouchableOpacity
               style={styles.button}
-              onPress={debouncePress(() => {
-                router.push({
-                  pathname: "../friends",
-                  params: { viewedUid: finalUid },
-                });
-              })}
+              onPress={handleViewFriendsPress}
             >
               <Ionicons name="people-outline" color="white" size={ms(18)} />
               <Text style={styles.buttonText}>View Friends</Text>
@@ -219,9 +231,7 @@ export default function ProfileScreen({ uid }: ProfileProps) {
               <TouchableOpacity
                 testID="add-friends"
                 style={styles.button}
-                onPress={debouncePress(() => {
-                  router.push("../addfriends");
-                })}
+                onPress={handleAddFriendPress}
               >
                 <MaterialIcons name="group-add" color="white" size={ms(18)} />
               </TouchableOpacity>

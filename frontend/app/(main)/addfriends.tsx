@@ -71,7 +71,7 @@ export default function UsersList() {
 
       const requestId = await createRequest(currentUserId, friendId);
       const requestInfo = await getRequestInfo(requestId);
-          
+
       setSentRequests((prev) => [...prev, requestInfo]); // to update UI to reflect "requested"
 
       const friendName = requestInfo.receiverName;
@@ -96,7 +96,7 @@ export default function UsersList() {
           <UserSearch
             users={users}
             showAddButton={true}
-            placeholder="Seach users"
+            placeholder="Search users"
             userId={currentUserId}
             friendUids={friendUids}
             handleAddFriend={handleAddFriend}

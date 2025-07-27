@@ -3,6 +3,7 @@ import {
   ColorSchemeName,
   StyleSheet,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
@@ -11,6 +12,7 @@ import { ThemedText } from "./ThemedText";
 import { RFValue } from "react-native-responsive-fontsize";
 import { Goal } from "@/types/goal";
 import CategoryChips from "./CategoryChips";
+import { debouncePress } from "@/utils/debouncePress";
 
 interface Props extends Partial<Goal> {
   title: string;
@@ -29,18 +31,19 @@ export default function GoalCard({
   onPress,
   colorScheme,
 }: Props) {
-  const styles = getStyles(colorScheme);
+  const isDark = colorScheme === "dark";
+  const styles = getStyles(isDark);
 
   return (
     <LinearGradient
       colors={
-        colorScheme === "dark" ? ["#0f2027", "#188991"] : ["#d0e6fa", "#b3d2f2"] // ["#dcf4a9", "#b2df75"]
+        isDark ? ["#0f2027", "#188991"] : ["#d0e6fa", "#b3d2f2"] // ["#dcf4a9", "#b2df75"]
       }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.itemContainer}
     >
-      <TouchableOpacity onPress={onPress} style={{ flex: 1 }}>
+      <TouchableOpacity onPress={debouncePress(onPress)} style={{ flex: 1 }}>
         <View style={styles.row}>
           {deadline && (
             <FontAwesome6 name="hourglass-half" size={20} color="#f64b4b" />
@@ -69,7 +72,7 @@ export default function GoalCard({
   );
 }
 
-const getStyles = (colorScheme: ColorSchemeName) =>
+const getStyles = (isDark: boolean) =>
   StyleSheet.create({
     itemContainer: {
       flexDirection: "column",
@@ -98,6 +101,6 @@ const getStyles = (colorScheme: ColorSchemeName) =>
     },
     status: {
       fontSize: 13,
-      color: colorScheme === "dark" ? "#bfbfbf" : "#228669",
+      color: isDark ? "#bfbfbf" : "#228669",
     },
   });

@@ -14,6 +14,8 @@ import { useContext } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import { debouncePress } from "@/utils/debouncePress";
+import { useSublistStore } from "@/stores/sublistStore";
+import { useUserStore } from "@/stores/userStore";
 
 type SideMenuProps = {
   open: boolean;
@@ -23,11 +25,14 @@ type SideMenuProps = {
 
 export default function SideMenu({ open, setOpen, testID }: SideMenuProps) {
   const { logout } = useContext(AuthContext);
-
   const router = useRouter();
+  const { clearStore } = useSublistStore();
+  const { clearUser } = useUserStore();
 
-  const logOut = () => {
-    logout();
+  const logOut = async () => {
+    await logout();
+    clearStore();
+    clearUser();
     router.replace("/(auth)/login");
   };
 
@@ -50,7 +55,10 @@ export default function SideMenu({ open, setOpen, testID }: SideMenuProps) {
   return (
     <View style={StyleSheet.absoluteFill}>
       {open && (
-        <TouchableWithoutFeedback testID="side-menu-overlay" onPress={() => setOpen(false)}>
+        <TouchableWithoutFeedback
+          testID="side-menu-overlay"
+          onPress={() => setOpen(false)}
+        >
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
       )}

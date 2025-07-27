@@ -19,11 +19,12 @@ import { deleteSubBucketList } from "@/firebase/firestore";
 import { showMessage } from "react-native-flash-message";
 import SwipeableRow from "./SwipeableRow";
 import DeleteModal from "./DeleteModal";
+import { useSublistStore } from "@/stores/sublistStore";
+import { debouncePress } from "@/utils/debouncePress";
 
 interface ItemProps {
   uid: string;
   data: Sublist[];
-  updateData: React.Dispatch<React.SetStateAction<Sublist[]>>;
   toggleVersion?: () => void; // optional, used to trigger refetch of data
   colorScheme: ColorSchemeName;
 }
@@ -31,10 +32,10 @@ interface ItemProps {
 export default function SublistItems({
   uid,
   data,
-  updateData,
   colorScheme,
   toggleVersion = () => {},
 }: ItemProps): ReactNode | Promise<ReactNode> {
+  const isDark = colorScheme === "dark";
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sublist | null>(null);
@@ -62,16 +63,20 @@ export default function SublistItems({
   };
 
   // delete sublist
+  const { addSublist, removeSublist } = useSublistStore();
   const handleDelete = async (sublist: Sublist) => {
     try {
       console.log("deleting sublist");
       console.log("userid", uid);
+      // Optimistic UI
+      removeSublist(sublist.id);
+
       await deleteSubBucketList(sublist);
       console.log("deleted!");
-      // update sublists state
-      updateData((prevSublists) =>
+
+      /* updateData((prevSublists) =>
         prevSublists.filter((list) => list.id !== sublist.id)
-      );
+      ); */
       toggleVersion?.();
       setModalVisible(false); // clsose modal after deletion
       showMessage({
@@ -94,6 +99,9 @@ export default function SublistItems({
         icon: "danger",
         duration: 5000,
       });
+
+      // Re-add to cache if deletion fails
+      addSublist(sublist.id, sublist, sublist.ownerId);
     }
   };
 
@@ -109,25 +117,21 @@ export default function SublistItems({
         }}
       >
         <LinearGradient
-          colors={
-            colorScheme === "dark"
-              ? ["#0f2027", "#188991"]
-              : ["#dcf4a9", "#b2df75"]
-          }
+          colors={isDark ? ["#0f2027", "#188991"] : ["#dcf4a9", "#b2df75"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.itemContainer}
         >
           <TouchableOpacity
             style={{ flex: 1 }}
-            onPress={() => handleSublistPress(item)}
+            onPress={debouncePress(() => handleSublistPress(item))}
           >
             <View style={{ flexDirection: "row", gap: 12 }}>
               {item?.collaborators?.length > 1 ? (
                 <Feather
                   name="users"
                   size={24}
-                  color={colorScheme === "dark" ? "white" : "black"}
+                  color={isDark ? "white" : "black"}
                 />
               ) : (
                 <></>
@@ -184,6 +188,7 @@ export default function SublistItems({
         estimatedItemSize={20}
         contentContainerStyle={{ paddingBottom: 100 }}
         keyExtractor={(item, index) => `${item.title}-${index}`}
+        extraData={colorScheme}
       />
       {modalVisible && (
         <View

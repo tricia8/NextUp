@@ -1,6 +1,5 @@
 import { LegendList } from "@legendapp/list";
-import { StyleSheet, Dimensions, StatusBar, View } from "react-native";
-import { RFValue } from "react-native-responsive-fontsize";
+import { StatusBar, View, ColorSchemeName } from "react-native";
 import { PostWithPending } from "@/types/postWithPending";
 import { useState } from "react";
 import DeleteModal from "./DeleteModal";
@@ -14,7 +13,7 @@ type PostListProps = {
   goalId: string;
   ownerId: string;
   posts: PostWithPending[];
-  isDark?: boolean;
+  colorScheme: ColorSchemeName;
 };
 
 export default function PostList({
@@ -23,7 +22,7 @@ export default function PostList({
   goalId,
   ownerId,
   posts,
-  isDark = false,
+  colorScheme,
 }: PostListProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<PostWithPending | null>(
@@ -87,10 +86,10 @@ export default function PostList({
     return (
       <PostItem
         item={item}
-        isDark={isDark}
         ownerId={ownerId}
         userId={userId}
         onDeletePress={onDeletePress}
+        colorScheme={colorScheme}
       />
     );
   };
@@ -102,6 +101,7 @@ export default function PostList({
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 80 }}
+        extraData={colorScheme}
       />
       {modalVisible && (
         <View
