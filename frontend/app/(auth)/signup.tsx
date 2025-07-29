@@ -137,6 +137,7 @@ export default function Signup() {
 
             <View style={styles.fieldContainer}>
               <FloatingLabelInput
+                testID="email-input"
                 label={"Email"}
                 value={email}
                 onChangeText={(value) => {
@@ -162,6 +163,7 @@ export default function Signup() {
               )}
 
               <FloatingLabelInput
+                testID="username-input"
                 label={"Username: 1 to 15 characters"}
                 value={username}
                 onChangeText={handleUsernameChange}
@@ -197,6 +199,7 @@ export default function Signup() {
               )}
 
               <FloatingLabelInput
+                testID="password-input"
                 label={"Password"}
                 isPassword
                 togglePassword={show}
@@ -239,6 +242,7 @@ export default function Signup() {
                 <TouchableOpacity
                   style={styles.accountButton}
                   onPress={handleAccountCreation}
+                  testID="signup-button"
                 >
                   <ThemedText
                     style={[styles.subHeading, styles.createAccountText]}
