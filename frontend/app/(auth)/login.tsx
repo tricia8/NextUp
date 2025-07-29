@@ -82,8 +82,9 @@ export default function Login() {
     }
   };
 
-  return (
-    loading? <LoadingScreen /> :
+  return loading ? (
+    <LoadingScreen />
+  ) : (
     <SafeAreaView style={styles.container} edges={[]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -108,6 +109,7 @@ export default function Login() {
 
             <View style={styles.fieldContainer}>
               <FloatingLabelInput
+                testID="email-input"
                 label={"Email"}
                 value={email}
                 onChangeText={(value) => {
@@ -133,6 +135,7 @@ export default function Login() {
               )}
 
               <FloatingLabelInput
+                testID="password-input"
                 label={"Password"}
                 isPassword
                 togglePassword={show}
@@ -144,12 +147,20 @@ export default function Login() {
                   }
                 }}
                 customShowPasswordComponent={
-                  <TouchableOpacity onPress={handleShowPassword}>
+                  <TouchableOpacity
+                    onPress={handleShowPassword}
+                    testID="show-password-icon"
+                  >
                     <Ionicons name="eye" size={24} color="black" />
                   </TouchableOpacity>
                 }
                 customHidePasswordComponent={
-                  <Ionicons name="eye-off" size={24} color="black" />
+                  <Ionicons
+                    name="eye-off"
+                    size={24}
+                    color="black"
+                    testID="hide-password-icon"
+                  />
                 }
                 leftComponent={
                   <SimpleLineIcons name="lock" size={22} color="black" />
@@ -179,6 +190,7 @@ export default function Login() {
                       handleLogin();
                     }
                   }}
+                  testID="login-button"
                 >
                   <ThemedText style={[styles.subHeading, styles.loginText]}>
                     Log in
