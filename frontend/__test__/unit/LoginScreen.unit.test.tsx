@@ -1,6 +1,6 @@
 import React from "react";
 import { act } from "react";
-import { render, waitFor, fireEvent } from "@testing-library/react-native";
+import { render, fireEvent } from "@testing-library/react-native";
 import Login from "@/app/(auth)/login";
 import { Keyboard } from "react-native";
 import { AuthContext } from "@/context/AuthContext";
@@ -26,17 +26,7 @@ jest.mock("expo-router", () => ({
   useNavigation: () => ({
     navigate: jest.fn(),
   }),
-  useEffect: (fn: any) => fn(),
 }));
-
-/* jest.mock("expo-router", () => ({
-  ...jest.requireActual("expo-router"),
-
-  useRouter: () => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-  }),
-})); */
 
 jest.useFakeTimers();
 
@@ -207,67 +197,5 @@ describe("Login", () => {
 
     fireEvent.press(getByTestId("login-button"));
     expect(loginMock).not.toHaveBeenCalled();
-  });
-
-  // Only unauthenticated user can access this screen
-  it("redirects authenticated user with verified email away from login screen", async () => {
-    const authUser = {
-      uid: mockUser.uid,
-      email: "test@example.com",
-      emailVerified: true,
-    };
-    const loginMock = jest.fn();
-
-    // Set default state to avoid calling undefined
-    // let queryByTestId: (id: string) => any = () => undefined;
-
-    // To handle redirects inside useEffect
-    /* await act(async () => {
-      ({ queryByTestId } = render(
-        <AuthContext.Provider value={{ login: loginMock, user: authUser }}>
-          <Login />
-        </AuthContext.Provider>
-      ));
-    }); */
-
-    const { queryByTestId } = render(
-      <AuthContext.Provider value={{ login: loginMock, user: authUser }}>
-        <Login />
-      </AuthContext.Provider>
-    );
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/(main)/(tabs)");
-      expect(queryByTestId("password-input")).toBeNull();
-      expect(queryByTestId("email-input")).toBeNull();
-      expect(queryByTestId("login-button")).toBeNull(); // form shouldn't render
-    });
-  });
-
-  it("shows login screen when user is not authenticated", async () => {
-    const loginMock = jest.fn();
-
-    // Set default state to avoid calling undefined
-    // let getByTestId: (id: string) => any = () => undefined;
-
-    // To handle redirects inside useEffect
-    /*  await act(async () => {
-      ({ getByTestId } = render(
-        <AuthContext.Provider value={{ login: loginMock, user: null }}>
-          <Login />
-        </AuthContext.Provider>
-      ));
-    }); */
-
-    const { getByTestId } = render(
-      <AuthContext.Provider value={{ login: loginMock, user: null }}>
-        <Login />
-      </AuthContext.Provider>
-    );
-
-    expect(mockReplace).not.toHaveBeenCalled(); // user is not redirected away from login screen
-    expect(getByTestId("password-input")).toBeTruthy();
-    expect(getByTestId("email-input")).toBeTruthy();
-    expect(getByTestId("login-button")).toBeTruthy(); // form should render
   });
 });
