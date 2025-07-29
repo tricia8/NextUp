@@ -169,7 +169,12 @@ export default function Signup() {
                 onChangeText={handleUsernameChange}
                 rightComponent={
                   userNameAvailable === true ? (
-                    <AntDesign name="checkcircle" size={22} color="#89d66b" />
+                    <AntDesign
+                      name="checkcircle"
+                      size={22}
+                      color="#89d66b"
+                      testID="check-icon"
+                    />
                   ) : undefined
                 }
                 leftComponent={
@@ -180,6 +185,7 @@ export default function Signup() {
               />
               {userNameAvailable === false && (
                 <ThemedText
+                  testID="inline-error-username-taken"
                   style={styles.errorText}
                   lightColor="#c40028"
                   darkColor="#ffb1c1"
@@ -211,12 +217,20 @@ export default function Signup() {
                   }
                 }}
                 customShowPasswordComponent={
-                  <TouchableOpacity onPress={handleShowPassword}>
+                  <TouchableOpacity
+                    onPress={handleShowPassword}
+                    testID="show-password-icon"
+                  >
                     <Ionicons name="eye" size={24} color="black" />
                   </TouchableOpacity>
                 }
                 customHidePasswordComponent={
-                  <Ionicons name="eye-off" size={24} color="black" />
+                  <Ionicons
+                    name="eye-off"
+                    size={24}
+                    color="black"
+                    testID="hide-password-icon"
+                  />
                 }
                 leftComponent={
                   <SimpleLineIcons name="lock" size={22} color="black" />
@@ -236,7 +250,7 @@ export default function Signup() {
             </View>
 
             {loading ? (
-              <ActivityIndicator size="large" />
+              <ActivityIndicator testID="loading-icon" size="large" />
             ) : (
               <>
                 <TouchableOpacity
