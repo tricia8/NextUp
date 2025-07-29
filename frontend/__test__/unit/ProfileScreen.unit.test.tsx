@@ -45,10 +45,28 @@ jest.mock("@/firebase/firestore", () => ({
   getUserStats: jest.fn(() =>
     Promise.resolve({ totalEvents: 5, completedEvents: 3 })
   ),
-  getRelationship: jest.fn(() => Promise.resolve("self")),
+  getUpcomingEvents: jest.fn().mockResolvedValue([]),
+  getOverdueEvents: jest.fn().mockResolvedValue([]),
+  getFriendRequests: jest.fn().mockResolvedValue([]),
+  getSublistInvites: jest.fn().mockResolvedValue([]),
+  getRelationship: jest.fn().mockResolvedValue("self"),
   deleteFriend: jest.fn(() => Promise.resolve()),
   updateProfile: jest.fn(() => Promise.resolve()),
 }));
+
+/* jest.mock("@/firebase/firestore", () => ({
+  getUserProfile: jest.fn(() =>
+    Promise.resolve({
+      ...mockUser,
+    })
+  ),
+  getUserStats: jest.fn(() =>
+    Promise.resolve({ totalEvents: 5, completedEvents: 3 })
+  ),
+  getRelationship: jest.fn(() => Promise.resolve("self")),
+  deleteFriend: jest.fn(() => Promise.resolve()),
+  updateProfile: jest.fn(() => Promise.resolve()),
+})); */
 
 jest.mock("@/components/JourneyScreen", () => {
   return () => {
@@ -86,7 +104,7 @@ describe("ProfileScreen", () => {
   });
 
   it("renders username", async () => {
-    const { getByText } = render(
+    const { getByText, debug } = render(
       <AuthContext.Provider value={contextValue}>
         <ProfileScreen />
       </AuthContext.Provider>
