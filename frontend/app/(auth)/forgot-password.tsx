@@ -89,6 +89,7 @@ export default function ResetPassword() {
             </ThemedText>
             <View style={styles.fieldContainer}>
               <FloatingLabelInput
+                testID="email-input"
                 label={"Email"}
                 value={email}
                 onChangeText={(value) => {
