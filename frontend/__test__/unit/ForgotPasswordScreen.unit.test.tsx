@@ -1,7 +1,10 @@
 import ResetPassword from "@/app/(auth)/forgot-password";
-import { AuthProvider } from "@/context/AuthContext";
-import { fireEvent, render } from "@testing-library/react-native";
+import { AuthContext, AuthProvider } from "@/context/AuthContext";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "@/firebase/firebaseConfig";
+import { showMessage } from "react-native-flash-message";
+import { FirebaseError } from "firebase/app";
 
 jest.mock("expo-font");
 jest.mock("expo-asset");
@@ -25,6 +28,15 @@ jest.mock("firebase/auth", () => ({
     callback(null); // simulate no logged-in user
     return () => {}; // return unsubscribe function
   }),
+}));
+
+// Mock error mapper
+jest.mock("@/utils/firebaseErrorMapper", () => ({
+  getFriendlyAuthErrorMessage: () => "Mock Firebase Error",
+}));
+
+jest.mock("react-native-flash-message", () => ({
+  showMessage: jest.fn(),
 }));
 
 describe("ResetPassword", () => {
@@ -57,5 +69,58 @@ describe("ResetPassword", () => {
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
   });
 
-  it("calls forgotPassword with correct email when 'Send link to email' is pressed", () => {});
+  it("calls forgotPassword with correct email when 'Send link to email' is pressed", async () => {
+    const { getByTestId, getByText } = renderScreen();
+
+    const emailInput = getByTestId("email-input");
+    fireEvent.changeText(emailInput, "test@example.com");
+    fireEvent.press(getByText("Send link to email"));
+
+    await waitFor(() => {
+      expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+        auth,
+        "test@example.com"
+      );
+      expect(showMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Check your email",
+          description: expect.stringContaining("test@example.com"),
+          type: "success",
+        })
+      );
+    });
+  });
+
+  it("clicking on 'Back to login' button navigates to the login page", () => {
+    const { getByText } = renderScreen();
+    fireEvent.press(getByText("Back to login"));
+    expect(mockPush).toHaveBeenCalledWith("/login");
+  });
+
+  it("shows error flash message on Firebase error", async () => {
+    const mockForgotPassword = jest.fn();
+    const error = new FirebaseError("1", "Firebase error");
+    mockForgotPassword.mockRejectedValueOnce(error);
+
+    const { getByText, getByTestId } = render(
+      <AuthContext.Provider
+        value={{ user: null, forgotPassword: mockForgotPassword }}
+      >
+        <ResetPassword />
+      </AuthContext.Provider>
+    );
+
+    fireEvent.changeText(getByTestId("email-input"), "test@example.com");
+    fireEvent.press(getByText("Send link to email"));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Error",
+          description: "Mock Firebase Error",
+          type: "danger",
+        })
+      );
+    });
+  });
 });
