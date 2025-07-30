@@ -20,9 +20,6 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("firebase/auth", () => ({
-  /* createUserWithEmailAndPassword: jest.fn(() =>
-    Promise.resolve({ user: { uid: "test-uid", emailVerified: false } })
-  ), */
   sendPasswordResetEmail: jest.fn(() => Promise.resolve()),
   onAuthStateChanged: jest.fn((auth, callback) => {
     callback(null); // simulate no logged-in user
@@ -67,6 +64,16 @@ describe("ResetPassword", () => {
 
     expect(getByText("Email is required")).toBeTruthy();
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it("clears error message when typing in email input", () => {
+    const { getByText, getByTestId, queryByText } = renderScreen();
+
+    fireEvent.press(getByText("Send link to email"));
+    expect(getByText("Email is required")).toBeTruthy();
+
+    fireEvent.changeText(getByTestId("email-input"), "test@example.com");
+    expect(queryByText("Email is required")).toBeNull();
   });
 
   it("calls forgotPassword with correct email when 'Send link to email' is pressed", async () => {
@@ -118,6 +125,35 @@ describe("ResetPassword", () => {
         expect.objectContaining({
           message: "Error",
           description: "Mock Firebase Error",
+          type: "danger",
+        })
+      );
+    });
+  });
+
+  it("shows fallback error on unexpected error", async () => {
+    const mockForgotPassword = jest.fn();
+    const error = new Error("Unexpected error");
+    mockForgotPassword.mockRejectedValueOnce(error);
+
+    const { getByText, getByTestId } = render(
+      <AuthContext.Provider
+        value={{ user: null, forgotPassword: mockForgotPassword }}
+      >
+        <ResetPassword />
+      </AuthContext.Provider>
+    );
+
+    fireEvent.changeText(getByTestId("email-input"), "test@example.com");
+    fireEvent.press(getByText("Send link to email"));
+
+    await waitFor(() => {
+      expect(showMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Unexpected Error",
+          description: expect.stringContaining(
+            "Something went wrong. Please try again"
+          ),
           type: "danger",
         })
       );
