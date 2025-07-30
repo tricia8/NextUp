@@ -1,11 +1,15 @@
-import React, { act } from "react";
+import React, { act, useContext } from "react";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
 import { Keyboard } from "react-native";
-import { AuthContext } from "@/context/AuthContext";
+import { AuthContext, AuthProvider } from "@/context/AuthContext";
 import Signup from "@/app/(auth)/signup";
 import { checkUniqueUsername, createUser } from "@/firebase/firestore";
 import { showMessage } from "react-native-flash-message";
 import { FirebaseError } from "firebase/app";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
 
 const mockUser = {
   uid: "test-uid",
@@ -40,6 +44,17 @@ jest.mock("expo-router", () => ({
   }),
 }));
 
+jest.mock("firebase/auth", () => ({
+  createUserWithEmailAndPassword: jest.fn(() =>
+    Promise.resolve({ user: { uid: "test-uid", emailVerified: false } })
+  ),
+  sendEmailVerification: jest.fn(() => Promise.resolve()),
+  onAuthStateChanged: jest.fn((auth, callback) => {
+    callback(null);
+    return () => {};
+  }),
+}));
+
 jest.mock("@/firebase/firestore", () => ({
   createUser: jest.fn(),
   checkUniqueUsername: jest.fn(),
@@ -70,7 +85,7 @@ describe("Signup", () => {
 
   // Clear mocks before each test
   beforeEach(() => {
-    jest.resetAllMocks(); // clears call history and resets all mocks to initial implementation
+    jest.clearAllMocks(); // clears call history and resets all mocks to initial implementation
   });
 
   it("updates email, username and password state on input change", () => {
@@ -257,6 +272,43 @@ describe("Signup", () => {
         expect.objectContaining({
           message: "Sign Up Failed",
           description: "Mock Firebase Error",
+        })
+      );
+    });
+  });
+
+  it("show user-friendly email verification alert on successful signup", async () => {
+    const { getByTestId } = render(
+      <AuthProvider>
+        <Signup />
+      </AuthProvider>
+    );
+
+    (checkUniqueUsername as jest.Mock).mockImplementationOnce((_, cb) =>
+      cb(true)
+    );
+
+    act(() => fillSignupForm(getByTestId));
+
+    await waitFor(() => {
+      expect(getByTestId("check-icon")).toBeTruthy();
+    });
+
+    fireEvent.press(getByTestId("signup-button"));
+
+    await waitFor(() => {
+      /* expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
+        "test@example.com",
+        "Pass123!"
+      ); */
+      expect(sendEmailVerification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          uid: "test-uid",
+        })
+      );
+      expect(showMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Verification Required",
         })
       );
     });
