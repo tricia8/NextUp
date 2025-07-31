@@ -21,10 +21,15 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      await user.reload(); // Refreshes the user's data from Firebase
+      setUser(auth.currentUser); // Use updated user info
+    } else {
+      setUser(null);
+    }
+    setLoading(false);
+  });
 
     return () => {
       unsubscribe();
