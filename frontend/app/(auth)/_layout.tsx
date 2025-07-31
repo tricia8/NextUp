@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { AuthContext } from "@/context/AuthContext";
 import { useRootNavigationState, usePathname } from "expo-router";
 
@@ -10,9 +10,10 @@ export default function AuthLayout() {
   const { user, loading } = useContext(AuthContext);
   const router = useRouter();
   const pathname = usePathname();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (!rootNavigationState?.key || loading) return;
+    if (!rootNavigationState?.key || loading || hasRedirected.current) return;
 
     /* if (user) {
       if (!user.emailVerified) {
@@ -27,26 +28,25 @@ export default function AuthLayout() {
     } */
 
     // User is signed in but email not verified -> go to login
-    if (user && !user.emailVerified) {
+    if (user && !user.emailVerified && pathname !== "/(auth)/login") {
+      hasRedirected.current = true;
       router.replace("/(auth)/login");
       return;
-    }
-
-    // User is signed in and verified -> go to main tabs
-    if (user && user.emailVerified) {
+    } else if (user && user.emailVerified && pathname !== "/(main)/(tabs)") {
+      // User is signed in and verified -> go to main tabs
+      hasRedirected.current = true;
       router.replace("/(main)/(tabs)");
       return;
-    }
-
-    // User is not signed in -> go to login
-    if (!user) {
+    } else if (!user && pathname !== "/(auth)/login") {
+      // User is not signed in -> go to login
+      hasRedirected.current = true;
       router.replace("/(auth)/login");
     }
-  }, [user, loading, rootNavigationState]);
+  }, [user, loading, pathname, rootNavigationState?.key]);
 
-  useEffect(() => {
+  /* useEffect(() => {
     console.log("Auth Check", { user, emailVerified: user?.emailVerified });
-  }, [user]);
+  }, [user]); */
 
   if (!rootNavigationState?.key) {
     console.log("Waiting for navigation state...");

@@ -82,7 +82,7 @@ export function AuthProvider({ children }) {
         password
       );
 
-      if (user) {
+      if (userCredential) {
         const results = userCredential.user;
         await sendEmailVerification(results);
         console.log("sent email verification");
