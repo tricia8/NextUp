@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "@/context/AuthContext";
-import { useRootNavigationState } from "expo-router";
+import { useRootNavigationState, usePathname } from "expo-router";
 
 export default function AuthLayout() {
   // const navigation = useNavigation();
@@ -9,17 +9,20 @@ export default function AuthLayout() {
   const rootNavigationState = useRootNavigationState();
   const { user, loading } = useContext(AuthContext);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!rootNavigationState?.key || loading) return;
 
     if (user) {
       if (!user.emailVerified) {
-        console.log("User not verified, redirecting to login");
-        router.replace("/(auth)/login");
+        if (pathname !== "/(auth)/login") {
+          router.replace("/(auth)/login");
+        }
       } else {
-        console.log("User verified, redirecting to main");
-        router.replace("/(main)/(tabs)");
+        if (pathname !== "/(main)/(tabs)") {
+          router.replace("/(main)/(tabs)");
+        }
       }
     }
   }, [user, loading, rootNavigationState]);
