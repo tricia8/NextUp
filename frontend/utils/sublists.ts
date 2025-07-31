@@ -121,7 +121,7 @@ export function filterSublistsAdvanced(
       return false;
     if (
       typeof options.shared === "boolean" &&
-      !filterBySharedStatus(sublist, !options.shared)
+      !filterBySharedStatus(sublist, options.shared)
     )
       return false;
     if (options.visibility && sublist.accessLevel !== options.visibility)

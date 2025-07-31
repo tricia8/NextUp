@@ -20,6 +20,7 @@ import { pickImage } from "@/cloudinary/pickimage";
 import { uploadToCloudinary } from "@/cloudinary/upload";
 import { debouncePress } from "@/utils/debouncePress";
 import ProfilePic from "./ProfilePic";
+import { useUserStore } from "@/stores/userStore";
 
 const PROFILEPICSIZE = ms(100);
 
@@ -40,7 +41,7 @@ export default function EditProfile({
   setCategory,
   testID,
 }: editProfileProps) {
-  const [bioText, setBioText] = useState(userData.bio);
+  const [bioText, setBioText] = useState(userData.bio ?? "");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string[]>([]);
   const [image, setImage] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export default function EditProfile({
     }
   }, [userData]);
 
+  const { setUser } = useUserStore();
   const handleSave = async (uid: string, profileDetails: Partial<User>) => {
     try {
       if (base64) {
@@ -64,9 +66,10 @@ export default function EditProfile({
       await updateProfile(uid, profileDetails);
       Alert.alert("Saved!");
       const updatedUser = await getUserProfile(uid); // refetch
+      onClose();
       setUserData(updatedUser);
       setCategory(updatedUser?.category?.[0] ?? "--");
-      onClose();
+      setUser(updatedUser);
     } catch (error) {
       console.log(error);
       Alert.alert("Error saving");
@@ -99,7 +102,11 @@ export default function EditProfile({
         <ThemedView style={styles.mainContainer}>
           <View style={styles.profileContainer}>
             <TouchableOpacity onPress={debouncePress(handlePickImage)}>
-              <ProfilePic testID="profile-pic" imageUrl={image} size={PROFILEPICSIZE} />
+              <ProfilePic
+                testID="profile-pic"
+                imageUrl={image}
+                size={PROFILEPICSIZE}
+              />
             </TouchableOpacity>
 
             <ThemedText type="defaultSemiBold">{userData.username}</ThemedText>

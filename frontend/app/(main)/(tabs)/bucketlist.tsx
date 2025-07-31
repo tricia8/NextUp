@@ -45,6 +45,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import FilterModal from "@/components/FilterModal";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { debouncePress } from "@/utils/debouncePress";
+import { FilterOptions } from "@/types/filterOptions";
 
 export default function BucketList() {
   const { user, loading } = useContext(AuthContext);
@@ -52,6 +53,7 @@ export default function BucketList() {
   const uid = user?.uid;
   //  const [sublists, setSublists] = useState<Sublist[]>([]);
   const [filteredSublists, setFilteredSublists] = useState<Sublist[]>([]);
+  const [searchResults, setSearchResults] = useState<Sublist[]>([]); // for searching within filtered data
   const [version, setVersion] = useState(false); // toggle to trigger refetch
   const [isLoading, setIsLoading] = useState(false); // loading state for sublists
 
@@ -73,7 +75,12 @@ export default function BucketList() {
 
   useEffect(() => {
     setFilteredSublists(bucketList);
+    console.log("bucketList updated:", bucketList);
   }, [bucketList]);
+
+  useEffect(() => {
+    setSearchResults(filteredSublists); // keep search in sync
+  }, [filteredSublists]);
 
   // Debounce function
   const handlePress = useCallback(
@@ -82,6 +89,37 @@ export default function BucketList() {
     }, 800),
     [] // empty dependencies so it's created only once
   );
+
+  function sortSublistOrder() {
+    function toMillis(timestamp: { _nanoseconds: number; _seconds: number }) {
+      return (
+        timestamp._seconds * 1000 + Math.floor(timestamp._nanoseconds / 1000000)
+      );
+    }
+
+    const { sublistData } = useSublistStore.getState();
+    const millisMap = Object.fromEntries(
+      Object.entries(sublistData).map(([id, data]) => [
+        id,
+        data.updatedAtRaw ? toMillis(data.updatedAtRaw) : 0,
+      ])
+    );
+
+    const sorted = Object.keys(sublistData).sort(
+      (a, b) => millisMap[b] - millisMap[a]
+    );
+
+    useSublistStore.getState().setSublistOrder(sorted);
+
+    console.log(
+      "Sorted sublistOrder:",
+      sorted.map((id) => ({
+        id,
+        updatedAt: millisMap[id] || undefined,
+        updated: sublistData[id]?.updatedAt,
+      }))
+    );
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -95,7 +133,10 @@ export default function BucketList() {
           const cachedSublistCollection =
             useSublistStore.getState().sublistData;
 
-          if (!cachedSublistCollection) {
+          if (
+            !cachedSublistCollection ||
+            Object.keys(cachedSublistCollection).length === 0
+          ) {
             // store doesn't have sublist collection yet
             setIsLoading(true);
             const sublists = (await getAllSubBucketLists()) as Sublist[];
@@ -140,15 +181,19 @@ export default function BucketList() {
             if (!isActive) return; // prevent state update after unmount
 
             const unownedSublistsArray = await getUnownedSubBucketLists(); // sorted by updatedAt desc
+            const { sublistData } = useSublistStore.getState();
+
             unownedSublistsArray.forEach((sublist: Sublist) => {
-              if (sublist.id in sublistRecord) {
+              if (sublist.id in sublistData) {
                 // update existing sublist
                 updateCachedSublist(sublist.id, sublist, sublist.ownerId);
               } else {
                 // add new sublist, append to the front of sublistOrder
                 addSublist(sublist.id, sublist, sublist.ownerId);
               }
+
               // re-sort sublistOrder by updatedAt to maintain order
+              sortSublistOrder();
             });
           });
 
@@ -161,15 +206,19 @@ export default function BucketList() {
             if (!isActive) return; // prevent state update after unmount
 
             const ownedSublistsArray = await getOwnedSubBucketLists(); // sorted by updatedAt desc
+            const { sublistData } = useSublistStore.getState();
+
             ownedSublistsArray.forEach((sublist: Sublist) => {
-              if (sublist.id in sublistRecord) {
+              if (sublist.id in sublistData) {
                 // update existing sublist
                 updateCachedSublist(sublist.id, sublist, sublist.ownerId);
               } else {
                 // add new sublist, append to the front of sublistOrder
                 addSublist(sublist.id, sublist, sublist.ownerId);
               }
+
               // re-sort sublistOrder by updatedAt to maintain order
+              sortSublistOrder();
             });
           });
         } catch (error) {
@@ -197,16 +246,20 @@ export default function BucketList() {
         if (unsubUnownedSublists) unsubUnownedSublists();
         if (unsubOwnedSublists) unsubOwnedSublists();
       };
-    }, [uid, version]) // `version` toggling triggers refetch
+    }, [uid /* version */])
   );
 
   const router = useRouter();
 
   const styles = getStyles(colorScheme);
 
-  if (loading || !user?.uid || isLoading) {
-    return <LoadingScreen />;
-  }
+  // Filter modal
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    owned: undefined,
+    shared: undefined,
+    visibility: undefined,
+    progressStatus: undefined,
+  });
 
   // Open filter modal
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -216,12 +269,14 @@ export default function BucketList() {
     bottomSheetModalRef.current?.present();
   };
 
-  return (
+  return loading || !user?.uid || isLoading ? (
+    <LoadingScreen />
+  ) : (
     <SafeAreaView style={styles.safeView} edges={[]}>
       <ThemedView lightColor="#a2e6ff" style={styles.themedView}>
         <View style={styles.searchFilterBar}>
           <SublistSearchBar
-            setFilteredSublists={setFilteredSublists}
+            setSearchResults={setSearchResults}
             filteredSublists={filteredSublists}
             // sublists={sublists}
             sublists={bucketList}
@@ -252,7 +307,7 @@ export default function BucketList() {
           <View style={{ flex: 0.8 }}>
             <SublistItems
               uid={uid}
-              data={filteredSublists}
+              data={searchResults}
               toggleVersion={() => setVersion(!version)}
               colorScheme={colorScheme}
             />
@@ -272,8 +327,11 @@ export default function BucketList() {
 
       <FilterModal
         bottomSheetModalRef={bottomSheetModalRef}
-        filteredSublists={filteredSublists}
+        sublistData={bucketList}
         setFilteredSublists={setFilteredSublists}
+        filterOptions={filterOptions}
+        setFilterOptions={setFilterOptions}
+        setSearchResults={setSearchResults}
       />
     </SafeAreaView>
   );

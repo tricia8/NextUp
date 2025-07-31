@@ -26,8 +26,8 @@ import { showMessage } from "react-native-flash-message";
 import { getFriendlyAuthErrorMessage } from "@/utils/firebaseErrorMapper";
 import { useUserStore } from "@/stores/userStore";
 import { getOwnerProfile } from "@/firebase/firestore";
-import { UserWithCategory } from "@/types/userWithCategory";
 import LoadingScreen from "@/components/Loading";
+import { User } from "@/types/user";
 
 export default function Login() {
   const { login } = useContext(AuthContext);
@@ -65,7 +65,7 @@ export default function Login() {
       const userCredential = await login(email, password);
       const user = userCredential.user;
       const profile = await getOwnerProfile(user.uid);
-      useUserStore.getState().setUser(profile as UserWithCategory);
+      useUserStore.getState().setUser(profile as User);
       console.log("User logged in:", profile);
     } catch (error) {
       if (error instanceof FirebaseError) {

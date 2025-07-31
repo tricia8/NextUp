@@ -16,6 +16,7 @@ interface SublistState {
     sublistRecord: Record<string, Sublist>,
     sublistOrder: string[]
   ) => void;
+  setSublistOrder: (newOrder: string[]) => void;
   addSublist: (sublistId: string, data: Sublist, ownerId: string) => void;
   updateCachedSublist: (
     sublistId: string,
@@ -74,6 +75,8 @@ export const useSublistStore = create<SublistState>()((set) => ({
       sublistData: sublistRecord,
       sublistOrder: sublistOrder,
     })),
+
+  setSublistOrder: (newOrder) => set((state) => ({ sublistOrder: newOrder })),
 
   addSublist: (sublistId, data, ownerId) =>
     set((state) => {

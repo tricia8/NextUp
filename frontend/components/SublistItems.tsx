@@ -77,7 +77,7 @@ export default function SublistItems({
       /* updateData((prevSublists) =>
         prevSublists.filter((list) => list.id !== sublist.id)
       ); */
-      toggleVersion?.();
+      // toggleVersion?.();
       setModalVisible(false); // clsose modal after deletion
       showMessage({
         message: "Success",

@@ -6,27 +6,36 @@ import { RFValue } from "react-native-responsive-fontsize";
 import { filterSublistsAdvanced } from "@/utils/sublists";
 import { Sublist } from "@/types/sublist";
 import { auth } from "@/firebase/firebaseConfig";
+import { FilterOptions } from "@/types/filterOptions";
 
 type FilterPickerProps = {
   sublistData: Sublist[]; // pass in filtered sublists
   closeSheet: () => void;
   setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
+  filterOptions: FilterOptions;
+  setFilterOptions: React.Dispatch<React.SetStateAction<FilterOptions>>;
+  setSearchResults: React.Dispatch<React.SetStateAction<Sublist[]>>;
 };
 
 export default function FilterPicker({
   sublistData,
   closeSheet,
   setFilteredSublists,
+  filterOptions,
+  setFilterOptions,
+  setSearchResults,
 }: FilterPickerProps) {
   // Filters
-  const [owned, setOwned] = useState<boolean | undefined>(undefined);
+  /* const [owned, setOwned] = useState<boolean | undefined>(undefined);
   const [shared, setShared] = useState<boolean | undefined>(undefined);
   const [visibility, setVisibility] = useState<
     "private" | "friends" | "everyone" | undefined
   >(undefined);
   const [progressStatus, setProgressStatus] = useState<
     "Completed" | "In Progress" | "Getting Started" | undefined
-  >(undefined);
+  >(undefined); */
+
+  const { owned, shared, visibility, progressStatus } = filterOptions;
 
   const uid = auth.currentUser?.uid;
 
@@ -36,39 +45,57 @@ export default function FilterPicker({
       return;
     }
     closeSheet();
-    setFilteredSublists(
-      filterSublistsAdvanced(uid, sublistData, {
-        owned,
-        shared,
-        visibility,
-        progressStatus,
-      })
-    );
+    const results = filterSublistsAdvanced(uid, sublistData, {
+      owned,
+      shared,
+      visibility,
+      progressStatus,
+    });
+
+    setFilteredSublists(results); // update base filtered list for search bar to work on
+    setSearchResults(results); // reset search too
+  };
+
+  const resetAllFilters = () => {
+    setFilterOptions({
+      owned: undefined,
+      shared: undefined,
+      visibility: undefined,
+      progressStatus: undefined,
+    });
   };
 
   return (
     <View style={{ gap: 10 }}>
-      <ThemedText type="subtitle">Filter Options</ThemedText>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <ThemedText type="subtitle">Filter Options</ThemedText>
+        <TouchableOpacity onPress={resetAllFilters}>
+          <ThemedText style={styles.clearText}>Reset All</ThemedText>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.chipsContainer}>
         <ThemedText style={styles.infoText}>Who owns it</ThemedText>
         <View style={styles.innerContainer}>
           <View style={{ flexDirection: "row", gap: 5, flexWrap: "wrap" }}>
             <FilterChip
               onPress={() => {
-                setOwned(true);
+                setFilterOptions((prev) => ({ ...prev, owned: true }));
               }}
               selected={owned === true}
               label="Me"
             />
             <FilterChip
-              onPress={() => setOwned(false)}
+              onPress={() =>
+                setFilterOptions((prev) => ({ ...prev, owned: false }))
+              }
               selected={owned === false}
               label="Not Me"
             />
           </View>
           <TouchableOpacity
             onPress={() => {
-              setOwned(undefined);
+              setFilterOptions((prev) => ({ ...prev, owned: undefined }));
             }}
           >
             <ThemedText style={styles.clearText}>Clear</ThemedText>
@@ -82,19 +109,23 @@ export default function FilterPicker({
         <View style={styles.innerContainer}>
           <View style={{ flexDirection: "row", gap: 5, flexWrap: "wrap" }}>
             <FilterChip
-              onPress={() => setShared(true)}
+              onPress={() =>
+                setFilterOptions((prev) => ({ ...prev, shared: true }))
+              }
               selected={shared === true}
               label="Shared"
             />
             <FilterChip
-              onPress={() => setShared(false)}
+              onPress={() =>
+                setFilterOptions((prev) => ({ ...prev, shared: false }))
+              }
               selected={shared === false}
               label="Not Shared"
             />
           </View>
           <TouchableOpacity
             onPress={() => {
-              setShared(undefined);
+              setFilterOptions((prev) => ({ ...prev, shared: undefined }));
             }}
           >
             <ThemedText style={styles.clearText}>Clear</ThemedText>
@@ -107,7 +138,7 @@ export default function FilterPicker({
           <ThemedText style={styles.infoText}>Who can see it</ThemedText>
           <TouchableOpacity
             onPress={() => {
-              setVisibility(undefined);
+              setFilterOptions((prev) => ({ ...prev, visibility: undefined }));
             }}
           >
             <ThemedText style={styles.clearText}>Clear</ThemedText>
@@ -116,18 +147,24 @@ export default function FilterPicker({
 
         <View style={{ flexDirection: "row", gap: 5, flexWrap: "wrap" }}>
           <FilterChip
-            onPress={() => setVisibility("private")}
+            onPress={() =>
+              setFilterOptions((prev) => ({ ...prev, visibility: "private" }))
+            }
             selected={visibility === "private"}
             label="Only Me"
           />
           <FilterChip
-            onPress={() => setVisibility("friends")}
+            onPress={() =>
+              setFilterOptions((prev) => ({ ...prev, visibility: "friends" }))
+            }
             selected={visibility === "friends"}
             label="Friends"
           />
 
           <FilterChip
-            onPress={() => setVisibility("everyone")}
+            onPress={() =>
+              setFilterOptions((prev) => ({ ...prev, visibility: "everyone" }))
+            }
             selected={visibility === "everyone"}
             label="Everyone"
           />
@@ -139,7 +176,10 @@ export default function FilterPicker({
           <ThemedText style={styles.infoText}>Progress status</ThemedText>
           <TouchableOpacity
             onPress={() => {
-              setProgressStatus(undefined);
+              setFilterOptions((prev) => ({
+                ...prev,
+                progressStatus: undefined,
+              }));
             }}
           >
             <ThemedText style={styles.clearText}>Clear</ThemedText>
@@ -148,17 +188,32 @@ export default function FilterPicker({
 
         <View style={{ flexDirection: "row", gap: 5, flexWrap: "wrap" }}>
           <FilterChip
-            onPress={() => setProgressStatus("Completed")}
+            onPress={() =>
+              setFilterOptions((prev) => ({
+                ...prev,
+                progressStatus: "Completed",
+              }))
+            }
             selected={progressStatus === "Completed"}
             label="Completed"
           />
           <FilterChip
-            onPress={() => setProgressStatus("In Progress")}
+            onPress={() =>
+              setFilterOptions((prev) => ({
+                ...prev,
+                progressStatus: "In Progress",
+              }))
+            }
             selected={progressStatus === "In Progress"}
             label="In Progress"
           />
           <FilterChip
-            onPress={() => setProgressStatus("Getting Started")}
+            onPress={() =>
+              setFilterOptions((prev) => ({
+                ...prev,
+                progressStatus: "Getting Started",
+              }))
+            }
             selected={progressStatus === "Getting Started"}
             label="Getting Started"
           />

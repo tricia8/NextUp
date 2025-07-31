@@ -77,7 +77,6 @@ export default function Signup() {
     try {
       const user = await register(email, password);
       await createUser(user, username);
-      router.replace("/login");
     } catch (error) {
       if (error instanceof FirebaseError) {
         showMessage({
