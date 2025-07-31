@@ -1,8 +1,9 @@
 export default {
   expo: {
-    name: "nextup",
+    name: "NextUp",
     slug: "nextup",
-    version: "1.0.0",
+    description: "A collaborative bucket list app",
+    version: "3.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "frontend",
@@ -33,6 +34,14 @@ export default {
     plugins: [
       "expo-router",
       "expo-font",
+      [
+        "expo-build-properties",
+        {
+          android: {
+            googleServicesFile: "./anrdoid/app/google-services.json",
+          },
+        },
+      ],
       [
         "expo-splash-screen",
         {
