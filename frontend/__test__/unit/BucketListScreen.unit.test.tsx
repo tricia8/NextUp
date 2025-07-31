@@ -1,14 +1,11 @@
 import BucketList from "@/app/(main)/(tabs)/bucketlist";
+import SublistSearchBar from "@/components/SublistSearchBar";
 import { AuthContext } from "@/context/AuthContext";
 import { Sublist } from "@/types/sublist";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import {
-  ListRenderItem,
-  ListRenderItemInfo,
-  RenderTarget,
-} from "@shopify/flash-list";
+import { ListRenderItemInfo, RenderTarget } from "@shopify/flash-list";
 import { ColorSchemeName } from "react-native";
 
 import { useSublistStore } from "@/stores/sublistStore";
@@ -28,22 +25,26 @@ const contextValue = {
   logout: mockLogout,
 };
 
-jest.mock("expo-router", () => ({
-  useRouter: () => ({
-    replace: jest.fn,
-  }),
-  useNavigation: () => ({
-    navigate: jest.fn(),
-  }),
-  useFocusEffect: (fn: any) => fn(),
-}));
+jest.mock("expo-router", () => {
+  const React = require("react");
+
+  return {
+    useRouter: () => ({
+      replace: jest.fn,
+    }),
+    useNavigation: () => ({
+      navigate: jest.fn(),
+    }),
+    useFocusEffect: (fn: any) => {
+      React.useEffect(fn, []); // fn runs only after render, avoids infinite re-renders
+    },
+  };
+});
 
 jest.mock("@/firebase/firestore", () => ({
   __esModule: true, // if the module uses ES modules
   ...require("@/__mocks__/@/firebase/firestore"),
 }));
-
-const { mockSublists } = require("@/__mocks__/@/firebase/firestore"); // loads after mock is applied
 
 jest.mock("firebase/firestore", () => {
   return {
@@ -60,11 +61,6 @@ type FlashListType = {
 };
 
 jest.mock("@shopify/flash-list", () => {
-  /* return {
-    FlashList: ({ data, renderItem }: FlashListType) => (
-      <>{data.map((item, index) => renderItem({ item, index }))}</>
-    ),
-  }; */
   const { ScrollView, View } = require("react-native");
 
   return {
@@ -85,7 +81,7 @@ jest.mock("@shopify/flash-list", () => {
   };
 });
 
-const mockChildComponent = jest.fn();
+/* const mockChildComponent = jest.fn();
 interface ItemProps {
   uid: string;
   data: Sublist[];
@@ -98,9 +94,63 @@ interface ItemProps {
 jest.mock("@/components/SublistItems", () => (props: ItemProps) => {
   mockChildComponent(props);
   return <></>; // mocked SublistItems component
+}); */
+
+const mockSublistItems = jest.fn();
+jest.mock("@/components/SublistItems", () => {
+  const Actual = jest.requireActual("@/components/SublistItems");
+  return {
+    __esModule: true,
+    default: (props: any) => {
+      mockSublistItems(props); // spy on props
+      return <Actual.default {...props} />;
+    },
+  };
 });
 
 describe("BucketList", () => {
+  const mockSublists: Sublist[] = [
+    {
+      id: "1",
+      title: "Travel Goals",
+      description: "",
+      accessLevel: "private",
+      collaborators: ["test-uid"],
+      updatedAt: "",
+      createdAt: "",
+      updatedAtRaw: { _seconds: 1556530679, _nanoseconds: 6700000000 },
+      createdAtRaw: { _seconds: 1556530679, _nanoseconds: 6700000000 },
+      completionStatus: [8, 8],
+      ownerId: "test-uid",
+    },
+    {
+      id: "2",
+      title: "Shopping List",
+      description: "",
+      accessLevel: "friends",
+      collaborators: ["uid-2", "test-uid"],
+      completionStatus: [2, 5],
+      ownerId: "uid-2",
+      updatedAt: "",
+      createdAt: "",
+      updatedAtRaw: { _seconds: 1557839461, _nanoseconds: 6700000000 },
+      createdAtRaw: { _seconds: 1556530679, _nanoseconds: 6700000000 },
+    },
+    {
+      id: "3",
+      title: "Coding Projects",
+      description: "",
+      accessLevel: "everyone",
+      collaborators: ["test-uid"],
+      updatedAt: "",
+      createdAt: "",
+      updatedAtRaw: { _seconds: 1564127930, _nanoseconds: 6700000001 },
+      createdAtRaw: { _seconds: 1562734651, _nanoseconds: 6700000001 },
+      completionStatus: [0, 5],
+      ownerId: "test-uid",
+    },
+  ];
+
   const renderScreen = () =>
     render(
       <AuthContext.Provider value={contextValue}>
@@ -116,22 +166,8 @@ describe("BucketList", () => {
     jest.clearAllMocks(); // clears call history
   });
 
-  it("search bar updates search correctly on user input", async () => {
-    const { getByPlaceholderText } = renderScreen();
-
-    const searchInput = getByPlaceholderText("Search sublists...");
-
-    fireEvent.changeText(searchInput, "Travel");
-
-    expect(searchInput.props.value).toBe("Travel");
-  });
-
-  it("search bar updates search results correctly on user input", () => {
-    // const setFilteredSublists = jest.fn((value) => {});
-    // const { mockSublists } = require("@/__mocks__/@/firebase/firestore");
-    // console.log("Mock sublists: ", mockSublists);
-    // inject mock data into zustand store
-    /* act(() => {
+  it("sublist search bar updates search results correctly on user input", async () => {
+    act(() => {
       useSublistStore.setState({
         sublistData: {
           "1": mockSublists[0],
@@ -140,21 +176,44 @@ describe("BucketList", () => {
         },
         sublistOrder: ["1", "2", "3"],
       });
-    }); */
-    /* await waitFor(() => {
-      expect(searchInput.props.value).toBe("Travel");
-      expect(setFilteredSublists).toHaveBeenCalledWith("Travel");
-      expect(mockChildComponent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: [mockSublists[0]],
-        })
+    });
+
+    const { getByPlaceholderText, queryByText } = renderScreen();
+
+    const searchInput = getByPlaceholderText("Search sublists...");
+
+    fireEvent.changeText(searchInput, "Travel");
+
+    expect(mockSublistItems).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [mockSublists[0]],
+      })
+    );
+
+    expect(queryByText("Travel Goals")).toBeTruthy();
+    expect(queryByText("Shopping List")).toBeNull();
+    expect(queryByText("Coding Projects")).toBeNull();
+  });
+
+  describe("SublistSearchBar", () => {
+    it("search bar updates search state and search results correctly on user input", async () => {
+      const setSearchResults = jest.fn((value) => {});
+      const { getByPlaceholderText } = render(
+        <AuthContext.Provider value={contextValue}>
+          <SublistSearchBar
+            sublists={mockSublists}
+            filteredSublists={mockSublists}
+            setSearchResults={setSearchResults}
+          />
+        </AuthContext.Provider>
       );
-    }); */
-    /* await waitFor(() => {
-      expect(queryByText("Travel Goals")).toBeTruthy();
-      expect(queryByText("Shopping List")).toBeNull();
-      expect(queryByText("Coding Projects")).toBeNull();
-    }); */
+
+      const searchInput = getByPlaceholderText("Search sublists...");
+
+      fireEvent.changeText(searchInput, "Travel");
+      expect(searchInput.props.value).toBe("Travel");
+      expect(setSearchResults).toHaveBeenCalledWith([mockSublists[0]]);
+    });
   });
 
   /* describe("SublistItems", () => {
