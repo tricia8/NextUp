@@ -46,7 +46,7 @@ describe("ResetPassword", () => {
 
   // Clear mocks before each test
   beforeEach(() => {
-    jest.clearAllMocks(); // clears call history and resets all mocks to initial implementation
+    jest.clearAllMocks(); // clears call history
   });
 
   it("updates email state on input change", () => {
