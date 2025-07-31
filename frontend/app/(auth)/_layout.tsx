@@ -13,40 +13,24 @@ export default function AuthLayout() {
   const hasRedirected = useRef(false);
 
   useEffect(() => {
+    // Wait until navigation and auth are ready
+    if (!rootNavigationState?.key || loading) return;
+
+    // Reset redirect flag if user changes
+    hasRedirected.current = false;
+  }, [user, loading, rootNavigationState?.key]);
+
+  useEffect(() => {
     if (!rootNavigationState?.key || loading || hasRedirected.current) return;
 
-    /* if (user) {
-      if (!user.emailVerified) {
-        if (pathname !== "/(auth)/login") {
-          router.replace("/(auth)/login");
-        }
-      } else {
-        if (pathname !== "/(main)/(tabs)") {
-          router.replace("/(main)/(tabs)");
-        }
-      }
-    } */
-
-    // User is signed in but email not verified -> go to login
-    if (user && !user.emailVerified && pathname !== "/(auth)/login") {
-      hasRedirected.current = true;
-      router.replace("/(auth)/login");
-      return;
-    } else if (user && user.emailVerified && pathname !== "/(main)/(tabs)") {
-      // User is signed in and verified -> go to main tabs
+    if (user && user.emailVerified) {
       hasRedirected.current = true;
       router.replace("/(main)/(tabs)");
-      return;
-    } else if (!user && pathname !== "/(auth)/login") {
-      // User is not signed in -> go to login
+    } else {
       hasRedirected.current = true;
       router.replace("/(auth)/login");
     }
   }, [user, loading, pathname, rootNavigationState?.key]);
-
-  /* useEffect(() => {
-    console.log("Auth Check", { user, emailVerified: user?.emailVerified });
-  }, [user]); */
 
   if (!rootNavigationState?.key) {
     console.log("Waiting for navigation state...");

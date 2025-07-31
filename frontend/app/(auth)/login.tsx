@@ -62,8 +62,8 @@ export default function Login() {
     Keyboard.dismiss();
     setLoading(true);
     try {
-      const userCredential = await login(email, password);
-      const user = userCredential.user;
+      const user = await login(email, password);
+      if (!user) return; // early return if email not verified
       const profile = await getOwnerProfile(user.uid);
       useUserStore.getState().setUser(profile as User);
       console.log("User logged in:", profile);
@@ -175,9 +175,9 @@ export default function Login() {
               <>
                 <TouchableOpacity
                   style={styles.loginButton}
-                  onPress={() => {
+                  onPress={async () => {
                     if (validateForm()) {
-                      handleLogin();
+                      await handleLogin();
                     }
                   }}
                 >

@@ -25,12 +25,13 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         await user.reload(); // Refreshes the user's data from Firebase
+        const refreshedUser = auth.currentUser;
 
-        if (user.emailVerified) {
-          setUser(auth.currentUser); // Use updated user info
+        if (refreshedUser?.emailVerified) {
+          setUser(refreshedUser); // Use updated user info
         } else {
           setUser(null); // Block unverified users
-          await signOut(auth);
+          // await signOut(auth);
         }
       } else {
         setUser(null);
@@ -65,9 +66,9 @@ export function AuthProvider({ children }) {
           autoHide: false,
         });
 
-        return;
+        return null;
       }
-      router.replace("/(main)/(tabs)"); // login success: redirect user to homepage
+      return results;
     } catch (error) {
       console.error("Login error:", error.message);
       throw error;
