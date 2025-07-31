@@ -20,6 +20,7 @@
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
+    "@sentry/react-native": "^6.19.0",
     "@shopify/flash-list": "1.7.6",
     "dayjs": "^1.11.13",
     "expo": "53.0.20",

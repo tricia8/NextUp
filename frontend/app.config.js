@@ -35,6 +35,14 @@ export default {
       "expo-router",
       "expo-font",
       [
+        "@sentry/react-native/expo",
+        {
+          url: "https://sentry.io/",
+          project: "nextup-frontend",
+          organization: "gracia-va",
+        },
+      ],
+      [
         "expo-build-properties",
         {
           android: {
