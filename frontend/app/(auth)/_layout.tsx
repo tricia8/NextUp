@@ -14,7 +14,7 @@ export default function AuthLayout() {
   useEffect(() => {
     if (!rootNavigationState?.key || loading) return;
 
-    if (user) {
+    /* if (user) {
       if (!user.emailVerified) {
         if (pathname !== "/(auth)/login") {
           router.replace("/(auth)/login");
@@ -24,8 +24,29 @@ export default function AuthLayout() {
           router.replace("/(main)/(tabs)");
         }
       }
+    } */
+
+    // User is signed in but email not verified -> go to login
+    if (user && !user.emailVerified) {
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    // User is signed in and verified -> go to main tabs
+    if (user && user.emailVerified) {
+      router.replace("/(main)/(tabs)");
+      return;
+    }
+
+    // User is not signed in -> go to login
+    if (!user) {
+      router.replace("/(auth)/login");
     }
   }, [user, loading, rootNavigationState]);
+
+  useEffect(() => {
+    console.log("Auth Check", { user, emailVerified: user?.emailVerified });
+  }, [user]);
 
   if (!rootNavigationState?.key) {
     console.log("Waiting for navigation state...");

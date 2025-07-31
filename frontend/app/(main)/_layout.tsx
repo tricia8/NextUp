@@ -35,7 +35,7 @@ export default function MainLayout() {
   }
 
   // Handle unauthenticated access
-  if (!user) return <Redirect href="/(auth)/login" />;
+  if (!user || !user.emailVerified) return <Redirect href="/(auth)/login" />;
 
   const router = useRouter();
 
@@ -74,14 +74,16 @@ export default function MainLayout() {
           }}
         />
         <Stack.Screen name="profile/[uid]" options={{ headerShown: false }} />
-        <Stack.Screen name="journey/[uid]" 
-          options={{ 
+        <Stack.Screen
+          name="journey/[uid]"
+          options={{
             title: "Journey",
             headerTitleStyle: {
               fontWeight: "bold",
               fontSize: RFValue(26),
             },
-           }} />
+          }}
+        />
         <Stack.Screen
           name="[sublistId]/index"
           options={{

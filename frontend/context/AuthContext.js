@@ -22,14 +22,20 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      await user.reload(); // Refreshes the user's data from Firebase
-      setUser(auth.currentUser); // Use updated user info
-    } else {
-      setUser(null);
-    }
-    setLoading(false);
-  });
+      if (user) {
+        await user.reload(); // Refreshes the user's data from Firebase
+
+        if (user.emailVerified) {
+          setUser(auth.currentUser); // Use updated user info
+        } else {
+          setUser(null); // Block unverified users
+          await signOut(auth);
+        }
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
 
     return () => {
       unsubscribe();
@@ -75,18 +81,25 @@ export function AuthProvider({ children }) {
         email,
         password
       );
-      const results = userCredential.user;
-      await sendEmailVerification(results);
-      showMessage({
-        message: "Verification Required",
-        description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
-        type: "warning",
-        statusBarHeight: StatusBar.currentHeight,
-        floating: true,
-        color: "black",
-        duration: 2300,
-      });
-      return results;
+
+      if (user) {
+        const results = userCredential.user;
+        await sendEmailVerification(results);
+        console.log("sent email verification");
+        await user.reload();
+        await signOut(auth);
+
+        showMessage({
+          message: "Verification Required",
+          description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
+          type: "warning",
+          statusBarHeight: StatusBar.currentHeight,
+          floating: true,
+          color: "black",
+          duration: 2300,
+        });
+        return results;
+      }
     } catch (error) {
       console.error("Signup error:", error.message);
       throw error;
