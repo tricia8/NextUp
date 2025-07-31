@@ -40,13 +40,10 @@ jest.mock("expo-router", () => ({
 
 jest.mock("@/firebase/firestore", () => ({
   __esModule: true, // if the module uses ES modules
-  /* getOwnedSubBucketLists: jest.fn().mockResolvedValue(mockSublists), // mockFirestore.getOwnedSubBucketLists,
-  getAllSubBucketLists: mockFirestore.getAllSubBucketLists,
-  getUnownedSubBucketLists: mockFirestore.getUnownedSubBucketLists, */
-  ...require("@/__mocks__/firebase/firestore"),
+  ...require("@/__mocks__/@/firebase/firestore"),
 }));
 
-const { mockSublists } = require("@/__mocks__/firebase/firestore"); // loads after mock is applied
+const { mockSublists } = require("@/__mocks__/@/firebase/firestore"); // loads after mock is applied
 
 jest.mock("firebase/firestore", () => {
   return {
@@ -127,16 +124,11 @@ describe("BucketList", () => {
     fireEvent.changeText(searchInput, "Travel");
 
     expect(searchInput.props.value).toBe("Travel");
-    /* await waitFor(() => {
-      expect(queryByText("Travel Goals")).toBeTruthy();
-      expect(queryByText("Shopping List")).toBeNull();
-      expect(queryByText("Coding Projects")).toBeNull();
-    }); */
   });
 
   it("search bar updates search results correctly on user input", () => {
     // const setFilteredSublists = jest.fn((value) => {});
-    // const { mockSublists } = require("@/__mocks__/firebase/firestore");
+    // const { mockSublists } = require("@/__mocks__/@/firebase/firestore");
     // console.log("Mock sublists: ", mockSublists);
     // inject mock data into zustand store
     /* act(() => {
@@ -157,6 +149,11 @@ describe("BucketList", () => {
           data: [mockSublists[0]],
         })
       );
+    }); */
+    /* await waitFor(() => {
+      expect(queryByText("Travel Goals")).toBeTruthy();
+      expect(queryByText("Shopping List")).toBeNull();
+      expect(queryByText("Coding Projects")).toBeNull();
     }); */
   });
 
