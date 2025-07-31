@@ -12,6 +12,7 @@ import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
+import { getIdToken } from "firebase/auth";
 
 export const AuthContext = createContext();
 
@@ -83,22 +84,14 @@ export function AuthProvider({ children }) {
       );
 
       if (userCredential) {
-        const results = userCredential.user;
-        await sendEmailVerification(results);
+        const user = userCredential.user;
+        await sendEmailVerification(user);
         console.log("sent email verification");
-        await user.reload();
-        await signOut(auth);
 
-        showMessage({
-          message: "Verification Required",
-          description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
-          type: "warning",
-          statusBarHeight: StatusBar.currentHeight,
-          floating: true,
-          color: "black",
-          duration: 2300,
-        });
-        return results;
+        // Get token before signing out
+        const token = await user.getIdToken();
+
+        return { user, token };
       }
     } catch (error) {
       console.error("Signup error:", error.message);

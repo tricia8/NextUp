@@ -30,7 +30,7 @@ import { FirebaseError } from "firebase/app";
 import { getFriendlyAuthErrorMessage } from "@/utils/firebaseErrorMapper";
 
 export default function Signup() {
-  const { register } = useContext(AuthContext);
+  const { register, logout } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [userNameAvailable, setUsernameAvailable] = useState(null); // boolean or null
@@ -75,8 +75,20 @@ export default function Signup() {
     Keyboard.dismiss();
     setLoading(true);
     try {
-      const user = await register(email, password);
-      await createUser(user, username);
+      const { user, token } = await register(email, password);
+      await createUser(user, username, token);
+      await logout();
+      router.replace("/(auth)/login");
+
+      showMessage({
+        message: "Verification Required",
+        description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
+        type: "warning",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        color: "black",
+        duration: 2300,
+      });
     } catch (error) {
       if (error instanceof FirebaseError) {
         showMessage({

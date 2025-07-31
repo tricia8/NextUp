@@ -50,8 +50,8 @@ export const checkUniqueUsername = debounce(async (username, setAvailable) => {
   }
 }, 500);
 
-export const createUser = async (user, username) => {
-  const token = await getIdTokenFromFirebaseUser();
+export const createUser = async (user, username, token) => {
+  // const token = await getIdTokenFromFirebaseUser();
 
   try {
     const res = await fetch(`https://nextup-l0e9.onrender.com/api/users`, {
