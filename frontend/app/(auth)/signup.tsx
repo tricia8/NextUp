@@ -81,13 +81,13 @@ export default function Signup() {
       router.replace("/(auth)/login");
 
       showMessage({
-        message: "Verification Required",
-        description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
+        message: "Verify Your Email",
+        description: `We've sent a verification link to ${email}. Click on the link to complete your signup. You may have to check your spam folder.`,
         type: "warning",
         statusBarHeight: StatusBar.currentHeight,
         floating: true,
         color: "black",
-        duration: 2300,
+        autoHide: false,
       });
     } catch (error) {
       if (error instanceof FirebaseError) {
