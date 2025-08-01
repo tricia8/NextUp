@@ -17,6 +17,7 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({
     replace: mockReplace,
   }),
+  usePathname: jest.fn(),
   useRootNavigationState: jest.fn(),
 }));
 
@@ -27,7 +28,7 @@ describe("AuthLayout", () => {
     (useRootNavigationState as jest.Mock).mockReturnValue({ key: "test-key" });
   });
 
-  it("redirects authenticated user with verified email to main", async () => {
+  it("redirects authenticated user with verified email only once to main", async () => {
     const authUser = {
       uid: mockUser.uid,
       email: "test@example.com",
@@ -35,7 +36,7 @@ describe("AuthLayout", () => {
     };
     const loginMock = jest.fn();
 
-    render(
+    const { rerender } = render(
       <AuthContext.Provider
         value={{ login: loginMock, user: authUser, loading: false }}
       >
@@ -46,9 +47,23 @@ describe("AuthLayout", () => {
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith("/(main)/(tabs)");
     });
+
+    jest.clearAllMocks();
+
+    rerender(
+      <AuthContext.Provider
+        value={{ login: loginMock, user: authUser, loading: false }}
+      >
+        <AuthLayout />
+      </AuthContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
   });
 
-  it("redirects authenticated user with unverified email to login screen", async () => {
+  it("redirects authenticated user with unverified email only once to login screen", async () => {
     const authUser = {
       ...mockUser,
       emailVerified: false,
@@ -56,7 +71,7 @@ describe("AuthLayout", () => {
 
     const loginMock = jest.fn();
 
-    render(
+    const { rerender } = render(
       <AuthContext.Provider
         value={{ login: loginMock, user: authUser, loading: false }}
       >
@@ -67,12 +82,27 @@ describe("AuthLayout", () => {
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
     });
+
+    jest.clearAllMocks();
+
+    rerender(
+      <AuthContext.Provider
+        value={{ login: loginMock, user: authUser, loading: false }}
+      >
+        <AuthLayout />
+      </AuthContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
   });
 
-  it("does nothing when user is not authenticated", async () => {
+  it("redirects unauthenticated user only once to login", async () => {
     const loginMock = jest.fn();
 
-    render(
+    // first render
+    const { rerender } = render(
       <AuthContext.Provider
         value={{ login: loginMock, user: null, loading: false }}
       >
@@ -81,7 +111,21 @@ describe("AuthLayout", () => {
     );
 
     await waitFor(() => {
-      expect(mockReplace).not.toHaveBeenCalled(); // expo router is not called
+      expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
+    });
+
+    jest.clearAllMocks();
+
+    rerender(
+      <AuthContext.Provider
+        value={{ login: loginMock, user: null, loading: false }}
+      >
+        <AuthLayout />
+      </AuthContext.Provider>
+    );
+
+    await waitFor(() => {
+      expect(mockReplace).not.toHaveBeenCalled(); // expo router is not called after one redirect
     });
   });
 

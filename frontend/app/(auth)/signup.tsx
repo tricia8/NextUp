@@ -107,7 +107,7 @@ export default function Signup() {
     }
   };
 
-  const handleAccountCreation = () => {
+  const handleAccountCreation = async () => {
     if (validateForm()) {
       if (userNameAvailable === false) {
         showMessage({
@@ -119,7 +119,7 @@ export default function Signup() {
         });
         return;
       }
-      handleSignUp();
+      await handleSignUp();
     }
   };
 

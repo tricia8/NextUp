@@ -2,14 +2,9 @@ import React, { act, useContext } from "react";
 import { render, waitFor, fireEvent } from "@testing-library/react-native";
 import { Keyboard } from "react-native";
 import { AuthContext, AuthProvider } from "@/context/AuthContext";
-import Signup from "@/app/(auth)/signup";
 import { checkUniqueUsername, createUser } from "@/firebase/firestore";
-import { showMessage } from "react-native-flash-message";
 import { FirebaseError } from "firebase/app";
-import {
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
-} from "firebase/auth";
+import { sendEmailVerification } from "firebase/auth";
 
 const mockUser = {
   uid: "test-uid",
@@ -46,13 +41,20 @@ jest.mock("expo-router", () => ({
 
 jest.mock("firebase/auth", () => ({
   createUserWithEmailAndPassword: jest.fn(() =>
-    Promise.resolve({ user: { uid: "test-uid", emailVerified: false } })
+    Promise.resolve({
+      user: {
+        uid: "test-uid",
+        emailVerified: false,
+        getIdToken: jest.fn().mockResolvedValue("test-token"),
+      },
+    })
   ),
   sendEmailVerification: jest.fn(() => Promise.resolve()),
   onAuthStateChanged: jest.fn((auth, callback) => {
     callback(null);
     return () => {};
   }),
+  signOut: jest.fn(),
 }));
 
 jest.mock("@/firebase/firestore", () => ({
@@ -63,6 +65,9 @@ jest.mock("@/firebase/firestore", () => ({
 jest.mock("react-native-flash-message", () => ({
   showMessage: jest.fn(),
 }));
+
+import { showMessage } from "react-native-flash-message";
+import Signup from "@/app/(auth)/signup";
 
 // Mock error mapper
 jest.mock("@/utils/firebaseErrorMapper", () => ({
@@ -114,7 +119,11 @@ describe("Signup", () => {
   });
 
   it("calls register and createUser with the correct credentials when 'Create account' is pressed and user inputs are valid", async () => {
-    mockRegister.mockResolvedValueOnce(mockFirebaseUser); // mock return of register
+    const idToken = "test-token";
+    mockRegister.mockResolvedValueOnce({
+      user: mockFirebaseUser,
+      token: idToken,
+    }); // mock return of register
 
     const { getByTestId } = renderSignup();
 
@@ -126,7 +135,11 @@ describe("Signup", () => {
         "test@example.com",
         "Pass123!"
       );
-      expect(createUser).toHaveBeenCalledWith(mockFirebaseUser, "testuser");
+      expect(createUser).toHaveBeenCalledWith(
+        mockFirebaseUser,
+        "testuser",
+        idToken
+      );
     });
   });
 
@@ -284,9 +297,12 @@ describe("Signup", () => {
       </AuthProvider>
     );
 
+    const logout = jest.fn();
+
     (checkUniqueUsername as jest.Mock).mockImplementationOnce((_, cb) =>
       cb(true)
     );
+    // (sendEmailVerification as jest.Mock).mockResolvedValueOnce(true);
 
     act(() => fillSignupForm(getByTestId));
 
@@ -297,10 +313,6 @@ describe("Signup", () => {
     fireEvent.press(getByTestId("signup-button"));
 
     await waitFor(() => {
-      /* expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(
-        "test@example.com",
-        "Pass123!"
-      ); */
       expect(sendEmailVerification).toHaveBeenCalledWith(
         expect.objectContaining({
           uid: "test-uid",
@@ -308,7 +320,8 @@ describe("Signup", () => {
       );
       expect(showMessage).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "Verification Required",
+          message: "Verify Your Email",
+          description: expect.stringContaining("test@example.com"),
         })
       );
     });
