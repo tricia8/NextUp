@@ -1,12 +1,13 @@
-import BucketList from "@/app/(main)/(tabs)/bucketlist";
 import SublistSearchBar from "@/components/SublistSearchBar";
 import { AuthContext } from "@/context/AuthContext";
 import { Sublist } from "@/types/sublist";
-import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import {
+  BottomSheetModalProps,
+  BottomSheetModalProvider,
+} from "@gorhom/bottom-sheet";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ListRenderItemInfo, RenderTarget } from "@shopify/flash-list";
-import { ColorSchemeName } from "react-native";
 
 import { useSublistStore } from "@/stores/sublistStore";
 // import { XMLHttpRequest } from "xmlhttprequest";
@@ -23,6 +24,7 @@ const mockUser = {
 const contextValue = {
   user: mockUser,
   logout: mockLogout,
+  loading: false,
 };
 
 jest.mock("expo-router", () => {
@@ -51,6 +53,31 @@ jest.mock("firebase/firestore", () => {
     __esModule: true, // if the module uses ES modules
     getFirestore: jest.fn(() => ({})),
     onSnapshot: jest.fn(() => () => {}),
+  };
+});
+
+const mockPresent = jest.fn();
+jest.mock("@gorhom/bottom-sheet", () => {
+  const React = require("react");
+  const { View } = require("react-native");
+
+  return {
+    __esModule: true,
+    BottomSheetModalProvider: ({ children }: any) => <View>{children}</View>,
+    BottomSheetModal: React.forwardRef((props: any, ref: any) => {
+      if (ref) {
+        ref.current = { present: mockPresent };
+      }
+      return (
+        <View ref={ref} testID={props.testID}>
+          {props.children}
+        </View>
+      );
+    }),
+    BottomSheetScrollView: ({ children, testID }: any) => (
+      <View testID={testID}>{children}</View>
+    ),
+    BottomSheetBackdrop: (props: any) => <View testID={"mock-backdrop"} />,
   };
 });
 
@@ -108,6 +135,9 @@ jest.mock("@/components/SublistItems", () => {
   };
 });
 
+import BucketList from "@/app/(main)/(tabs)/bucketlist";
+import FilterPicker from "@/components/FilterPicker";
+
 describe("BucketList", () => {
   const mockSublists: Sublist[] = [
     {
@@ -164,9 +194,6 @@ describe("BucketList", () => {
 
   beforeEach(() => {
     jest.clearAllMocks(); // clears call history
-  });
-
-  it("sublist search bar updates search results correctly on user input", async () => {
     act(() => {
       useSublistStore.setState({
         sublistData: {
@@ -177,7 +204,19 @@ describe("BucketList", () => {
         sublistOrder: ["1", "2", "3"],
       });
     });
+  });
 
+  it("filter icon opens filter modal on press", async () => {
+    const { getByTestId, queryByTestId } = renderScreen();
+    const filterIcon = getByTestId("filter-icon");
+    fireEvent.press(filterIcon);
+    await waitFor(() => {
+      expect(mockPresent).toHaveBeenCalled();
+      expect(queryByTestId("filter-modal")).toBeOnTheScreen();
+    });
+  });
+
+  it("sublist search bar updates search results correctly on user input", async () => {
     const { getByPlaceholderText, queryByText } = renderScreen();
 
     const searchInput = getByPlaceholderText("Search sublists...");
@@ -214,6 +253,34 @@ describe("BucketList", () => {
       expect(searchInput.props.value).toBe("Travel");
       expect(setSearchResults).toHaveBeenCalledWith([mockSublists[0]]);
     });
+  });
+
+  describe("FilterModal", () => {
+    it("setFilterOptions updates state correctly according to selected filter options", () => {
+      const filterOptions = {
+        owned: undefined,
+        shared: undefined,
+        visibility: undefined,
+        progressStatus: undefined,
+      };
+
+      const { getByTestId } = render(
+        <FilterPicker
+          sublistData={mockSublists}
+          closeSheet={jest.fn()}
+          setFilteredSublists={jest.fn()}
+          filterOptions={filterOptions}
+          setFilterOptions={jest.fn()}
+          setSearchResults={jest.fn((value) => {})}
+        />
+      );
+
+      // Test one interaction per filter type (e.g. owned, shared, etc.)
+      // Confirm that filter updates trigger setFilterOptions with a functional update
+    });
+
+    // Add a test for “Reset All” and “Apply Filters”
+    describe("FilterPicker", () => {});
   });
 
   /* describe("SublistItems", () => {

@@ -44,6 +44,7 @@ import {
 import { auth, db } from "@/firebase/firebaseConfig";
 import FilterModal from "@/components/FilterModal";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
+
 import { debouncePress } from "@/utils/debouncePress";
 import { FilterOptions } from "@/types/filterOptions";
 
@@ -286,6 +287,7 @@ export default function BucketList() {
             style={{ justifyContent: "center" }}
             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
             onPress={handlePresentModalPress}
+            testID="filter-icon"
           >
             <Ionicons
               size={35}
@@ -326,6 +328,7 @@ export default function BucketList() {
       </ThemedView>
 
       <FilterModal
+        testID="filter-modal"
         bottomSheetModalRef={bottomSheetModalRef}
         sublistData={bucketList}
         setFilteredSublists={setFilteredSublists}

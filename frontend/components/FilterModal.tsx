@@ -16,6 +16,7 @@ import { Sublist } from "@/types/sublist";
 import { FilterOptions } from "@/types/filterOptions";
 
 type FilterModalProps = {
+  testID: string;
   bottomSheetModalRef: React.RefObject<BottomSheetModal | null>;
   sublistData: Sublist[];
   setFilteredSublists: React.Dispatch<React.SetStateAction<Sublist[]>>;
@@ -25,6 +26,7 @@ type FilterModalProps = {
 };
 
 export default function FilterModal({
+  testID,
   bottomSheetModalRef,
   sublistData,
   setFilteredSublists,
@@ -66,7 +68,7 @@ export default function FilterModal({
       backgroundStyle={styles.modalBg}
       enableContentPanningGesture={false}
     >
-      <BottomSheetScrollView style={styles.contentContainer}>
+      <BottomSheetScrollView testID={testID} style={styles.contentContainer}>
         <View style={{ paddingHorizontal: 10, gap: 10, flex: 1 }}>
           <FilterPicker
             closeSheet={closeSheet}
