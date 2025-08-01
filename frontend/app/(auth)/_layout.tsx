@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { AuthContext } from "@/context/AuthContext";
-import { useRootNavigationState } from "expo-router";
+import { useRootNavigationState, usePathname } from "expo-router";
 
 export default function AuthLayout() {
   // const navigation = useNavigation();
@@ -9,20 +9,28 @@ export default function AuthLayout() {
   const rootNavigationState = useRootNavigationState();
   const { user, loading } = useContext(AuthContext);
   const router = useRouter();
+  const pathname = usePathname();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
+    // Wait until navigation and auth are ready
     if (!rootNavigationState?.key || loading) return;
 
-    if (user) {
-      if (!user.emailVerified) {
-        console.log("User not verified, redirecting to login");
-        router.replace("/(auth)/login");
-      } else {
-        console.log("User verified, redirecting to main");
-        router.replace("/(main)/(tabs)");
-      }
+    // Reset redirect flag if user changes
+    hasRedirected.current = false;
+  }, [user, loading, rootNavigationState?.key]);
+
+  useEffect(() => {
+    if (!rootNavigationState?.key || loading || hasRedirected.current) return;
+
+    if (user && user.emailVerified) {
+      hasRedirected.current = true;
+      router.replace("/(main)/(tabs)");
+    } else {
+      hasRedirected.current = true;
+      router.replace("/(auth)/login");
     }
-  }, [user, loading, rootNavigationState]);
+  }, [user, loading, pathname, rootNavigationState?.key]);
 
   if (!rootNavigationState?.key) {
     console.log("Waiting for navigation state...");

@@ -504,7 +504,7 @@ export default function GoalPage() {
                 <View
                   style={[
                     styles.titleEditBar,
-                    { justifyContent: "flex-start" },
+                    { justifyContent: "flex-start", alignItems: "center" },
                   ]}
                 >
                   <ThemedText style={styles.metadata}>Done?</ThemedText>
@@ -514,8 +514,6 @@ export default function GoalPage() {
                     onValueChange={handleToggle}
                     value={isDone}
                     style={{
-                      top: -11,
-                      marginVertical: 0,
                       alignSelf: "flex-start",
                     }}
                   />

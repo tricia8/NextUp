@@ -36,4 +36,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# google-services file and properties files
+android
+
 app-example
+
+.env.local

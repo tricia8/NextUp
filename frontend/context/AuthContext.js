@@ -12,6 +12,7 @@ import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
+import { getIdToken } from "firebase/auth";
 
 export const AuthContext = createContext();
 
@@ -21,8 +22,20 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await user.reload(); // Refreshes the user's data from Firebase
+        const refreshedUser = auth.currentUser;
+
+        if (refreshedUser?.emailVerified) {
+          setUser(refreshedUser); // Use updated user info
+        } else {
+          setUser(null); // Block unverified users
+          // await signOut(auth);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
@@ -53,9 +66,9 @@ export function AuthProvider({ children }) {
           autoHide: false,
         });
 
-        return;
+        return null;
       }
-      router.replace("/(main)/(tabs)"); // login success: redirect user to homepage
+      return results;
     } catch (error) {
       console.error("Login error:", error.message);
       throw error;
@@ -70,18 +83,17 @@ export function AuthProvider({ children }) {
         email,
         password
       );
-      const results = userCredential.user;
-      await sendEmailVerification(results);
-      showMessage({
-        message: "Verification Required",
-        description: `A verification email was sent to ${email}. Please verify your email before logging in.`,
-        type: "warning",
-        statusBarHeight: StatusBar.currentHeight,
-        floating: true,
-        color: "black",
-        duration: 2300,
-      });
-      return results;
+
+      if (userCredential) {
+        const user = userCredential.user;
+        await sendEmailVerification(user);
+        console.log("sent email verification");
+
+        // Get token before signing out
+        const token = await user.getIdToken();
+
+        return { user, token };
+      }
     } catch (error) {
       console.error("Signup error:", error.message);
       throw error;

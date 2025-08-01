@@ -30,7 +30,7 @@ import { FirebaseError } from "firebase/app";
 import { getFriendlyAuthErrorMessage } from "@/utils/firebaseErrorMapper";
 
 export default function Signup() {
-  const { register } = useContext(AuthContext);
+  const { register, logout } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [userNameAvailable, setUsernameAvailable] = useState(null); // boolean or null
@@ -75,8 +75,20 @@ export default function Signup() {
     Keyboard.dismiss();
     setLoading(true);
     try {
-      const user = await register(email, password);
-      await createUser(user, username);
+      const { user, token } = await register(email, password);
+      await createUser(user, username, token);
+      await logout();
+      router.replace("/(auth)/login");
+
+      showMessage({
+        message: "Verify Your Email",
+        description: `We've sent a verification link to ${email}. Click on the link to complete your signup. You may have to check your spam folder.`,
+        type: "warning",
+        statusBarHeight: StatusBar.currentHeight,
+        floating: true,
+        color: "black",
+        autoHide: false,
+      });
     } catch (error) {
       if (error instanceof FirebaseError) {
         showMessage({
