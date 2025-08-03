@@ -141,6 +141,8 @@ import { useFocusEffect } from "expo-router";
 import FilterPicker from "@/components/FilterPicker";
 import SublistItems from "@/components/SublistItems";
 import BucketList from "@/app/(main)/(tabs)/bucketlist";
+import SwipeableRow from "@/components/SwipeableRow";
+import { View } from "react-native";
 
 const mockUseFocusEffect = useFocusEffect as jest.Mock;
 
@@ -563,21 +565,51 @@ describe("BucketList", () => {
       );
     });
 
-    it("navigates to Sublist Details screen on tapping a sublist item", () => {
-      const { getByTestId, queryByTestId } = render(
-        <SublistItems
-          uid={mockUser.uid}
-          data={mockSublists.slice(0, 1)} // get the first sublist item
-          colorScheme="dark"
-        />
-      );
+    describe("Sublist card", () => {
+      it("tapping a sublist item navigates to Sublist Details screen", () => {
+        const { getByTestId, queryByTestId } = render(
+          <SublistItems
+            uid={mockUser.uid}
+            data={mockSublists.slice(0, 1)} // get the first sublist item
+            colorScheme="dark"
+          />
+        );
 
-      const item1 = getByTestId("sublist-item-1");
-      fireEvent.press(item1);
-      expect(mockPush).toHaveBeenCalledWith({
-        pathname: "/(main)/[sublistId]",
-        params: { sublistId: "1" },
+        const item1 = getByTestId("sublist-item-1");
+        fireEvent.press(item1);
+        expect(mockPush).toHaveBeenCalledWith({
+          pathname: "/(main)/[sublistId]",
+          params: { sublistId: "1" },
+        });
       });
+
+      it("delete button on sublist card opens confirmation modal on press", async () => {
+        const { getByTestId, getByText } = render(
+          <GestureHandlerRootView>
+            <SublistItems
+              uid={mockUser.uid}
+              data={mockSublists.slice(0, 1)}
+              colorScheme="light"
+            />
+          </GestureHandlerRootView>
+        );
+
+        const deleteButton = await waitFor(() => getByTestId("delete-button"));
+        fireEvent.press(deleteButton);
+        await waitFor(() => {
+          expect(
+            getByText("Are you sure you want to delete this sublist?")
+          ).toBeTruthy();
+        });
+      });
+    });
+  });
+
+  describe("Add Sublist Button", () => {
+    it("tapping the Add Sublist button navigates to sublist creation screen", () => {
+      const { getByTestId } = renderScreen();
+      fireEvent.press(getByTestId("add-button"));
+      expect(mockPush).toHaveBeenCalledWith("../new-sublist");
     });
   });
 });

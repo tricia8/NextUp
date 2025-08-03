@@ -53,7 +53,11 @@ export default function SwipeableRow({
 
     return (
       <Reanimated.View style={styleAnimation} pointerEvents="auto">
-        <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          testID="delete-button"
+          onPress={onDelete}
+        >
           <MaterialIcons name="delete" size={30} color="white" />
         </TouchableOpacity>
       </Reanimated.View>

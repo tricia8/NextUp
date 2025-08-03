@@ -321,6 +321,7 @@ export default function BucketList() {
             onPress={handlePress}
             activeOpacity={0.5}
             style={styles.addButton}
+            testID="add-button"
           >
             <Ionicons name="add-circle" size={80} color="#39a64b" />
           </TouchableOpacity>

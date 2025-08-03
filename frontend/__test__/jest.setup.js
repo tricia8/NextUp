@@ -8,3 +8,5 @@ jest.mock("lodash.debounce", () => {
   };
   return mockDebounce;
 });
+
+require("react-native-reanimated").setUpTests();
