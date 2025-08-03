@@ -256,31 +256,217 @@ describe("BucketList", () => {
   });
 
   describe("FilterModal", () => {
-    it("setFilterOptions updates state correctly according to selected filter options", () => {
-      const filterOptions = {
+    const mockSetFilterOptions = jest.fn();
+    const mockSetFilteredSublists = jest.fn();
+    const mockSetSearchResults = jest.fn();
+    const mockCloseSheet = jest.fn();
+
+    const defaultFilterPickerProps = {
+      sublistData: mockSublists,
+      closeSheet: mockCloseSheet,
+      setFilteredSublists: mockSetFilteredSublists,
+      filterOptions: {
         owned: undefined,
         shared: undefined,
         visibility: undefined,
         progressStatus: undefined,
-      };
+      },
+      setFilterOptions: mockSetFilterOptions,
+      setSearchResults: mockSetSearchResults,
+    };
 
-      const { getByTestId } = render(
-        <FilterPicker
-          sublistData={mockSublists}
-          closeSheet={jest.fn()}
-          setFilteredSublists={jest.fn()}
-          filterOptions={filterOptions}
-          setFilterOptions={jest.fn()}
-          setSearchResults={jest.fn((value) => {})}
-        />
-      );
+    const renderFilterPicker = () =>
+      render(<FilterPicker {...defaultFilterPickerProps} />);
 
-      // Test one interaction per filter type (e.g. owned, shared, etc.)
-      // Confirm that filter updates trigger setFilterOptions with a functional update
+    // Mock a prevState for testing calls to setFilterOptions
+    const prevState = {
+      owned: true,
+      shared: true,
+      visibility: "friends",
+      progressStatus: "Completed",
+    };
+
+    it("renders all key filter sections", () => {
+      const { getByText } = renderFilterPicker();
+
+      expect(getByText("Filter Options")).toBeTruthy();
+      expect(getByText("Who owns it")).toBeTruthy();
+      expect(getByText("Sharing status")).toBeTruthy();
+      expect(getByText("Who can see it")).toBeTruthy();
+      expect(getByText("Progress status")).toBeTruthy();
     });
 
-    // Add a test for “Reset All” and “Apply Filters”
-    describe("FilterPicker", () => {});
+    it("calls setFilterOptions with all undefined values when 'Reset All' is pressed", () => {
+      const { getByText } = renderFilterPicker();
+
+      fireEvent.press(getByText("Reset All"));
+      expect(mockSetFilterOptions).toHaveBeenCalledWith({
+        owned: undefined,
+        shared: undefined,
+        visibility: undefined,
+        progressStatus: undefined,
+      });
+    });
+
+    it("calls closeSheet when Cancel is pressed", () => {
+      const { getByText } = renderFilterPicker();
+
+      fireEvent.press(getByText("Cancel"));
+      expect(mockCloseSheet).toHaveBeenCalled();
+    });
+
+    describe("Owned filter", () => {
+      it("sets owned to true when 'Me' is pressed", () => {
+        const { getByText } = renderFilterPicker();
+
+        fireEvent.press(getByText("Me"));
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: true,
+          visibility: "friends",
+          progressStatus: "Completed",
+        });
+      });
+
+      it("resets owned filter when 'Clear' under 'Who owns it' is pressed", () => {
+        const { getAllByText } = renderFilterPicker();
+        fireEvent.press(getAllByText("Clear")[0]); // first 'Clear' is for 'Who owns it'
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: undefined,
+          shared: true,
+          visibility: "friends",
+          progressStatus: "Completed",
+        });
+      });
+    });
+
+    describe("Shared filter", () => {
+      it("updates shared to false when 'Not Shared' chip is pressed", () => {
+        const { getByText } = renderFilterPicker();
+        fireEvent.press(getByText("Not Shared"));
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: false,
+          visibility: "friends",
+          progressStatus: "Completed",
+        });
+      });
+
+      it("resets shared filter when 'Clear' under 'Sharing status' is pressed", () => {
+        const { getAllByText } = renderFilterPicker();
+        fireEvent.press(getAllByText("Clear")[1]); // second 'Clear' is for 'Sharing status'
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: undefined,
+          visibility: "friends",
+          progressStatus: "Completed",
+        });
+      });
+    });
+
+    describe("Visibility filter", () => {
+      it("updates visibility to private when 'Only Me' chip is pressed", () => {
+        const { getByText } = renderFilterPicker();
+        fireEvent.press(getByText("Only Me"));
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: true,
+          visibility: "private",
+          progressStatus: "Completed",
+        });
+      });
+
+      it("resets visibility filter when 'Clear' under 'Who can see it' is pressed", () => {
+        const { getAllByText } = renderFilterPicker();
+        fireEvent.press(getAllByText("Clear")[2]); // third 'Clear' is for 'Who can see it'
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: true,
+          visibility: undefined,
+          progressStatus: "Completed",
+        });
+      });
+    });
+
+    describe("Progress filter", () => {
+      it("updates progress status to In Progress when 'In Progress' chip is pressed", () => {
+        const { getByText } = renderFilterPicker();
+        fireEvent.press(getByText("In Progress"));
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: true,
+          visibility: "friends",
+          progressStatus: "In Progress",
+        });
+      });
+
+      it("resets progress filter when 'Clear' under 'Progress Status' is pressed", () => {
+        const { getAllByText } = renderFilterPicker();
+        fireEvent.press(getAllByText("Clear")[3]); // fourth 'Clear' is for 'Progress Status'
+        expect(mockSetFilterOptions).toHaveBeenCalledWith(expect.any(Function));
+
+        // Access the function passed to setFilterOptions
+        const passedFunction = mockSetFilterOptions.mock.calls[0][0];
+
+        // Run the passed function manually
+        const newState = passedFunction(prevState);
+        expect(newState).toEqual({
+          owned: true,
+          shared: true,
+          visibility: "friends",
+          progressStatus: undefined,
+        });
+      });
+    });
   });
 
   /* describe("SublistItems", () => {
