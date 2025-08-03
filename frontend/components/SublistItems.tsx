@@ -123,12 +123,14 @@ export default function SublistItems({
           style={styles.itemContainer}
         >
           <TouchableOpacity
+            testID={`sublist-item-${item.id}`}
             style={{ flex: 1 }}
             onPress={debouncePress(() => handleSublistPress(item))}
           >
             <View style={{ flexDirection: "row", gap: 12 }}>
               {item?.collaborators?.length > 1 ? (
                 <Feather
+                  testID={`shared-${item.id}`}
                   name="users"
                   size={24}
                   color={isDark ? "white" : "black"}

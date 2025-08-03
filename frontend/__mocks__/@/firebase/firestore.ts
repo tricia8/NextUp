@@ -1,7 +1,7 @@
 import { db } from "@/firebase/firebaseConfig";
 import { Sublist } from "@/types/sublist";
 
-export const mockSublists: Sublist[] = [
+/* export const mockSublists: Sublist[] = [
   {
     id: "1",
     title: "Travel Goals",
@@ -32,24 +32,15 @@ export const mockSublists: Sublist[] = [
     completionStatus: [0, 5],
     ownerId: "test-uid",
   },
-];
+]; */
 
 // mock Firestore implementation
 const mockFirestore = {
   // getFirestore: jest.fn().mockReturnValue(db),
   // onSnapshot: jest.fn(() => () => {}), // returns unsubscribe
-  getAllSubBucketLists: jest.fn().mockResolvedValue(mockSublists),
-  getUnownedSubBucketLists: jest.fn().mockResolvedValue([mockSublists[1]]),
-  getOwnedSubBucketLists: jest
-    .fn()
-    .mockResolvedValue([mockSublists[0], mockSublists[2]]),
+  getAllSubBucketLists: jest.fn().mockResolvedValue([]),
+  getUnownedSubBucketLists: jest.fn().mockResolvedValue([]),
+  getOwnedSubBucketLists: jest.fn().mockResolvedValue([]),
 };
 
 export default mockFirestore;
-/* export default {
-  getFirestore,
-  getAllSubBucketLists,
-  getOwnedSubBucketLists,
-  getUnownedSubBucketLists,
-  onSnapshot,
-}; */

@@ -1,10 +1,8 @@
+import React from "react";
 import SublistSearchBar from "@/components/SublistSearchBar";
 import { AuthContext } from "@/context/AuthContext";
 import { Sublist } from "@/types/sublist";
-import {
-  BottomSheetModalProps,
-  BottomSheetModalProvider,
-} from "@gorhom/bottom-sheet";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ListRenderItemInfo, RenderTarget } from "@shopify/flash-list";
@@ -27,19 +25,23 @@ const contextValue = {
   loading: false,
 };
 
+const mockReplace = jest.fn();
+const mockPush = jest.fn();
 jest.mock("expo-router", () => {
   const React = require("react");
 
   return {
     useRouter: () => ({
-      replace: jest.fn,
+      replace: mockReplace,
+      push: mockPush,
     }),
     useNavigation: () => ({
       navigate: jest.fn(),
     }),
-    useFocusEffect: (fn: any) => {
+    /* useFocusEffect: (fn: any) => {
       React.useEffect(fn, []); // fn runs only after render, avoids infinite re-renders
-    },
+    }, */
+    useFocusEffect: jest.fn(),
   };
 });
 
@@ -135,8 +137,12 @@ jest.mock("@/components/SublistItems", () => {
   };
 });
 
-import BucketList from "@/app/(main)/(tabs)/bucketlist";
+import { useFocusEffect } from "expo-router";
 import FilterPicker from "@/components/FilterPicker";
+import SublistItems from "@/components/SublistItems";
+import BucketList from "@/app/(main)/(tabs)/bucketlist";
+
+const mockUseFocusEffect = useFocusEffect as jest.Mock;
 
 describe("BucketList", () => {
   const mockSublists: Sublist[] = [
@@ -233,6 +239,54 @@ describe("BucketList", () => {
     expect(queryByText("Shopping List")).toBeNull();
     expect(queryByText("Coding Projects")).toBeNull();
   });
+
+  it("show user feedback for empty bucketlist", async () => {
+    act(() => {
+      useSublistStore.setState({
+        sublistData: {},
+        sublistOrder: [],
+      });
+    });
+
+    const { getByTestId } = renderScreen();
+
+    await waitFor(() => expect(getByTestId("empty-list-text")).toBeTruthy());
+  });
+
+  it("shows LoadingScreen when user is being authenticated", () => {
+    const mockAuthContext = {
+      user: null,
+      loading: true, // simulate auth in progress
+    };
+
+    const { getByTestId } = render(
+      <AuthContext.Provider value={mockAuthContext}>
+        <BucketList />
+      </AuthContext.Provider>
+    );
+
+    expect(getByTestId("loading-spinner")).toBeTruthy();
+  });
+
+  /* it("shows LoadingScreen when sublists are being fetched from database", () => {
+    mockUseFocusEffect.mockImplementationOnce((fn: any) => {
+      React.useEffect(fn, []);
+    });
+
+    act(() => {
+      useSublistStore.setState({
+        sublistData: {},
+        sublistOrder: [],
+      });
+    });
+
+    const { getByTestId } = render(
+      <AuthContext.Provider value={contextValue}>
+        <BucketList />
+      </AuthContext.Provider>
+    );
+    expect(getByTestId("loading-spinner")).toBeTruthy();
+  }); */
 
   describe("SublistSearchBar", () => {
     it("search bar updates search state and search results correctly on user input", async () => {
@@ -469,11 +523,61 @@ describe("BucketList", () => {
     });
   });
 
-  /* describe("SublistItems", () => {
-    it("renders items", () => {
-      const { getByText } = render(<SublistItems />);
-      const element = getByText("Title of one of the items");
-      // Do something with element ...
+  describe("SublistItems", () => {
+    it("renders sublist items with correct content", () => {
+      const { getByTestId, queryByTestId } = render(
+        <SublistItems
+          uid={mockUser.uid}
+          data={mockSublists.slice(0, 2)} // get the first 2 sublist items
+          colorScheme="dark"
+        />
+      );
+
+      const item1 = getByTestId("sublist-item-1");
+      const [completed1, total1] = mockSublists[0].completionStatus || [0, 0];
+      const item2 = getByTestId("sublist-item-2");
+      const [completed2, total2] = mockSublists[1].completionStatus || [0, 0];
+
+      expect(item1).not.toContainElement(queryByTestId(`shared-1`));
+      expect(item1).toHaveTextContent(new RegExp(mockSublists[0].title));
+      // expect(item1).toContain(expect.stringContaining(mockSublists[0].title));
+      expect(item1).toHaveTextContent(
+        mockSublists[0].accessLevel === "private"
+          ? /only you/
+          : mockSublists[0].accessLevel
+      );
+
+      expect(item1).toHaveTextContent(
+        new RegExp(`${completed1}\\s*of\\s*${total1}\\s*complete`, "i") // \\s* matches whitespace, "i" flag makes it case-insensitive
+      );
+
+      expect(item2).toHaveTextContent(new RegExp(mockSublists[1].title));
+      expect(item2).toContainElement(getByTestId("shared-2"));
+      expect(item2).toHaveTextContent(
+        mockSublists[1].accessLevel === "private"
+          ? /only you/
+          : new RegExp(mockSublists[1].accessLevel)
+      );
+      expect(item2).toHaveTextContent(
+        new RegExp(`${completed2}\\s*of\\s*${total2}\\s*complete`, "i")
+      );
     });
-  }); */
+
+    it("navigates to Sublist Details screen on tapping a sublist item", () => {
+      const { getByTestId, queryByTestId } = render(
+        <SublistItems
+          uid={mockUser.uid}
+          data={mockSublists.slice(0, 1)} // get the first sublist item
+          colorScheme="dark"
+        />
+      );
+
+      const item1 = getByTestId("sublist-item-1");
+      fireEvent.press(item1);
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: "/(main)/[sublistId]",
+        params: { sublistId: "1" },
+      });
+    });
+  });
 });

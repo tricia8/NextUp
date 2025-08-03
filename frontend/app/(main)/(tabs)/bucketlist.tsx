@@ -301,7 +301,7 @@ export default function BucketList() {
           <LoadingScreen />
         ) : bucketList.length === 0 ? (
           <View style={styles.emptyListView}>
-            <ThemedText style={styles.emptyListText}>
+            <ThemedText style={styles.emptyListText} testID="empty-list-text">
               Looks empty here...{"\n"}Add a sublist to get things rolling!
             </ThemedText>
           </View>
