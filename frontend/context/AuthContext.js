@@ -12,7 +12,7 @@ import { showMessage } from "react-native-flash-message";
 import { StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
-import { getIdToken } from "firebase/auth";
+import ReverifyButton from "@/components/ReverifyButton";
 
 export const AuthContext = createContext();
 
@@ -57,13 +57,14 @@ export function AuthProvider({ children }) {
         // hasn't verified email
         showMessage({
           message: "Warning",
-          description: "Please verify your email to login.",
+          description: "Please verify your email to login!",
           type: "warning",
           icon: "auto",
           statusBarHeight: StatusBar.currentHeight, //Android only
           floating: true,
           color: "#4a2516",
           autoHide: false,
+          renderAfterContent: () => <ReverifyButton user={results} />,
         });
 
         return null;
