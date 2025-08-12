@@ -438,6 +438,20 @@ const getSublistDocOrThrow = async (userId, sublistId) => {
     err.status = 404;
     throw err;
   }
+
+  const sublistData = ownerSublistSnap.data();
+
+  // Remove stale sharedSublist if no longer a collaborator
+  if (
+    sublistData.collaborators &&
+    !sublistData.collaborators.includes(userId)
+  ) {
+    await sharedSublistDocRef.delete();
+    const err = new Error("Access denied: You are no longer a collaborator.");
+    err.status = 403;
+    throw err;
+  }
+
   return { docSnap: ownerSublistSnap, ownerId };
 };
 
@@ -542,13 +556,23 @@ router.get("/user/sharedSublists", async (req, res) => {
     const sharedSublists = await Promise.all(
       sharedListsSnap.docs.map(async (doc) => {
         const sublistId = doc.id;
-        const ownerId = doc.data().ownerId;
-        const { docSnap } = await getSublistDocOrThrow(ownerId, sublistId);
-        return {
-          id: doc.id,
-          // updatedAtDate: docSnap.data().updatedAt.toDate(),
-          ...formatSublistData(docSnap.data()), // with updatedAtRaw and createdAtRaw
-        };
+        // const ownerId = doc.data().ownerId;
+        try {
+          const { docSnap } = await getSublistDocOrThrow(userId, sublistId);
+          return {
+            id: doc.id,
+            // updatedAtDate: docSnap.data().updatedAt.toDate(),
+            ...formatSublistData(docSnap.data()), // with updatedAtRaw and createdAtRaw
+          };
+        } catch (err) {
+          if (err.status === 403) {
+            // Skip stale shared sublists silently
+            console.warn(`Skipping stale shared sublist: ${sublistId}`);
+            return null;
+          }
+          // For other errors (e.g. DB issues), fail fast
+          throw err;
+        }
       })
     );
 
@@ -556,7 +580,7 @@ router.get("/user/sharedSublists", async (req, res) => {
       /* sharedSublists.sort((a, b) => {
         a.updatedAtRaw.toMillis() > b.updatedAtRaw.toMillis() ? -1 : 1; // sort by most recently updated
       }) */
-      sharedSublists
+      sharedSublists.filter(Boolean) // remove null entries
     );
   } catch (error) {
     return res.status(error.status || 500).json({ error: error.message });
