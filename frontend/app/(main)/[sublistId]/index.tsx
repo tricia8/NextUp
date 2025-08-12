@@ -435,6 +435,7 @@ export default function currentSublist() {
   ) => {
     // type refers to event type
     if (event.type === "set" && selectedDate) {
+      selectedDate.setHours(23, 59, 59, 0); // set date to the end of the day
       setDeadlineDate(selectedDate);
       toggleDatePicker(); // hide picker after selection
       setDeadlineString(selectedDate.toDateString());
