@@ -77,6 +77,22 @@ router.patch("/users/updateProfile", async (req, res) => {
     if (Object.keys(updatedFields).length > 0) {
       await userRef.update(updatedFields);
       console.log("Updated fields:", updatedFields);
+
+      const friendsRef = db.collection(`users/${userId}/friends`);
+      const friendsSnapshot = await friendsRef.get();
+
+      const batch = db.batch();
+      friendsSnapshot.forEach((friendDoc) => {
+        const friendId = friendDoc.id;
+        const friendSubRef = db
+          .collection(`users/${friendId}/friends`)
+          .doc(userId);
+
+        batch.update(friendSubRef, updatedFields);
+      });
+
+      await batch.commit();
+
       return res
         .status(200)
         .json({ message: "Profile updated", updatedFields });
