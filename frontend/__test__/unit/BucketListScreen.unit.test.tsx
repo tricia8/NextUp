@@ -58,6 +58,11 @@ jest.mock("firebase/firestore", () => {
   };
 });
 
+const mockShowMessage = jest.fn();
+jest.mock("react-native-flash-message", () => ({
+  showMessage: mockShowMessage,
+}));
+
 const mockPresent = jest.fn();
 jest.mock("@gorhom/bottom-sheet", () => {
   const React = require("react");
@@ -143,6 +148,8 @@ import SublistItems from "@/components/SublistItems";
 import BucketList from "@/app/(main)/(tabs)/bucketlist";
 import SwipeableRow from "@/components/SwipeableRow";
 import { View } from "react-native";
+import DeleteModal from "@/components/DeleteModal";
+import { getAllSubBucketLists } from "@/firebase/firestore";
 
 const mockUseFocusEffect = useFocusEffect as jest.Mock;
 
@@ -603,6 +610,48 @@ describe("BucketList", () => {
         });
       });
     });
+
+    it("calls handleItemDelete with selected item and closes modal when 'Delete' is pressed", async () => {
+      const mockSetModalVisible = jest.fn();
+      const mockHandleItemDelete = jest.fn();
+
+      const { getByTestId } = render(
+        <DeleteModal
+          modalVisible={true}
+          setModalVisible={mockSetModalVisible}
+          item={mockSublists[0]}
+          handleItemDelete={mockHandleItemDelete}
+          heading="Test"
+          body=""
+        />
+      );
+
+      const deleteButton = getByTestId("confirm-delete-button");
+      fireEvent.press(deleteButton);
+      expect(mockHandleItemDelete).toHaveBeenCalledWith(mockSublists[0]);
+      expect(mockSetModalVisible).toHaveBeenCalledWith(false);
+    });
+
+    it("closes the modal without calling handleItemDelete when 'Cancel' is pressed", async () => {
+      const mockSetModalVisible = jest.fn();
+      const mockHandleItemDelete = jest.fn();
+
+      const { getByTestId } = render(
+        <DeleteModal
+          modalVisible={true}
+          setModalVisible={mockSetModalVisible}
+          item={mockSublists[0]}
+          handleItemDelete={mockHandleItemDelete}
+          heading="Test"
+          body=""
+        />
+      );
+
+      const cancelButton = getByTestId("cancel-button");
+      fireEvent.press(cancelButton);
+      expect(mockHandleItemDelete).not.toHaveBeenCalled();
+      expect(mockSetModalVisible).toHaveBeenCalledWith(false);
+    });
   });
 
   describe("Add Sublist Button", () => {
@@ -611,5 +660,125 @@ describe("BucketList", () => {
       fireEvent.press(getByTestId("add-button"));
       expect(mockPush).toHaveBeenCalledWith("../new-sublist");
     });
+  });
+
+  describe("Error handling in sublist fetch", () => {
+    /* it("shows error flash message when fetching sublists fails", async () => {
+      jest.resetModules(); // fresh module registry
+      let BucketList: React.ComponentType;
+      const mockShowMessage = jest.fn();
+
+      act(() => {
+        useSublistStore.setState({
+          sublistData: {},
+          sublistOrder: [],
+        });
+      });
+
+      (useFocusEffect as jest.Mock).mockImplementationOnce((fn: any) => fn());
+
+      const mockGetAllSubBucketLists = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("Fetch failed"));
+
+      jest.mock("@/firebase/firestore", () => ({
+        __esModule: true,
+        getAllSubBucketLists: mockGetAllSubBucketLists,
+      }));
+
+      const BucketList = require("@/app/(main)/(tabs)/bucketlist").default;
+
+      render(
+        <AuthContext.Provider value={contextValue}>
+          <BucketList />
+        </AuthContext.Provider>
+      );
+
+      await waitFor(() =>
+        expect(mockShowMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: "Error",
+            description: "Fetch failed",
+            type: "danger",
+          })
+        )
+      );
+    }); 
+
+    it("shows error flash message when fetching sublists fails", async () => {
+      jest.resetModules(); // fresh module registry
+      let BucketList: React.FC;
+
+      jest.isolateModulesAsync(async () => {
+        jest.mock("@/firebase/firestore", () => ({
+          __esModule: true,
+          getAllSubBucketLists: jest
+            .fn()
+            .mockRejectedValueOnce(new Error("Fetch failed")),
+          getUnownedSubBucketLists: jest.fn(),
+          getOwnedSubBucketLists: jest.fn(),
+        }));
+
+        jest.mock("expo-router", () => ({
+          useFocusEffect: (fn: any) => fn(),
+          useRouter: jest.fn(),
+        }));
+
+        BucketList = require("@/app/(main)/(tabs)/bucketlist").default;
+
+        render(
+          <AuthContext.Provider value={contextValue}>
+            <BucketList />
+          </AuthContext.Provider>
+        );
+
+        await waitFor(() =>
+          expect(mockShowMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+              message: "Error",
+              description: "Fetch failed",
+              type: "danger",
+            })
+          )
+        ); 
+        
+      }); 
+    });*/
+    /* it("shows error flash message when fetching sublists fails", async () => {
+      // Clear previous mock calls
+      jest.clearAllMocks();
+
+      // Override just the firestore mock for this test
+      // const { getAllSubBucketLists } = require("@/firebase/firestore");
+      (getAllSubBucketLists as jest.Mock).mockRejectedValueOnce(
+        new Error("Fetch failed")
+      );
+
+      (useFocusEffect as jest.Mock).mockImplementationOnce((fn: any) => fn());
+
+      // Reset store state to empty so fetch triggers
+      act(() => {
+        useSublistStore.setState({
+          sublistData: {},
+          sublistOrder: [],
+        });
+      });
+
+      render(
+        <AuthContext.Provider value={contextValue}>
+          <BucketList />
+        </AuthContext.Provider>
+      );
+
+      await waitFor(() =>
+        expect(mockShowMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: "Error",
+            description: "Fetch failed",
+            type: "danger",
+          })
+        )
+      );
+    }); */
   });
 });

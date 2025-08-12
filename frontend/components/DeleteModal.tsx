@@ -102,6 +102,7 @@ export default function DeleteModal({
                 borderRadius: 5,
                 alignItems: "center",
               }}
+              testID="confirm-delete-button"
             >
               <ThemedText style={{ color: "#fff", fontSize: RFValue(14) }}>
                 Delete
@@ -115,6 +116,7 @@ export default function DeleteModal({
                 borderRadius: 5,
                 alignItems: "center",
               }}
+              testID="cancel-button"
             >
               <ThemedText style={{ color: "#4aa1ff", fontSize: RFValue(14) }}>
                 Cancel
