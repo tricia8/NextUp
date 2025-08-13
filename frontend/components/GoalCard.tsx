@@ -3,7 +3,6 @@ import {
   ColorSchemeName,
   StyleSheet,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
@@ -37,7 +36,7 @@ export default function GoalCard({
   return (
     <LinearGradient
       colors={
-        isDark ? ["#0f2027", "#188991"] : ["#d0e6fa", "#b3d2f2"] // ["#dcf4a9", "#b2df75"]
+        isDark ? ["#0f2027", "#188991"] : ["#8dd1f5ff", "#4ccac4ff"] // ["#dcf4a9", "#b2df75"]
       }
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -94,13 +93,16 @@ const getStyles = (isDark: boolean) =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
-      padding: 2,
+      paddingRight: 2,
     },
     title: {
       fontSize: RFValue(16),
+      flexWrap: "wrap",
+      flexShrink: 1,
+      marginRight: 8,
     },
     status: {
       fontSize: 13,
-      color: isDark ? "#bfbfbf" : "#228669",
+      color: isDark ? "#bfbfbf" : "#18493bff",
     },
   });
