@@ -1253,9 +1253,18 @@ router.patch(
 
         const isEventCompleted = eventDocSnap.data().isCompleted;
 
+        const updateData = { ...req.body };
+        const timestamp = FieldValue.serverTimestamp();
+
+        // Handle deadline conversion
+        if (updateData.deadline) {
+          const deadlineDate = new Date(updateData.deadline);
+          updateData.deadline = Timestamp.fromDate(deadlineDate);
+        }
+
         if (
-          req.body.isCompleted !== undefined &&
-          req.body.isCompleted !== isEventCompleted
+          updateData.isCompleted !== undefined &&
+          updateData.isCompleted !== isEventCompleted
         ) {
           // Completion status has changed, update sublist completion status and overall stats
           completionStatusChanged = true;
@@ -1271,11 +1280,9 @@ router.patch(
           });
         }
 
-        const timestamp = FieldValue.serverTimestamp();
-
         // Update event document
         transaction.update(eventDocRef, {
-          ...req.body,
+          ...updateData,
           updatedAt: timestamp,
         });
 
@@ -1295,7 +1302,11 @@ router.patch(
             .doc(collaboratorId)
             .collection("sharedSublists")
             .doc(sublistId);
-          transaction.update(sharedListRef, { updatedAt: timestamp });
+          transaction.set(
+            sharedListRef,
+            { updatedAt: timestamp },
+            { merge: true }
+          );
         });
       });
 
