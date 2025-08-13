@@ -77,7 +77,7 @@ export default function ImageViewer({
           <Ionicons
             name="add-circle"
             size={33}
-            color={isDark ? "#64748c" : "#cbe3df"}
+            color={isDark ? "#64748c" : "#64748ce1"}
           />
         </TouchableHighlight>
       );
