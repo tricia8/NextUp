@@ -337,6 +337,7 @@ export default function GoalPage() {
         goalTitle,
         goalDescription,
         categories,
+        deadline: deadlineDate,
       });
     } catch (error) {
       showMessage({
