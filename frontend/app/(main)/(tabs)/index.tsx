@@ -158,7 +158,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled>
         <ThemedView style={{ flex: 1 }}>
           <SideMenu open={open} setOpen={setOpen} />
 
