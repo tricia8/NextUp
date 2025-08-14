@@ -35,6 +35,7 @@ import Notifications from "@/components/Notifications";
 import { Activity } from "@/types/activity";
 import { generateSuggestion } from "@/gemini/generateSuggestion";
 import Markdown from "react-native-markdown-display";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 const PROFILEPICSIZE = ms(50);
 
@@ -53,6 +54,7 @@ export default function HomeScreen() {
   const [suggestion, setSuggestion] = useState<string>("");
 
   const colorScheme = useColorScheme();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const toggleOpen = () => {
     setOpen(!open);
@@ -158,9 +160,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView edges={[]} style={{ flex: 1 }}>
+    <SafeAreaView edges={["bottom"]} style={{ flex: 1 }}>
       {/* <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled> */}
-      <ThemedView style={{ flex: 1, flexShrink: 1 }}>
+      <ThemedView
+        style={{ flex: 1, flexShrink: 1, paddingBottom: tabBarHeight }}
+      >
         <SideMenu open={open} setOpen={setOpen} />
 
         <View style={styles.mainContainer}>
@@ -215,22 +219,22 @@ export default function HomeScreen() {
           </View>
 
           <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
-            <ScrollView
+            {/* <ScrollView
               contentContainerStyle={{ flexGrow: 1 }}
               nestedScrollEnabled
-            >
-              {overdueCount ? (
-                <View style={styles.overdueContainer}>
-                  <Text style={[styles.smallText, { fontWeight: "bold" }]}>
-                    You have {overdueCount} overdue goal(s).
-                  </Text>
-                </View>
-              ) : (
-                <></>
-              )}
+            >*/}
+            {overdueCount ? (
+              <View style={styles.overdueContainer}>
+                <Text style={[styles.smallText, { fontWeight: "bold" }]}>
+                  You have {overdueCount} overdue goal(s).
+                </Text>
+              </View>
+            ) : (
+              <></>
+            )}
 
-              <View style={styles.upcomingContainer}>
-                <Text style={styles.header}>Upcoming</Text>
+            <View style={styles.upcomingContainer}>
+              {/*  <Text style={styles.header}>Upcoming</Text>
                 {upcomingEvents.length === 0 ? (
                   <View>
                     <Text style={[styles.smallText, { textAlign: "center" }]}>
@@ -252,30 +256,40 @@ export default function HomeScreen() {
                         Due {event.deadline}
                       </Text>
                     </View>
-                  )) */
+                  )) */}
 
-                  <FlatList
-                    data={upcomingEvents}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => (
-                      <View key={item.id} style={{ flex: 1, marginBottom: 8 }}>
+              <FlatList
+                data={upcomingEvents}
+                keyExtractor={(item) => item.id}
+                ListHeaderComponent={() => (
+                  <View style={styles.upcomingHeader}>
+                    <Text style={styles.header}>Upcoming</Text>
+                    {upcomingEvents.length === 0 && (
+                      <View>
                         <Text
-                          style={[
-                            styles.smallText,
-                            { fontWeight: "700", textAlign: "left" },
-                          ]}
+                          style={[styles.smallText, { textAlign: "center" }]}
                         >
-                          {item.title}
-                        </Text>
-                        <Text style={styles.deadlineText}>
-                          Due {item.deadline}
+                          You have no scheduled goals. Set one now!
                         </Text>
                       </View>
                     )}
-                  />
+                  </View>
                 )}
-              </View>
-            </ScrollView>
+                renderItem={({ item }) => (
+                  <View key={item.id} style={{ flex: 1, marginBottom: 8 }}>
+                    <Text
+                      style={[
+                        styles.smallText,
+                        { fontWeight: "700", textAlign: "left" },
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text style={styles.deadlineText}>Due {item.deadline}</Text>
+                  </View>
+                )}
+              />
+            </View>
           </View>
 
           <View style={styles.suggestionsContainer}>
@@ -333,13 +347,19 @@ const styles = StyleSheet.create({
     gap: vs(10),
   },
   upcomingContainer: {
-    alignItems: "flex-start",
+    // alignItems: "flex-start",
     paddingVertical: vs(15),
     paddingHorizontal: s(11),
     backgroundColor: "#6a5acd",
     gap: vs(10),
     flex: 1,
-    height: vs(200),
+    width: "100%",
+  },
+  upcomingHeader: {
+    backgroundColor: "#6a5acd",
+    gap: vs(10),
+    flex: 1,
+    width: "100%",
   },
   progressStats: {
     flexDirection: "row",
