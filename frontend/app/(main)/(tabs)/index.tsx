@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   useColorScheme,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFValue } from "react-native-responsive-fontsize";
@@ -158,121 +159,143 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView edges={[]} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled>
-        <ThemedView style={{ flex: 1 }}>
-          <SideMenu open={open} setOpen={setOpen} />
+      {/* <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled> */}
+      <ThemedView style={{ flex: 1, flexShrink: 1 }}>
+        <SideMenu open={open} setOpen={setOpen} />
 
-          <View style={styles.mainContainer}>
-            <View style={styles.titleContainer}>
-              <ThemedText type="title">Hello {name}!</ThemedText>
+        <View style={styles.mainContainer}>
+          <View style={styles.titleContainer}>
+            <ThemedText type="title">Hello {name}!</ThemedText>
 
-              <View style={styles.iconContainer}>
-                <TouchableOpacity
-                  onPress={debouncePress(() => setModalVisible(true))}
-                >
-                  {activities.length != 0 ? (
-                    <RingingBell isRinging={true} />
-                  ) : (
-                    <RingingBell isRinging={false} />
-                  )}
-                </TouchableOpacity>
+            <View style={styles.iconContainer}>
+              <TouchableOpacity
+                onPress={debouncePress(() => setModalVisible(true))}
+              >
+                {activities.length != 0 ? (
+                  <RingingBell isRinging={true} />
+                ) : (
+                  <RingingBell isRinging={false} />
+                )}
+              </TouchableOpacity>
 
-                <TouchableOpacity onPress={debouncePress(toggleOpen)}>
-                  <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
-                </TouchableOpacity>
+              <TouchableOpacity onPress={debouncePress(toggleOpen)}>
+                <ProfilePic imageUrl={photoUrl} size={PROFILEPICSIZE} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.subContainer}>
+            <Text style={styles.header}>My Progress</Text>
+
+            <View style={styles.progressStats}>
+              <View style={styles.donutContainer}>
+                <DonutChart
+                  value={completedEvents}
+                  max={!totalEvents ? 1 : totalEvents}
+                  radius={ms(60)}
+                  strokeWidth={ms(25)}
+                />
+              </View>
+
+              <View style={styles.progressTextContainer}>
+                <AnimatedTextInput
+                  value={completedEvents}
+                  textColor="white"
+                  size={RFValue(25)}
+                />
+                <Text style={styles.progressText}>OUT OF</Text>
+                <AnimatedTextInput
+                  value={totalEvents}
+                  textColor="white"
+                  size={RFValue(25)}
+                />
+                <Text style={styles.progressText}>COMPLETED</Text>
               </View>
             </View>
+          </View>
 
-            <View style={styles.subContainer}>
-              <Text style={styles.header}>My Progress</Text>
-
-              <View style={styles.progressStats}>
-                <View style={styles.donutContainer}>
-                  <DonutChart
-                    value={completedEvents}
-                    max={!totalEvents ? 1 : totalEvents}
-                    radius={ms(60)}
-                    strokeWidth={ms(25)}
-                  />
+          <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
+            <ScrollView
+              contentContainerStyle={{ flexGrow: 1 }}
+              nestedScrollEnabled
+            >
+              {overdueCount ? (
+                <View style={styles.overdueContainer}>
+                  <Text style={[styles.smallText, { fontWeight: "bold" }]}>
+                    You have {overdueCount} overdue goal(s).
+                  </Text>
                 </View>
+              ) : (
+                <></>
+              )}
 
-                <View style={styles.progressTextContainer}>
-                  <AnimatedTextInput
-                    value={completedEvents}
-                    textColor="white"
-                    size={RFValue(25)}
-                  />
-                  <Text style={styles.progressText}>OUT OF</Text>
-                  <AnimatedTextInput
-                    value={totalEvents}
-                    textColor="white"
-                    size={RFValue(25)}
-                  />
-                  <Text style={styles.progressText}>COMPLETED</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
-              <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                {overdueCount ? (
-                  <View style={styles.overdueContainer}>
-                    <Text style={[styles.smallText, { fontWeight: "bold" }]}>
-                      You have {overdueCount} overdue goal(s).
+              <View style={styles.upcomingContainer}>
+                <Text style={styles.header}>Upcoming</Text>
+                {upcomingEvents.length === 0 ? (
+                  <View>
+                    <Text style={[styles.smallText, { textAlign: "center" }]}>
+                      You have no scheduled goals. Set one now!
                     </Text>
                   </View>
                 ) : (
-                  <></>
-                )}
-
-                <View style={styles.upcomingContainer}>
-                  <Text style={styles.header}>Upcoming</Text>
-                  {upcomingEvents.length === 0 ? (
-                    <View>
-                      <Text style={[styles.smallText, { textAlign: "center" }]}>
-                        You have no scheduled goals. Set one now!
+                  /*upcomingEvents.map((event) => (
+                    <View key={event.id} style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.smallText,
+                          { fontWeight: "700", textAlign: "left" },
+                        ]}
+                      >
+                        {event.title}
+                      </Text>
+                      <Text style={styles.deadlineText}>
+                        Due {event.deadline}
                       </Text>
                     </View>
-                  ) : (
-                    upcomingEvents.map((event) => (
-                      <View key={event.id} style={{ flex: 1 }}>
+                  )) */
+
+                  <FlatList
+                    data={upcomingEvents}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <View key={item.id} style={{ flex: 1, marginBottom: 8 }}>
                         <Text
                           style={[
                             styles.smallText,
                             { fontWeight: "700", textAlign: "left" },
                           ]}
                         >
-                          {event.title}
+                          {item.title}
                         </Text>
                         <Text style={styles.deadlineText}>
-                          Due {event.deadline}
+                          Due {item.deadline}
                         </Text>
                       </View>
-                    ))
-                  )}
-                </View>
-              </ScrollView>
-            </View>
-
-            <View style={styles.suggestionsContainer}>
-              <Text style={{ fontSize: RFValue(13), fontWeight: "bold" }}>
-                Bucket List Inspiration 🪄
-              </Text>
-              <ScrollView>
-                <Markdown
-                  style={{
-                    text: {
-                      fontSize: RFValue(13),
-                    },
-                  }}
-                >
-                  {suggestion}
-                </Markdown>
-              </ScrollView>
-            </View>
+                    )}
+                  />
+                )}
+              </View>
+            </ScrollView>
           </View>
-        </ThemedView>
-      </ScrollView>
+
+          <View style={styles.suggestionsContainer}>
+            <Text style={{ fontSize: RFValue(13), fontWeight: "bold" }}>
+              Bucket List Inspiration 🪄
+            </Text>
+            <ScrollView nestedScrollEnabled>
+              <Markdown
+                style={{
+                  text: {
+                    fontSize: RFValue(13),
+                  },
+                }}
+              >
+                {suggestion}
+              </Markdown>
+            </ScrollView>
+          </View>
+        </View>
+      </ThemedView>
 
       <Notifications
         visible={isModalVisible}
@@ -316,6 +339,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#6a5acd",
     gap: vs(10),
     flex: 1,
+    height: vs(200),
   },
   progressStats: {
     flexDirection: "row",
@@ -350,6 +374,8 @@ const styles = StyleSheet.create({
     shadowColor: "#0000cd",
     shadowOpacity: 1,
     elevation: 10,
+    marginBottom: 6,
+    gap: 3,
   },
   header: {
     color: "white",
