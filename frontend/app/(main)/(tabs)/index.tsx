@@ -160,13 +160,17 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView edges={["bottom"]} style={{ flex: 1 }}>
-      {/* <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled> */}
-      <ThemedView
-        style={{ flex: 1, flexShrink: 1, paddingBottom: tabBarHeight }}
-      >
+    <SafeAreaView
+      edges={["bottom"]}
+      style={{
+        flex: 1,
+        backgroundColor: colorScheme == "dark" ? "#151718" : "#fff",
+      }}
+    >
+      <ThemedView style={{ flex: 1, flexShrink: 1 }}>
         <SideMenu open={open} setOpen={setOpen} />
 
+        {/* <ScrollView contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled> */}
         <View style={styles.mainContainer}>
           <View style={styles.titleContainer}>
             <ThemedText type="title">Hello {name}!</ThemedText>
@@ -218,7 +222,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={[{ height: vs(200), paddingVertical: vs(10) }]}>
+          <View style={[{ height: "30%", paddingVertical: vs(10) }]}>
             {/* <ScrollView
               contentContainerStyle={{ flexGrow: 1 }}
               nestedScrollEnabled
@@ -234,30 +238,6 @@ export default function HomeScreen() {
             )}
 
             <View style={styles.upcomingContainer}>
-              {/*  <Text style={styles.header}>Upcoming</Text>
-                {upcomingEvents.length === 0 ? (
-                  <View>
-                    <Text style={[styles.smallText, { textAlign: "center" }]}>
-                      You have no scheduled goals. Set one now!
-                    </Text>
-                  </View>
-                ) : (
-                  /*upcomingEvents.map((event) => (
-                    <View key={event.id} style={{ flex: 1 }}>
-                      <Text
-                        style={[
-                          styles.smallText,
-                          { fontWeight: "700", textAlign: "left" },
-                        ]}
-                      >
-                        {event.title}
-                      </Text>
-                      <Text style={styles.deadlineText}>
-                        Due {event.deadline}
-                      </Text>
-                    </View>
-                  )) */}
-
               <FlatList
                 data={upcomingEvents}
                 keyExtractor={(item) => item.id}
@@ -384,7 +364,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   suggestionsContainer: {
-    height: vs(140),
+    height: "25%", //vs(140),
     paddingVertical: vs(13),
     paddingHorizontal: s(12),
     backgroundColor: "rgba(102, 205, 170, 1)",
