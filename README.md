@@ -1,5 +1,5 @@
 # **Orbital 2025 README**
-https://drive.google.com/file/d/1_GMC0Aq-YUJf1xQB4SBBXbGaluHPiCrQ/view?usp=sharing
+
 ## Table of Contents
 
 - [Team Information](#team-information)
@@ -12,14 +12,14 @@ https://drive.google.com/file/d/1_GMC0Aq-YUJf1xQB4SBBXbGaluHPiCrQ/view?usp=shari
 - [Core Features](#core-features)
     - [1. Secure user authentication](#1-secure-user-authentication)
     - [2. Creating and updating sub-bucket lists](#2-creating-and-updating-sub-bucket-lists)
-    - [3. Adding of friends](#adding-of-friends)
-    - [4. User collaboration](#user-collaboration)
-    - [5. Event Journaling](#event-journaling)
-    - [6. Milestones Record](#milestones-record)
-    - [7. Customisable Profile](#customisable-profile)
-    - [8. Display of User Progress](#display-of-user-progress)
-    - [9. Notifications](#notifications)
-    - [10. AI-powered Event Suggestions](#ai-powered-event-suggestions)
+    - [3. Adding of friends](#3-adding-of-friends)
+    - [4. User collaboration](#4-user-collaboration)
+    - [5. Event Journaling](#5-event-journaling)
+    - [6. Milestones Record](#6-milestones-record)
+    - [7. Customisable Profile](#7-customisable-profile)
+    - [8. Display of User Progress](#8-display-of-user-progress)
+    - [9. Notifications](#9-notifications)
+    - [10. AI-powered Event Suggestions](#10-ai-powered-event-suggestions)
 - [Application Design](#application-design)
     - [Technology Stack](#technology-stack)
     - [Frontend-to-Backend Authentication and High-Level Flow](#frontend-to-backend-authentication-and-high-level-flow)
@@ -262,7 +262,8 @@ We have implemented the UI/UX for the Sublist Creation page with Firestore logic
 
 ****
 
-_Sublist Creation page in Dark Theme_
+![Sublist Creation page in Dark Theme](./NextUp_README_assets/sublist-creation.png)
+_Sublist Creation page in Dark Theme_ 
 
 The Share List Modal has dynamic user search functionality to invite collaborators. Tapping on ‘Add users’ opens a dropdown picker with a search bar and a list of all users who are not yet collaborators of the sublist. By default, the ‘Invite’ button is disabled when no user has been picked (i.e. when the \`value\` prop of the ‘Add users’ dropdown picker is an empty array).
 
@@ -272,10 +273,12 @@ On successful sublist creation, all input fields in the sublist creation page ar
 
 ****
 
+![Sublist Editing Mode in Dark and Light Themes](./NextUp_README_assets/sublist-editing.png)
 _Sublist Editing Mode in Dark and Light Themes_
 
 ****
 
+![Sublist Viewing Mode in Dark and Light Themes](./NextUp_README_assets/sublist-viewing.png)
 _Sublist Viewing Mode in Dark and Light Themes_ 
 
 On this screen, the user can toggle between the editing and viewing mode for the sublist’s title, description and visibility. 
@@ -286,6 +289,7 @@ A ‘Share’ icon is displayed on the sublist creation and sublist details scre
 
 __
 
+![Goal Creation Modal in Dark and Light Themes](./NextUp_README_assets/goal-creation.png)
 _Goal Creation Modal in Dark and Light Themes_
 
 On the sublist page, we have also implemented a bottom-sheet modal for goal creation with field validation integrated to check that the goal’s title is filled before submission. 
@@ -310,8 +314,7 @@ Initially, the swipe-to-delete feature for sublists and goals was implemented by
 
 Aside from refactoring search-and-filter logic for greater cohesiveness, we hope to implement sorting of sublists by their date of update, date of creation, and by title in alphabetical order. This would be helpful in sifting through large volumes of sublist items as app usage grows over time.
 
-3. #### **Adding of friends**
-
+### 3. Adding of friends
 
 ##### **Deliverables**
 
@@ -319,10 +322,11 @@ Users can add friends by searching for a specific username and clicking on the a
 
 The following screenshots display the View Friends, Add Friends, and Profile screens, as well as the friend request notification for this feature.
 
+![Add Friends feature in Dark Theme](./NextUp_README_assets/add-friends1.png)
+![Add Friends feature in Dark Theme](./NextUp_README_assets/add-friends2.png)
 _Add Friends feature in Dark Theme_
 
-4. #### **User collaboration**
-
+### 4. User collaboration
 
 ##### **Deliverables**
 
@@ -364,8 +368,8 @@ To enhance flexibility in sharing sublists, a possible add-on would be to add su
 
 Future iterations of NextUp could integrate shareable links for created sublists, with 2 access options—Only people with editing permissions can access with the link to view/edit the list; or any registered user with the link can edit.
 
-5. #### **Event Journaling**
 
+### 5. Event Journaling
 
 ##### **Deliverables**
 
@@ -375,6 +379,7 @@ Each post will be labelled with the author’s username and profile picture, alo
 
 Currently, there is no set limit on the number of posts/images allowed for each goal, or the maximum number of characters for text inputs.  
 
+![Event Journaling Page in Dark and Light Themes](./NextUp_README_assets/event-journaling.png)
 _Actual Implementation of Event Journaling Page in Dark and Light Themes_
 
 
@@ -402,8 +407,8 @@ We are considering integrating editing functionality for posts to provide greate
 
 Future iterations of NextUp could also integrate optional location tagging for posts. This would let users attach a place to their reflections or images when completing a goal, adding personal context or helping to track where milestones happened. It also opens the door to related features like memory maps and location-based goal search.
 
-6. #### **Milestones Record**
 
+### 6. Milestones Record
 
 ##### **Deliverables**
 
@@ -431,6 +436,7 @@ The visibility of a goal on the Journey page depends on:
 
   - Only goals in sublists with visibility set to _Everyone_ are visible.
 
+![Journey Page in Dark and Light Themes](./NextUp_README_assets/journey.png)
 _Actual Implementation of Journey Page in Dark and Light Themes_
 
 **Challenges Faced** 
@@ -445,8 +451,7 @@ Currently, the Journey page does not allow users to click on the displayed goals
 \
 
 
-7. #### **Customisable Profile**
-
+### 7. Customisable Profile
 
 ##### **Deliverables**
 
@@ -454,16 +459,17 @@ Each user can customize his profile picture, bio and favourite category by click
 
 ****
 
-_Actual Implementation of Profile Page in Dark and Light Modes_
+![Profile Page in Dark and Light Themes](./NextUp_README_assets/profile.png)
+_Actual Implementation of Profile Page in Dark and Light Themes_
 
-8. #### **Display of User Progress**
-
+### 8. Display of User Progress
 
 ##### **Deliverables**
 
 ****
 
-_Actual Implementation of Home Page in Dark and Light Modes_
+![Home Page in Dark and Light Themes](./NextUp_README_assets/home.png)
+_Actual Implementation of Home Page in Dark and Light Themes_
 
 The total number of goals a user has and the number of goals the user has completed will be displayed on both the home and profile pages. On the home page, the user’s upcoming goals and number of overdue goals, if any, will also be shown. The Bucket List page also displays the number of goals created and completed for each sublist.
 
@@ -472,8 +478,7 @@ The total number of goals a user has and the number of goals the user has comple
 
 We had difficulty deciding what was the best way to update user statistics. Initially, we created a document for each user that stored the user’s overall statistics. This document was updated directly whenever the user added or deleted a goal or removed a sublist. However, to ensure accuracy, we considered summing data on the spot using statistics from all sublists when the user navigates to the relevant screens. Although this allows for up-to-date stats, it may be inefficient if a user has many sublists and events. Therefore, to balance performance with accuracy, we retained the overall stats document but introduced a function to update it by summing statistics from sublists whenever changes occur.
 
-9. #### **Notifications**
-
+### 9. Notifications
 
 ##### **Deliverables**
 
@@ -484,13 +489,13 @@ A notification bell is displayed at the top of the home screen. By default, if u
 
 A potential enhancement would be to integrate push notifications to remind users about upcoming goals, overdue ones, or stale sublists.
 
-10. ####  **AI-powered Event Suggestions**
-
+###  10. AI-powered Event Suggestions
 
 ##### **Deliverables**
 
 A bucket list goal suggestion will be fetched from the Gemini API and displayed on the Home screen when the screen component mounts, or whenever the authenticated user's user ID changes (e.g. on login or app reinitialization). This inspires new bucket list ideas.
 
+![AI Suggestion Feature in Light Theme](./NextUp_README_assets/ai-suggestion.png)
 _AI Suggestion Feature in Light Theme_ 
 
 _(Left: Home Page, Right: Sample Suggestions Generated)_
@@ -594,12 +599,19 @@ NextUp supports both light and dark themes with responsive font-sizing.
 
 We used Figma and Google Docs to draft initial designs and prototype user flows before implementation, as illustrated in the following figures.
 
-Draft for Sublist Details Page
+![Figma Prototype](./NextUp_README_assets/figma-1.png)
+![Figma Prototype](./NextUp_README_assets/figma-2.png)
+_Static Mid-Fidelity Figma Prototype_
+
+![Draft for Sublist Details Page](./NextUp_README_assets/google-docs-draft.png)
+_Draft for Sublist Details Page_
 
 
 #### **Frontend-to-Backend Authentication and High-Level Flow**
 
 ****
+
+![Sequence Diagram Showing the HTTP Request Flow](./NextUp_README_assets/sequence-diagram.png)
 
 _Sequence Diagram Showing the HTTP Request Flow_
 
@@ -776,6 +788,8 @@ When subscribing to cached states (e.g. sublist data, list of posts), we used th
 
 The following outlines the process of keeping NextUp’s UI in sync with Firestore using real-time listeners and the global Zustand store.
 
+![Data Synchronisation Diagrammatic Outline](./NextUp_README_assets/data-syncing-diagram.png)
+
 1. **Firestore Snapshot Listener**
 
    - The app sets up Firestore onSnapshot listeners on sublist collections (BucketList Page) the sublist (Sublist Details Page), goals collection (Sublist Details Page), and individual goal data along with its post collection (Goal Journaling Page).
@@ -807,6 +821,7 @@ For sublist and goal components with editing modes, we combined the use of zusta
 
 #### ****
 
+![UML Activity Diagram](./NextUp_README_assets/uml-diagram.png)
 _UML Activity Diagram_
 
 
@@ -873,7 +888,8 @@ We utilised Github Project for progress tracking and work allocation. Weekly spr
 
 ****
 
-Screenshot of GitHub Project Spreadsheet
+![GitHub Project Spreadsheet](./NextUp_README_assets/github-project-spreadsheet.png)
+_Screenshot of GitHub Project Spreadsheet_
 
 **Code Formatting**
 
@@ -891,6 +907,14 @@ We used Insomnia API Platform and Postman to conduct API Unit testing. We tested
 We made use of environment variables in the testing interface to store user credentials. For instance, we stored the IdToken of the signed-in user and programmed the environment variable to trigger a refetch of a new IdToken before the expiration time of the current one. This IdToken was referenced in each HTTP request’s Authorization header to access protected API endpoints.
 
 The following are some screenshots of our test results:
+
+****
+
+![API testing screenshot 1](./NextUp_README_assets/api-testing-1.png)
+![API testing screenshot 2](./NextUp_README_assets/api-testing-2.png)
+![API testing screenshot 3](./NextUp_README_assets/api-testing-3.png)
+![API testing screenshot 4](./NextUp_README_assets/api-testing-4.png)
+![API testing screenshot 5](./NextUp_README_assets/api-testing-5.png)
 
 ****
 
@@ -1035,6 +1059,16 @@ We performed automated unit testing on individual functions or components in iso
 The following are some screenshots of our test results:
 
 ****
+![Home Screen Unit Tests](./NextUp_README_assets/home-unit-tests.png)
+![Profile Screen Unit Tests](./NextUp_README_assets/profile-unit-tests.png)
+![User Search Feature Unit Tests](./NextUp_README_assets/user-search-unit-tests.png)
+![Bucket List Screen Unit Tests](./NextUp_README_assets/bucketlist-unit-tests.png)
+![Auth Layout Unit Tests](./NextUp_README_assets/auth-layout-unit-tests.png)
+![Forgot Password Screen Unit Tests](./NextUp_README_assets/forgot-pw-unit-tests.png)
+![Login Screen Unit Tests](./NextUp_README_assets/login-unit-tests.png)
+![Sign Up Screen Unit Tests](./NextUp_README_assets/signup-unit-tests.png)
+
+
 
 ****
 
@@ -1103,6 +1137,8 @@ To assess product usability and the degree to which NextUp fulfills the needs an
 
 
 ### **Technical Proof-of-Concept**
+
+![NextUp QR Code](./NextUp_README_assets/NextUp-qr.png)
 
 Open this link on your Android devices (or scan the QR code) to install the app:
 
