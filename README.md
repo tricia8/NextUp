@@ -27,7 +27,7 @@
             - [Request Flow](#request-flow)
         - [Zustand State Management](#zustand-state-management)
         - [Real-time Data Flow](#real-time-data-flow)
-    - [Software Engineering Practices 40](#software-engineering-practices)
+    - [Software Engineering Practices](#software-engineering-practices)
 - [Testing](#testing)
     - [Backend](#backend)
         - [API Testing](#api-testing)
@@ -134,15 +134,19 @@ Ultimately, NextUp seeks to support users in reconnecting with their interests t
 
 On opening the app, unauthenticated users will be directed to the Login page, with email/password as the default sign-in option.
 
-![Login Page in Dark and Light Themes](./NextUp_README_assets/login.png)
-_Login Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/login.png" alt="Login Page" width="600">
+    <p><em>Login Page in Dark and Light Themes</em></p>
+</div>
 
 Users who have not previously created an account can click on the 'Sign up' text to navigate to the Sign-up page.
 
 On the Sign-up page, there are three input fields—email, username and password. Users can only register with a unique email and username (not case-sensitive). Any input in the username field will be checked for its availability in real-time; available handles will be validated with a tick icon, while unavailable ones will trigger an inline feedback message.
 
-![Signup Page in Dark and Light Themes](./NextUp_README_assets/signup.png)
-_Signup Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/signup.png" alt="Signup Page" width="600">
+    <p><em>Signup Page in Dark and Light Themes</em></p>
+</div>
 
 Passwords must be at least 6 characters and include at least:
 - 1 uppercase letter
@@ -158,8 +162,10 @@ Users who attempt to log in without verifying their emails will receive a warnin
 
 Registered users who have forgotten their password or wish to reset their password can navigate to the Reset-password page from the Login screen. They can enter their registered emails to receive a password-reset email which will bring them through the next steps.
 
-![Forgot Password Page in Dark and Light Themes](./NextUp_README_assets/forgot-password.png)
-_Forgot Password Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/forgot-password.png" alt="Forgot Password Page" width="600">
+    <p><em>Forgot Password Page in Dark and Light Themes</em></p>
+</div>
 
 #### Current Progress
 
@@ -178,7 +184,6 @@ Some users might desire more flexibility and control in resending email verifica
 
 We also hope to integrate Google Sign-in as a passwordless alternative to cater to users who prefer faster, frictionless authentication. Regex validation may also be implemented to verify email formats.
 
----
 
 ### 2. Creating and Updating Sub-Bucket Lists
 
@@ -194,7 +199,7 @@ Users can create sub-bucket lists (sublists). Creators of the list will be desig
 
 By default, each list can only be edited by its creator when first created, but he/she can share it with other users by searching for their usernames and adding them as collaborators. 
 
-Every user with editing permissions can add or remove goals from the sublist, as well as modify the title and description of the list. Currently, no limit has been set on the number of goals that each sublist can contain. More details on user collaboration will be provided in [Feature 4](#user-collaboration).
+Every user with editing permissions can add or remove goals from the sublist, as well as modify the title and description of the list. Currently, no limit has been set on the number of goals that each sublist can contain. More details on user collaboration will be provided in [Feature 4](#4-user-collaboration).
 
 
 Adding Goals
@@ -206,13 +211,18 @@ Once a goal has been completed, the user can mark it as done with the option to 
 #### Current Progress
 #### Bucket List Page
 
-![Bucket List Creation Page](./NextUp_README_assets/bucket-list.png)
-_Actual Implementation of Bucket List Page in Dark and Light Modes_
+<div align="center">
+    <img src="./NextUp_README_assets/bucket-list.png" alt="Bucket List Creation Page" width="600">
+    <p><em>Actual Implementation of Bucket List Page in Dark and Light Themes</em></p>
+</div>
 
 On the bucket list page, users will be able to view a list of all sublists owned by or shared with them. By default, sublists are sorted by their date of update in descending order (most recently updated first). The title, visibility and completion status of each sublist is displayed. Users can search for specific sublists via the search bar. 
 
 Users can also filter sublists by the following criteria: 
-![Bucket List Filter Function](./NextUp_README_assets/filter.png)
+
+<div align="center">
+    <img src="./NextUp_README_assets/filter.png" alt="Bucket List Filter Function" width="600">
+</div>
 
 For each of the 4 categories, users can select up to one label and reset their option using the ‘Clear’ button. All options can be reset at once using the ‘Reset All’ button.
 
@@ -260,10 +270,10 @@ The need for frontend sorting in step 3 required us to update each document in `
 
 We have implemented the UI/UX for the Sublist Creation page with Firestore logic for writing to the database. Attempts to create a sublist without a title or viewing status will fail on submission with inline error message(s) and a warning flash message. 
 
-****
-
-![Sublist Creation page in Dark Theme](./NextUp_README_assets/sublist-creation.png)
-_Sublist Creation page in Dark Theme_ 
+<div align="center">
+    <img src="./NextUp_README_assets/sublist-creation.png" alt="Sublist Creation Page" width="600">
+    <p><em>Sublist Creation page in Dark Theme</em></p>
+</div>
 
 The Share List Modal has dynamic user search functionality to invite collaborators. Tapping on ‘Add users’ opens a dropdown picker with a search bar and a list of all users who are not yet collaborators of the sublist. By default, the ‘Invite’ button is disabled when no user has been picked (i.e. when the \`value\` prop of the ‘Add users’ dropdown picker is an empty array).
 
@@ -271,15 +281,15 @@ On successful sublist creation, all input fields in the sublist creation page ar
 
 **Sublist Details Page**
 
-****
+<div align="center">
+    <img src="./NextUp_README_assets/sublist-editing.png" alt="Sublist Editing Mode" width="600">
+    <p><em>Sublist Editing Mode in Dark and Light Themes</em></p>
+</div>
 
-![Sublist Editing Mode in Dark and Light Themes](./NextUp_README_assets/sublist-editing.png)
-_Sublist Editing Mode in Dark and Light Themes_
-
-****
-
-![Sublist Viewing Mode in Dark and Light Themes](./NextUp_README_assets/sublist-viewing.png)
-_Sublist Viewing Mode in Dark and Light Themes_ 
+<div align="center">
+    <img src="./NextUp_README_assets/sublist-viewing.png" alt="Sublist Viewing Mode" width="600">
+    <p><em>Sublist Viewing Mode in Dark and Light Themes</em></p>
+</div>
 
 On this screen, the user can toggle between the editing and viewing mode for the sublist’s title, description and visibility. 
 
@@ -287,10 +297,12 @@ A flashlist of created goals will be fetched and re-rendered on adding a new goa
 
 A ‘Share’ icon is displayed on the sublist creation and sublist details screen. On press, it opens a modal that includes a search bar for adding collaborators and renders a list of current collaborators. The fetching of collaborators from Firestore has been implemented, while text-based username search and Firestore logic for sublist sharing is set to be completed in the next milestone.
 
-__
 
-![Goal Creation Modal in Dark and Light Themes](./NextUp_README_assets/goal-creation.png)
-_Goal Creation Modal in Dark and Light Themes_
+
+<div align="center">
+    <img src="./NextUp_README_assets/goal-creation.png" alt="Goal Creation Modal" width="600">
+    <p><em>Goal Creation Modal in Dark and Light Themes</em></p>
+</div>
 
 On the sublist page, we have also implemented a bottom-sheet modal for goal creation with field validation integrated to check that the goal’s title is filled before submission. 
 
@@ -298,7 +310,7 @@ Setting a deadline for the goal is optional. All deadlines have the time standar
 
 We used [Day.js](https://day.js.org/) with the relativeTime plugin to display helpful and user-friendly deadline information, e.g.: Due: in 2 hours (12 Aug 2025). For more details on how the estimated time difference is obtained, see the[ Day.js `fromNow` documentation](https://day.js.org/docs/en/display/from-now).
 
-When a goal is clicked, the user will be dynamically routed to the Goal Journaling Page where event journaling will take place. More details on this can be accessed in [Feature 5](#event-journaling-1).
+When a goal is clicked, the user will be dynamically routed to the Goal Journaling Page where event journaling will take place. More details on this can be accessed in [Feature 5](#5-event-journaling).
 
 
 ##### **Challenges Faced**
@@ -316,19 +328,21 @@ Aside from refactoring search-and-filter logic for greater cohesiveness, we hope
 
 ### 3. Adding of friends
 
-##### **Deliverables**
+#### Deliverables
 
 Users can add friends by searching for a specific username and clicking on the add friend button to send a friend request. Users will receive friend requests via in-app notifications which they can accept or reject. Upon acceptance, a mutual friendship is established, thus both users appear in each other’s friends list. Friends can be removed through the remove friend button on their respective profile pages, which also updates the friendship status for both parties.
 
 The following screenshots display the View Friends, Add Friends, and Profile screens, as well as the friend request notification for this feature.
 
-![Add Friends feature in Dark Theme](./NextUp_README_assets/add-friends1.png)
-![Add Friends feature in Dark Theme](./NextUp_README_assets/add-friends2.png)
-_Add Friends feature in Dark Theme_
+<div align="center">
+    <img src="./NextUp_README_assets/add-friends1.png" alt="Add Friends feature" width="600">
+    <img src="./NextUp_README_assets/add-friends2.png" alt="Add Friends feature" width="600">
+    <p><em>Add Friends feature in Dark Theme</em></p>
+</div>
 
 ### 4. User collaboration
 
-##### **Deliverables**
+#### **Deliverables**
 
 This feature is built for shared goals that users wish to pursue together with their friends or family. Any collaborator can update a sublist’s title and description, as well as create, update or delete goals. Only the owner can modify the sublist’s visibility and delete a sublist. 
 
@@ -351,7 +365,7 @@ We also executed multiple write operations (e.g. set, update, delete) as a singl
 While working on a specific goal, collaborators can document their experiences and reflections by posting images and/or text. This journaling process will be elaborated on in greater detail in [Feature 5](#event-journaling-2)**.**
 
 
-##### **Challenges Faced** 
+#### **Challenges Faced** 
 
 We had difficulty deciding how the database should reflect the event of a user adding collaborators to a sublist. The most straightforward way would be to store a copy of the sublist under each collaborator. However, if one collaborator makes changes to the sublist, all copies need to be updated consistently and this increases the risk of copies becoming out-of-sync. If we stored a single source of truth with references, it would ensure that all collaborators always see the latest version. However, it would result in more complex querying and firestore rules. Our final decision was to store the sublist under the owner and collaborators added would store a reference to that copy in their sharedSublists collection. We also included a collaborators array for each sublist and event to make querying easier.
 
@@ -362,7 +376,7 @@ With onSnapshot set up, we had to take extra care to prevent race conditions by 
 During API testing via Insomnia, after we successfully ran the POST request for email/password sign-in, we received repeated failed requests for protected routes (error status 401—Unauthorized client error). We spent a lot of time attempting to identify the source of the error, as we were already signed in with the Firebase ID token retrieved and correctly configured with the Authentication Header. We had also corrected the formatting of the request body but still encountered the same error. On returning to our code, we realised that having identical response messages and lack of console logs in our token verification middleware was not helpful for error tracing. Thus, we refined each response message with labels pinpointing the source of error (e.g. “Invalid token”), and added a console log for errors thrown when getAuth.verifyIdToken(token) was invoked (i.e. console.error("Token verification error:", error). This helped us locate the error—an incorrect file path for our Firebase Admin service account file.
 
 
-##### **Possible Add-Ons** 
+#### **Possible Add-Ons** 
 
 To enhance flexibility in sharing sublists, a possible add-on would be to add support for tiered collaborator roles. Roles may include ‘Viewer’ (read-only access) and ‘Editor’ (can modify sublist content), with the owner retaining full control. This enhancement enables users to limit editing to trusted collaborators, reducing the risk of accidental or unwanted changes to shared content. This would be useful if collaborators only need to track progress or stay informed without contributing directly to content.
 
@@ -371,7 +385,7 @@ Future iterations of NextUp could integrate shareable links for created sublists
 
 ### 5. Event Journaling
 
-##### **Deliverables**
+#### **Deliverables**
 
 For goals that are in progress or marked as completed, users can post comments and/or photos documenting their journey under that event. Posts are ordered by their date/time of creation, with the topmost post being most recently added. This allows for chronological journaling that reads like a timeline.
 
@@ -379,18 +393,20 @@ Each post will be labelled with the author’s username and profile picture, alo
 
 Currently, there is no set limit on the number of posts/images allowed for each goal, or the maximum number of characters for text inputs.  
 
-![Event Journaling Page in Dark and Light Themes](./NextUp_README_assets/event-journaling.png)
-_Actual Implementation of Event Journaling Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/event-journaling.png" alt="Event Journaling Screen" width="600">
+    <p><em>Actual Implementation of Event Journaling Screen in Dark and Light Themes</em></p>
+</div>
 
 
-##### **Current Progress**
+#### **Current Progress**
 
-**Design Considerations**
+##### **Design Considerations**
 
 For each post, we decided to allow up to 5 image uploads. This gives users greater flexibility in documenting their experiences richly. Some users may prefer just having one image per post for a cleaner timeline-style documentation, while others may wish to batch media to avoid spamming the feed, especially if they wish to share a moment through multiple angles or snapshots.
 
 
-##### **Challenges Faced**
+#### **Challenges Faced**
 
 Image Loading: OutOfMemory (OOM) Issue
 
@@ -401,7 +417,7 @@ Subsequently, we realised that the app had hit a native image decoding memory li
 To fix this issue, we used resizeMethod=”resize” on Animated.Image to reduce the decoded image memory on Android. We also rendered compressed or resized versions of post images via Cloudinary q\_auto, w\_720. q\_auto is Cloudinary’s quality and encoding algorithm which strikes an optimal balance between file size and visual quality. Such downsampling avoids unnecessary memory usage, improving app performance without quality loss. To avoid malformed image fetch requests, we added an extra check for image URLs with encodeURI().
 
 
-##### **Possible Add-Ons**
+#### **Possible Add-Ons**
 
 We are considering integrating editing functionality for posts to provide greater flexibility in the journaling process. We also hope to allow users to take photos directly in the app on top of picking existing photos from their media library.
 
@@ -410,7 +426,7 @@ Future iterations of NextUp could also integrate optional location tagging for p
 
 ### 6. Milestones Record
 
-##### **Deliverables**
+#### **Deliverables**
 
 Each user has a Journey page that brings all completed goals in one place. Without it, achievements remain scattered across sublists, making it difficult to revisit everything one has accomplished. This centralised view serves as a personalized memory lane that celebrates progress and fuels positive momentum.
 
@@ -436,72 +452,79 @@ The visibility of a goal on the Journey page depends on:
 
   - Only goals in sublists with visibility set to _Everyone_ are visible.
 
-![Journey Page in Dark and Light Themes](./NextUp_README_assets/journey.png)
-_Actual Implementation of Journey Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/journey.png" alt="Journey Screen" width="600">
+    <p><em>Actual Implementation of Journey Screen in Dark and Light Themes</em></p>
+</div>
 
-**Challenges Faced** 
+
+#### **Challenges Faced** 
 
 As there are multiple access levels to handle, we needed to write queries that reflect the viewer’s relationship to the owner of the Journey page and the access level of the sub-bucket list the event belongs to. ****We had to ensure users cannot see content they do not have access to, both on the frontend and enforced by Firestore security rules. This made the data fetching logic rather complex.
 
-**Future Plans** 
+#### **Future Plans** 
 
 Currently, the Journey page does not allow users to click on the displayed goals to access their respective journaling pages. This functionality is not yet in place as our current backend does not authorise non-collaborators to view the goal journaling page of sublist goals. If time permits, we hope to refactor our backend access logic to allow viewers to access the journaling page of completed goals displayed in another user’s Journey page.
 
-\
-\
 
 
 ### 7. Customisable Profile
 
-##### **Deliverables**
+#### **Deliverables**
 
 Each user can customize his profile picture, bio and favourite category by clicking on the ‘Edit Profile’ button, which displays the Edit Profile modal. Within this modal, users can upload a new profile picture from their device’s gallery, update their bio and select up to one category using the category picker. Upon saving, a success alert should appear and the profile page will be updated.
 
 ****
 
-![Profile Page in Dark and Light Themes](./NextUp_README_assets/profile.png)
-_Actual Implementation of Profile Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/profile.png" alt="Profile Screen" width="600">
+    <p><em>Actual Implementation of Profile Screen in Dark and Light Themes</em></p>
+</div>
+
 
 ### 8. Display of User Progress
 
-##### **Deliverables**
+#### **Deliverables**
 
 ****
 
-![Home Page in Dark and Light Themes](./NextUp_README_assets/home.png)
-_Actual Implementation of Home Page in Dark and Light Themes_
+<div align="center">
+    <img src="./NextUp_README_assets/home.png" alt="Home Screen" width="600">
+    <p><em>Actual Implementation of Home Screen in Dark and Light Themes</em></p>
+</div>
 
 The total number of goals a user has and the number of goals the user has completed will be displayed on both the home and profile pages. On the home page, the user’s upcoming goals and number of overdue goals, if any, will also be shown. The Bucket List page also displays the number of goals created and completed for each sublist.
 
 
-##### **Challenges Faced**
+#### **Challenges Faced**
 
 We had difficulty deciding what was the best way to update user statistics. Initially, we created a document for each user that stored the user’s overall statistics. This document was updated directly whenever the user added or deleted a goal or removed a sublist. However, to ensure accuracy, we considered summing data on the spot using statistics from all sublists when the user navigates to the relevant screens. Although this allows for up-to-date stats, it may be inefficient if a user has many sublists and events. Therefore, to balance performance with accuracy, we retained the overall stats document but introduced a function to update it by summing statistics from sublists whenever changes occur.
 
 ### 9. Notifications
 
-##### **Deliverables**
+#### **Deliverables**
 
 A notification bell is displayed at the top of the home screen. By default, if users do not have new notifications, the bell is static. When a user is invited to collaborate on a sublist, or when he/she receives a friend request, a ringing bell animation will be triggered with a 4-second pause between shakes. By clicking on the bell, the user will be able to view and dismiss these notifications. Friend requests can be accepted or declined.
 
 
-##### **Possible Add-Ons**
+#### **Possible Add-Ons**
 
 A potential enhancement would be to integrate push notifications to remind users about upcoming goals, overdue ones, or stale sublists.
 
 ###  10. AI-powered Event Suggestions
 
-##### **Deliverables**
+#### **Deliverables**
 
 A bucket list goal suggestion will be fetched from the Gemini API and displayed on the Home screen when the screen component mounts, or whenever the authenticated user's user ID changes (e.g. on login or app reinitialization). This inspires new bucket list ideas.
 
-![AI Suggestion Feature in Light Theme](./NextUp_README_assets/ai-suggestion.png)
-_AI Suggestion Feature in Light Theme_ 
+<div align="center">
+    <img src="./NextUp_README_assets/ai-suggestion.png" alt="AI Suggestion" width="600">
+    <p><em>AI Suggestion Feature in Light Theme</em></p>
+    <p><em>(Left: Home Page, Right: Sample Suggestions Generated)</em></p>
+</div>
 
-_(Left: Home Page, Right: Sample Suggestions Generated)_
 
-
-##### **Possible Add-Ons**
+#### **Possible Add-Ons**
 
 Triggering a goal suggestion only on userId change might limit the feature’s usefulness as it does not support real-time exploration or engagement. Thus, the following feature enhancements could be considered:
 
@@ -517,8 +540,8 @@ Triggering a goal suggestion only on userId change might limit the feature’s u
 
    - Optionally let users input their preferences (e.g. type and purpose of activity) before generating a suggestion
 
-\
-\
+
+
 
 
 
@@ -560,20 +583,27 @@ This was because we found Firestore’s Client SDK to be fairly efficient and ef
 
 However, the collaborative nature of our app demanded complicated access control, as collaboration involves granting access to other users outside the document owner's userId namespace. This introduced security challenges, where client-side security rules either need to be relaxed or refactored to integrate unnecessarily complex conditional logic (fragile, error-prone, and hard to scale). Thus, to we decided to implement a combined usage of Firebase Client and Admin SDKs: 
 
-|                                 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Client SDK**                  | Snapshot listeners on bucket list, sublist creation, sublist details and goal journaling screens                                                                                                                                                                                                                                                                                                                                                                         |
-| **Admin SDK and Express.js** | All other operations, including:* CRUD operations for sublists, goals and their associated posts
-
-* Inviting/Removing collaborators
-
-* Creating, retrieving and updating user profiles (including uploading images to Cloudinary)
-
-* Adding/removing friends
-
-* Generating AI-powered goal suggestions
-
-* Notification handlingRouting requests through server-side API allows for tighter control over access logic, ensuring client-side security rules remain robust. |
+<table>
+  <tr>
+    <td><strong>Client SDK</strong></td>
+    <td>Snapshot listeners on bucket list, sublist creation, sublist details and goal journaling screens</td>
+  </tr>
+  <tr>
+    <td><strong>Admin SDK and Express.js</strong></td>
+    <td>
+      All other operations, including:
+      <ul>
+        <li>CRUD operations for sublists, goals and their associated posts</li>
+        <li>Inviting/Removing collaborators</li>
+        <li>Creating, retrieving and updating user profiles (including uploading images to Cloudinary)</li>
+        <li>Adding/removing friends</li>
+        <li>Generating AI-powered goal suggestions</li>
+        <li>Notification handling</li>
+      </ul>
+      <p>Routing requests through server-side API allows for tighter control over access logic, ensuring client-side security rules remain robust.</p>
+    </td>
+  </tr>
+</table>
 
 This setup combines the speed and real-time capabilities of client-side access with the enhanced security of server-side operations (particularly for sensitive tasks like user sharing).
 
@@ -599,31 +629,35 @@ NextUp supports both light and dark themes with responsive font-sizing.
 
 We used Figma and Google Docs to draft initial designs and prototype user flows before implementation, as illustrated in the following figures.
 
-![Figma Prototype](./NextUp_README_assets/figma-1.png)
-![Figma Prototype](./NextUp_README_assets/figma-2.png)
-_Static Mid-Fidelity Figma Prototype_
+<div align="center">
+    <img src="./NextUp_README_assets/figma-1.png" alt="Figma Prototype">
+    <img src="./NextUp_README_assets/figma-2.png" alt="Figma Prototype">
+    <p><em>Static Mid-Fidelity Figma Prototype</em></p>
+</div>
 
-![Draft for Sublist Details Page](./NextUp_README_assets/google-docs-draft.png)
-_Draft for Sublist Details Page_
+<div align="center">
+    <img src="./NextUp_README_assets/google-docs-draft.png" alt="Draft for Sublist Details Page" width="500">
+    <p><em>Draft for Sublist Details Page</em></p>
+</div>
 
 
 #### **Frontend-to-Backend Authentication and High-Level Flow**
 
 ****
 
-![Sequence Diagram Showing the HTTP Request Flow](./NextUp_README_assets/sequence-diagram.png)
+<div align="center">
+    <img src="./NextUp_README_assets/sequence-diagram.png" alt="Sequence Diagram Showing the HTTP Request Flow" width="750">
+    <p><em>Sequence Diagram Showing the HTTP Request Flow</em></p>
+    <p><em>(Generated Using D2, a Text-to-Diagram Scripting Language)</em></p>
+</div>
 
-_Sequence Diagram Showing the HTTP Request Flow_
 
-_(Generated Using D2, a Text-to-Diagram Scripting Language)_ 
-
-
-##### **Authentication & API Design**
+#### Authentication & API Design
 
 NextUp uses Firebase Authentication on the frontend and a custom REST API backend that securely handles user data. All API endpoints are protected via a backend authentication middleware.
 
 
-###### **Request Flow**
+##### **Request Flow**
 
 1. **User authenticates via Firebase (Client-side)**
 
@@ -657,7 +691,7 @@ NextUp uses Firebase Authentication on the frontend and a custom REST API backen
 
 By attaching the authenticated user’s UID to req.user, the token verification middleware reduces the need to pass :userId in the URL path of protected routes. This allows for cleaner, less error-prone routes, and prevents users from spoofing other user IDs in the URL, as the server always trusts the UID from the token, not the client.
 
-\
+
 
 
 **Backend Internal API Endpoint Structure** 
@@ -712,7 +746,7 @@ The following are some of the main endpoints implemented:
 
 **Note**: While the current API structure works as intended, it does not strictly follow conventional REST naming practices. Future refactoring may be done to improve route structure and naming consistency.
 
-\
+
 
 
 
@@ -780,7 +814,7 @@ Instead of storing arrays of objects directly fetched from Firestore, we decided
 
 When subscribing to cached states (e.g. sublist data, list of posts), we used the useShallow hook to avoid unnecessary rerenders if the computed value is always shallow equal to the previous one.
 
-\
+
 
 
 
@@ -788,7 +822,9 @@ When subscribing to cached states (e.g. sublist data, list of posts), we used th
 
 The following outlines the process of keeping NextUp’s UI in sync with Firestore using real-time listeners and the global Zustand store.
 
-![Data Synchronisation Diagrammatic Outline](./NextUp_README_assets/data-syncing-diagram.png)
+<div align="center">
+    <img src="./NextUp_README_assets/data-syncing-diagram.png" alt="Data Synchronisation Diagrammatic Outline" width="600">
+</div>
 
 1. **Firestore Snapshot Listener**
 
@@ -821,17 +857,19 @@ For sublist and goal components with editing modes, we combined the use of zusta
 
 #### ****
 
-![UML Activity Diagram](./NextUp_README_assets/uml-diagram.png)
-_UML Activity Diagram_
+<div align="center">
+    <img src="./NextUp_README_assets/uml-diagram.png" alt="UML Activity Diagram">
+    <p><em>UML Activity Diagram</em></p>
+</div>
 
 
-#### **Software Engineering Practices**
+### Software Engineering Practices
 
 **Don’t-Repeat-Yourself (DRY) Principle**
 
 The DRY principle underscores the importance of avoiding code duplication. We seek to apply this by creating reusable abstractions that can be used across our app. 
 
-Component Composition\
+Component Composition
 A fundamental concept in React development, component composition supports the development of complex UIs by combining smaller, reusable components. Each smaller, self-contained component handles a specific task or represents a specific element.
 
 The importance of component composition was made clearer to us as we developed our Goal Journaling feature. While implementing dynamic image carousels for posts, we struggled with managing animated values like useSharedValue and useRef without violating React's strict Rules of Hooks. Initially, we attempted to initialize these values inside useEffect, useMemo, or loops, which led to invalid hook call errors, as hooks must only be called unconditionally at the top level of React functions. 
@@ -850,19 +888,15 @@ Rather than hard-coding values, constants can be used to define commonly used va
 
 Together, these approaches allow for clean, readable, maintainable and scalable code. 
 
-\
-
 
 **Reduce Coupling**
 
 Coupling is a measure of the degree of dependence between entities such as components, classes and methods. High coupling is typically undesirable as it makes it harder to maintain, integrate, test, and reuse modules in different contexts. 
 
-\
-
-
 Composition Over Inheritance
 
 While inheritance is another way to employ abstraction, we decided to use Composition over Inheritance; in Inheritance, components are tightly coupled. This means that any change in a parent component can bring unexpected consequences to its child components. Meanwhile, Composition keeps components loosely coupled. This makes it easier to manage evolving project requirements. 
+
 
 **Separation of Concerns Principle**
 
@@ -872,24 +906,28 @@ Apart from breaking down our app into independent, reusable components, we separ
 
 On a whole, SOC allows individual sections to be modified and debugged with ease.
 
+
 **Git Version Control**
 
 We adopted the Git Feature Branch Workflow with pull requests. 
 
 Instead of committing directly to the main branch, we created a separate branch for each feature, made feature-specific changes, before submitting a pull request to merge these changes to the development (pre-production) branch. This allows for effective collaboration, systematic conflict resolution and a clean codebase.  
 
+
 **Git Issues**
 
 We utilised Git Issues to track task progress, feature requests and bug fixes. This workflow allows for categorisation via labels and deadline tracking via milestones.
+
 
 **Github Project**
 
 We utilised Github Project for progress tracking and work allocation. Weekly sprints are conducted to review code, assess completion of weekly targets, plan deliverables for the following week, and reassign responsibilities as needed.
 
-****
+<div align="center">
+    <img src="./NextUp_README_assets/github-project-spreadsheet.png" alt="GitHub Project Spreadsheet" width="700">
+    <p><em>Screenshot of GitHub Project Spreadsheet</em></p>
+</div
 
-![GitHub Project Spreadsheet](./NextUp_README_assets/github-project-spreadsheet.png)
-_Screenshot of GitHub Project Spreadsheet_
 
 **Code Formatting**
 
@@ -910,12 +948,14 @@ The following are some screenshots of our test results:
 
 ****
 
-![API testing screenshot 1](./NextUp_README_assets/api-testing-1.png)
-![API testing screenshot 2](./NextUp_README_assets/api-testing-2.png)
-![API testing screenshot 3](./NextUp_README_assets/api-testing-3.png)
-![API testing screenshot 4](./NextUp_README_assets/api-testing-4.png)
-![API testing screenshot 5](./NextUp_README_assets/api-testing-5.png)
-
+<div align="center">
+    <img src="./NextUp_README_assets/api-testing-1.png" alt="API testing screenshot 1" width="500">
+    <img src="./NextUp_README_assets/api-testing-2.png" alt="API testing screenshot 2" width="500">
+    <img src="./NextUp_README_assets/api-testing-3.png" alt="API testing screenshot 3">
+    <img src="./NextUp_README_assets/api-testing-4.png" alt="API testing screenshot 4">
+    <img src="./NextUp_README_assets/api-testing-5.png" alt="API testing screenshot 5">
+</div
+    
 ****
 
 **Challenges Faced**
@@ -927,7 +967,7 @@ Enabling automated testing of the self-removal HTTP request, which only allows c
 
 We performed automated unit testing on individual functions or components in isolation using Jest and React Native Testing Library, mocking dependencies as needed. These tests verify that the code works as expected according to our intended logic. This process helps us identify and fix bugs early in the development cycle so as to maintain a robust, reliable codebase.
 
-\
+
 
 
 |                       |                                        |                                                                                                                                                                                                                       |                 |                                                                                                               |
@@ -1059,17 +1099,16 @@ We performed automated unit testing on individual functions or components in iso
 The following are some screenshots of our test results:
 
 ****
-![Home Screen Unit Tests](./NextUp_README_assets/home-unit-tests.png)
-![Profile Screen Unit Tests](./NextUp_README_assets/profile-unit-tests.png)
-![User Search Feature Unit Tests](./NextUp_README_assets/user-search-unit-tests.png)
-![Bucket List Screen Unit Tests](./NextUp_README_assets/bucketlist-unit-tests.png)
-![Auth Layout Unit Tests](./NextUp_README_assets/auth-layout-unit-tests.png)
-![Forgot Password Screen Unit Tests](./NextUp_README_assets/forgot-pw-unit-tests.png)
-![Login Screen Unit Tests](./NextUp_README_assets/login-unit-tests.png)
-![Sign Up Screen Unit Tests](./NextUp_README_assets/signup-unit-tests.png)
-
-
-
+<div align="center">
+    <img src="./NextUp_README_assets/home-unit-tests.png" alt="Home Screen Unit Tests" width="500">
+    <img src="./NextUp_README_assets/profile-unit-tests.png" alt="Profile Screen Unit Tests" width="600">
+    <img src="./NextUp_README_assets/user-search-unit-tests.png" alt="User Search Feature Unit Tests" width="600">
+    <img src="./NextUp_README_assets/bucketlist-unit-tests.png" alt="Bucket List Screen Unit Tests" width="600">
+    <img src="./NextUp_README_assets/auth-layout-unit-tests.png" alt="Auth Layout Unit Tests" width="600">
+    <img src="./NextUp_README_assets/forgot-pw-unit-tests.png" alt="Forgot Password Screen Unit Tests" width="600">
+    <img src="./NextUp_README_assets/login-unit-tests.png" alt="Login Screen Unit Tests" width="600">
+    <img src="./NextUp_README_assets/signup-unit-tests.png" alt="Sign Up Screen Unit Tests" width="800">
+</div>
 ****
 
 ****
@@ -1138,11 +1177,12 @@ To assess product usability and the degree to which NextUp fulfills the needs an
 
 ### **Technical Proof-of-Concept**
 
-![NextUp QR Code](./NextUp_README_assets/NextUp-qr.png)
+<img src="./NextUp_README_assets//NextUp-qr.png" alt="NextUp QR Code" width="300">
 
 Open this link on your Android devices (or scan the QR code) to install the app:
 
 <https://expo.dev/accounts/gracias022/projects/nextup/builds/d4fd32ef-8c29-484c-89d0-a8fbda45a27a> 
+
 
 **You may use the following sign-in credentials:**
 
